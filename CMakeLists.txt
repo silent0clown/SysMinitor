@@ -42,7 +42,6 @@ target_include_directories(SnapshotTool PRIVATE
 
 set_target_properties(SnapshotTool PROPERTIES
     OUTPUT_NAME "SnapshotTool"
-    RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"
 )
 
 # 特别为Visual Studio设置调试器工作目录
@@ -60,6 +59,17 @@ if(WIN32)
         ws2_32      # Winsock (HTTP库需要)
     )
 endif()
+
+# 获取输出目录（即 exe 所在路径）
+set(OUTPUT_DIR ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
+# 构建完成后，把 ${CMAKE_SOURCE_DIR}/webclient 复制到输出目录
+add_custom_command(TARGET SnapshotTool POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_SOURCE_DIR}/webclient"
+        "$<TARGET_FILE_DIR:SnapshotTool>/webclient"
+    COMMENT "Copying webclient to output directory"
+)
 
 # 安装目标
 install(TARGETS SnapshotTool RUNTIME DESTINATION bin)
