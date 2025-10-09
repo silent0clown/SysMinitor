@@ -55,12 +55,13 @@ void WebServer::stop() {
 }
 
 void WebServer::setup_routes() {
-    auto& server = *server_;
+  auto &server = *server_;
     
     // 仪表板页面
-    server.Get("/", [this](const httplib::Request& req, httplib::Response& res) {
-        res.set_content(generate_html_dashboard(), "text/html");
-    });
+  // server.Get("/", [this](const httplib::Request& req, httplib::Response& res)
+  // {
+  //     res.set_content(generate_html_dashboard(), "text/html");
+  // });
     
     // 获取快照列表
     server.Get("/api/snapshots", [this](const httplib::Request& req, httplib::Response& res) {
@@ -120,95 +121,8 @@ void WebServer::setup_routes() {
             res.set_content("{\"error\":\"No current snapshot available\"}", "application/json");
         }
     });
-}
 
-std::string WebServer::generate_html_dashboard() {
-    std::ostringstream oss;
-    
-    oss << R"(<!DOCTYPE html>
-<html>
-<head>
-    <title>System Snapshot Tool</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .card { border: 1px solid #ddd; padding: 20px; margin: 10px 0; border-radius: 5px; }
-        .section { margin-bottom: 30px; }
-        button { padding: 10px 15px; margin: 5px; background: #007cba; color: white; border: none; border-radius: 3px; cursor: pointer; }
-        button:hover { background: #005a87; }
-    </style>
-</head>
-<body>
-    <h1>System Snapshot Tool Dashboard</h1>
-    
-    <div class="section">
-        <h2>Quick Actions</h2>
-        <div class="card">
-            <button onclick="createSnapshot()\">Create New Snapshot</button>
-            <button onclick="refreshSnapshots()\">Refresh Snapshots List</button>
-        </div>
-    </div>
-    
-    <div class="section">
-        <h2>Available Snapshots</h2>
-        <div id="snapshots-list" class="card">
-            Loading...
-        </div>
-    </div>
-    
-    <div class="section">
-        <h2>Current System Status</h2>
-        <div id="current-status" class="card">
-            <button onclick="getCurrentStatus()\">Refresh Current Status</button>
-            <pre id="status-content"></pre>
-        </div>
-    </div>
-
-    <script>
-        function createSnapshot() {
-            fetch('/api/snapshot/create', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    alert('Snapshot created: ' + data.id);
-                    refreshSnapshots();
-                });
-        }
-        
-        function refreshSnapshots() {
-            fetch('/api/snapshots')
-                .then(response => response.json())
-                .then(data => {
-                    const list = document.getElementById('snapshots-list');
-                    list.innerHTML = '<ul>' + data.snapshots.map(id => 
-                        '<li>' + id + ' <button onclick="viewSnapshot(\\'' + id + '\\')\">View</button></li>'
-                    ).join('') + '</ul>';
-                });
-        }
-        
-        function getCurrentStatus() {
-            fetch('/api/current')
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('status-content').textContent = 
-                        JSON.stringify(data, null, 2);
-                });
-        }
-        
-        function viewSnapshot(id) {
-            fetch('/api/snapshot/' + id)
-                .then(response => response.json())
-                .then(data => {
-                    alert('Snapshot ' + id + ':\\n' + JSON.stringify(data, null, 2));
-                });
-        }
-        
-        // 初始化加载
-        refreshSnapshots();
-        getCurrentStatus();
-    </script>
-</body>
-</html>)";
-    
-    return oss.str();
+  server.set_mount_point("/", "webclient");
 }
 
 } // namespace snapshot
