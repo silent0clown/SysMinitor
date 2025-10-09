@@ -4,6 +4,7 @@
 #include <random>
 #include <winsock2.h>
 #include <iphlpapi.h>
+#include "nlohmann/json.hpp"
 #pragma comment(lib, "iphlpapi.lib")
 
 namespace snapshot {
@@ -70,20 +71,59 @@ SystemSnapshot::SystemSnapshot() {
 SystemSnapshot::SystemSnapshot(const std::string& name) : SystemSnapshot() {
     name_ = name;
 }
+static std::string time_to_string(time_t t) {
+  std::tm tm{};
+#if defined(_WIN32)
+  localtime_s(&tm, &t);
+#else
+  localtime_r(&t, &tm);
+#endif
+  std::ostringstream os;
+  os << std::put_time(&tm, "%Y-%m-%dT%H:%M:%S");
+  return os.str();
+}
 
 std::string SystemSnapshot::to_json() const {
     // 简化实现，实际应使用nlohmann/json
-    std::ostringstream oss;
-    oss << "{\n";
-    oss << "  \"id\": \"" << id_ << "\",\n";
-    oss << "  \"name\": \"" << name_ << "\",\n";
-    oss << "  \"hostname\": \"" << hostname_ << "\",\n";
-    oss << "  \"timestamp\": " << timestamp_ << ",\n";
-    oss << "  \"registry_entries\": " << registry_data_.size() << ",\n";
-    oss << "  \"disks\": " << disk_info_.size() << ",\n";
-    oss << "  \"processes\": " << process_info_.size() << "\n";
-    oss << "}";
-    return oss.str();
+  using nlohmann::json;
+
+  // 1. 构造 JSON 对象
+  json j;
+  j["id"] = id_;
+  j["name"] = name_;
+  j["hostname"] = hostname_;
+  j["timestamp"] = time_to_string(timestamp_);
+
+  // 2. registry_data
+  j["registry_data"] = json::array();
+  for (const auto &rv : registry_data_) {
+    j["registry_data"].push_back({{"key_path", rv.key_path},
+                                  {"value_name", rv.value_name},
+                                  {"type", rv.type},
+                                  {"data", rv.data}});
+  }
+
+  // 3. disk_info
+  j["disk_info"] = json::array();
+  for (const auto &d : disk_info_) {
+    j["disk_info"].push_back({{"drive_letter", d.drive_letter},
+                              {"total_size", d.total_size},
+                              {"free_space", d.free_space},
+                              {"used_space", d.used_space}});
+  }
+
+  // 4. process_info
+  j["process_info"] = json::array();
+  for (const auto &p : process_info_) {
+    j["process_info"].push_back({{"pid", p.pid},
+                                 {"name", p.name},
+                                 {"cpu_usage", p.cpu_usage},
+                                 {"memory_usage", p.memory_usage},
+                                 {"executable_path", p.executable_path}});
+  }
+
+  // 5. 返回紧凑 JSON 字符串（如需美化可用 dump(4)）
+  return j.dump();
 }
 
 std::shared_ptr<SystemSnapshot> SystemSnapshot::from_json(const std::string& json_str) {
