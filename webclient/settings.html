@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>设置 - OS Monitor Pro</title>
+    <link rel="stylesheet" href="assets/css/tailwind.min.css">
+    <script src="assets/js/anime.min.js"></script>
+    <link href="assets/css/fonts.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Noto Sans SC', sans-serif; }
+        .glass-card { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .setting-item { transition: all 0.3s ease; }
+        .setting-item:hover { background: rgba(59, 130, 246, 0.05); }
+        .toggle-switch { 
+            position: relative; 
+            width: 44px; 
+            height: 24px; 
+            background: #e5e7eb; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.3s ease;
+        }
+        .toggle-switch.active { background: #3b82f6; }
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .toggle-switch.active::after { transform: translateX(20px); }
+        .range-slider { -webkit-appearance: none; appearance: none; height: 6px; background: #e5e7eb; border-radius: 3px; outline: none; }
+        .range-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 20px; height: 20px; background: #3b82f6; border-radius: 50%; cursor: pointer; }
+        .range-slider::-moz-range-thumb { width: 20px; height: 20px; background: #3b82f6; border-radius: 50%; cursor: pointer; border: none; }
+        .theme-preview { width: 60px; height: 40px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; border: 2px solid transparent; }
+        .theme-preview.active { border-color: #3b82f6; transform: scale(1.05); }
+        .theme-light { background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); }
+        .theme-dark { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); }
+        .theme-auto { background: linear-gradient(135deg, #f8fafc 50%, #1e293b 50%); }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <!-- 顶部导航栏 -->
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-600 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">OS</span>
+                        </div>
+                        <h1 class="text-xl font-bold text-gray-900">Monitor Pro</h1>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button id="saveSettingsBtn" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        保存设置
+                    </button>
+                    <button id="resetSettingsBtn" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                        恢复默认
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex">
+        <!-- 左侧边栏 -->
+        <div class="w-64 bg-white shadow-sm min-h-screen">
+            <div class="p-6">
+                <nav class="space-y-2">
+                    <a href="index.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                        <span>📊</span>
+                        <span>实时仪表盘</span>
+                    </a>
+                    <a href="snapshot.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                        <span>📸</span>
+                        <span>快照管理</span>
+                    </a>
+                    <a href="report.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                        <span>📋</span>
+                        <span>报告分析</span>
+                    </a>
+                    <a href="settings.html" class="flex items-center space-x-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium">
+                        <span class="text-blue-600">⚙️</span>
+                        <span>设置</span>
+                    </a>
+                </nav>
+            </div>
+
+            <!-- 设置信息 -->
+            <div class="p-6 border-t border-gray-200">
+                <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">配置信息</h3>
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">配置版本:</span>
+                        <span class="font-medium">v2.1.0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">最后更新:</span>
+                        <span class="font-medium">2025-10-10</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">配置文件:</span>
+                        <span class="font-medium">config.json</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主内容区 -->
+        <div class="flex-1 p-6">
+            <!-- 常规设置 -->
+            <div class="mb-8">
+                <div class="glass-card rounded-xl p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">常规设置</h2>
+                    
+                    <div class="space-y-6">
+                        <!-- 语言设置 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">界面语言</h3>
+                                <p class="text-sm text-gray-600">选择您偏好的界面语言</p>
+                            </div>
+                            <select id="languageSelect" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="zh-CN" selected>简体中文</option>
+                                <option value="zh-TW">繁体中文</option>
+                                <option value="en-US">English</option>
+                                <option value="ja-JP">日本語</option>
+                            </select>
+                        </div>
+
+                        <!-- 主题设置 -->
+                        <div class="setting-item p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">界面主题</h3>
+                                <p class="text-sm text-gray-600">选择您喜欢的视觉主题</p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-center">
+                                    <div class="theme-preview theme-light active" data-theme="light"></div>
+                                    <span class="text-xs text-gray-600">浅色</span>
+                                </div>
+                                <div class="text-center">
+                                    <div class="theme-preview theme-dark" data-theme="dark"></div>
+                                    <span class="text-xs text-gray-600">深色</span>
+                                </div>
+                                <div class="text-center">
+                                    <div class="theme-preview theme-auto" data-theme="auto"></div>
+                                    <span class="text-xs text-gray-600">自动</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 自动启动 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">开机自动启动</h3>
+                                <p class="text-sm text-gray-600">系统启动时自动运行监控工具</p>
+                            </div>
+                            <div class="toggle-switch active" data-setting="autoStart"></div>
+                        </div>
+
+                        <!-- 最小化到系统托盘 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">最小化到系统托盘</h3>
+                                <p class="text-sm text-gray-600">关闭窗口时最小化到系统托盘</p>
+                            </div>
+                            <div class="toggle-switch active" data-setting="minimizeToTray"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 监控设置 -->
+            <div class="mb-8">
+                <div class="glass-card rounded-xl p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">监控设置</h2>
+                    
+                    <div class="space-y-6">
+                        <!-- 数据采集频率 -->
+                        <div class="setting-item p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">数据采集频率</h3>
+                                <p class="text-sm text-gray-600">设置系统数据的更新间隔</p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm text-gray-600">1秒</span>
+                                <input type="range" id="updateFrequency" class="range-slider flex-1" min="1" max="60" value="5">
+                                <span class="text-sm text-gray-600">60秒</span>
+                                <span id="frequencyValue" class="text-sm font-medium text-blue-600">5秒</span>
+                            </div>
+                        </div>
+
+                        <!-- CPU警告阈值 -->
+                        <div class="setting-item p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">CPU警告阈值</h3>
+                                <p class="text-sm text-gray-600">当CPU使用率超过此值时发出警告</p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm text-gray-600">50%</span>
+                                <input type="range" id="cpuThreshold" class="range-slider flex-1" min="50" max="100" value="80">
+                                <span class="text-sm text-gray-600">100%</span>
+                                <span id="cpuThresholdValue" class="text-sm font-medium text-blue-600">80%</span>
+                            </div>
+                        </div>
+
+                        <!-- 内存警告阈值 -->
+                        <div class="setting-item p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">内存警告阈值</h3>
+                                <p class="text-sm text-gray-600">当内存使用率超过此值时发出警告</p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm text-gray-600">50%</span>
+                                <input type="range" id="memoryThreshold" class="range-slider flex-1" min="50" max="100" value="85">
+                                <span class="text-sm text-gray-600">100%</span>
+                                <span id="memoryThresholdValue" class="text-sm font-medium text-blue-600">85%</span>
+                            </div>
+                        </div>
+
+                        <!-- 磁盘警告阈值 -->
+                        <div class="setting-item p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">磁盘警告阈值</h3>
+                                <p class="text-sm text-gray-600">当磁盘使用率超过此值时发出警告</p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <span class="text-sm text-gray-600">70%</span>
+                                <input type="range" id="diskThreshold" class="range-slider flex-1" min="70" max="100" value="90">
+                                <span class="text-sm text-gray-600">100%</span>
+                                <span id="diskThresholdValue" class="text-sm font-medium text-blue-600">90%</span>
+                            </div>
+                        </div>
+
+                        <!-- 声音警告 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">声音警告</h3>
+                                <p class="text-sm text-gray-600">当系统异常时播放警告声音</p>
+                            </div>
+                            <div class="toggle-switch active" data-setting="soundAlert"></div>
+                        </div>
+
+                        <!-- 桌面通知 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">桌面通知</h3>
+                                <p class="text-sm text-gray-600">显示系统状态的桌面通知</p>
+                            </div>
+                            <div class="toggle-switch active" data-setting="desktopNotification"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 快照设置 -->
+            <div class="mb-8">
+                <div class="glass-card rounded-xl p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">快照设置</h2>
+                    
+                    <div class="space-y-6">
+                        <!-- 默认采集选项 -->
+                        <div class="setting-item p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">默认采集选项</h3>
+                                <p class="text-sm text-gray-600">创建快照时默认包含的信息</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <label class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+                                    <input type="checkbox" class="w-5 h-5 text-blue-600" checked>
+                                    <span class="text-sm">注册表信息</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+                                    <input type="checkbox" class="w-5 h-5 text-blue-600" checked>
+                                    <span class="text-sm">进程信息</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+                                    <input type="checkbox" class="w-5 h-5 text-blue-600" checked>
+                                    <span class="text-sm">文件系统</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+                                    <input type="checkbox" class="w-5 h-5 text-blue-600">
+                                    <span class="text-sm">网络配置</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+                                    <input type="checkbox" class="w-5 h-5 text-blue-600">
+                                    <span class="text-sm">驱动程序</span>
+                                </label>
+                                <label class="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg cursor-pointer">
+                                    <input type="checkbox" class="w-5 h-5 text-blue-600">
+                                    <span class="text-sm">安全设置</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 存储位置 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">快照存储位置</h3>
+                                <p class="text-sm text-gray-600">选择快照文件的保存路径</p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                <input type="text" id="storagePath" value="C:\\OSMonitor\\Snapshots" readonly class="px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-sm">
+                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                    浏览
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 自动快照 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">启用自动快照</h3>
+                                <p class="text-sm text-gray-600">定期自动创建系统快照</p>
+                            </div>
+                            <div class="toggle-switch" data-setting="autoSnapshot"></div>
+                        </div>
+
+                        <!-- 自动快照频率 -->
+                        <div class="setting-item p-4 rounded-lg" id="autoSnapshotSettings" style="display: none;">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">自动快照频率</h3>
+                                <p class="text-sm text-gray-600">设置自动创建快照的时间间隔</p>
+                            </div>
+                            <select class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="1">每小时</option>
+                                <option value="6">每6小时</option>
+                                <option value="12">每12小时</option>
+                                <option value="24" selected>每天</option>
+                                <option value="168">每周</option>
+                            </select>
+                        </div>
+
+                        <!-- 保留策略 -->
+                        <div class="setting-item p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">快照保留策略</h3>
+                                <p class="text-sm text-gray-600">设置快照的保留时间和数量限制</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-2">保留时间</label>
+                                    <select class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full">
+                                        <option value="7">7天</option>
+                                        <option value="30" selected>30天</option>
+                                        <option value="90">90天</option>
+                                        <option value="365">1年</option>
+                                        <option value="0">永久保留</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-gray-600 mb-2">最大数量</label>
+                                    <input type="number" value="50" min="10" max="1000" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 高级设置 -->
+            <div class="mb-8">
+                <div class="glass-card rounded-xl p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">高级设置</h2>
+                    
+                    <div class="space-y-6">
+                        <!-- 调试模式 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">调试模式</h3>
+                                <p class="text-sm text-gray-600">启用详细日志记录用于故障排除</p>
+                            </div>
+                            <div class="toggle-switch" data-setting="debugMode"></div>
+                        </div>
+
+                        <!-- 性能模式 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">性能模式</h3>
+                                <p class="text-sm text-gray-600">优化监控性能，减少系统资源占用</p>
+                            </div>
+                            <div class="toggle-switch active" data-setting="performanceMode"></div>
+                        </div>
+
+                        <!-- 数据压缩 -->
+                        <div class="setting-item flex items-center justify-between p-4 rounded-lg">
+                            <div>
+                                <h3 class="font-medium text-gray-900">数据压缩</h3>
+                                <p class="text-sm text-gray-600">压缩存储监控数据以节省磁盘空间</p>
+                            </div>
+                            <div class="toggle-switch active" data-setting="dataCompression"></div>
+                        </div>
+
+                        <!-- 网络代理 -->
+                        <div class="setting-item p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">网络代理</h3>
+                                <p class="text-sm text-gray-600">配置网络代理设置</p>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <input type="text" placeholder="代理服务器地址" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <input type="number" placeholder="端口" class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <select class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">无认证</option>
+                                    <option value="basic">基本认证</option>
+                                    <option value="ntlm">NTLM认证</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- 数据导出 -->
+                        <div class="setting-item p-4 rounded-lg">
+                            <div class="mb-4">
+                                <h3 class="font-medium text-gray-900">数据导出</h3>
+                                <p class="text-sm text-gray-600">导出或导入配置文件</p>
+                            </div>
+                            <div class="flex space-x-3">
+                                <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                    导出配置
+                                </button>
+                                <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                    导入配置
+                                </button>
+                                <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                    重置配置
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 关于信息 -->
+            <div class="mb-8">
+                <div class="glass-card rounded-xl p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">关于</h2>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-teal-600 rounded-xl flex items-center justify-center">
+                                <span class="text-white font-bold text-xl">OS</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900">OS Monitor Pro</h3>
+                                <p class="text-gray-600">专业系统监控工具</p>
+                                <p class="text-sm text-gray-500">版本 2.1.0 (Build 2025.10.10)</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
+                            <div>
+                                <h4 class="font-medium text-gray-900 mb-2">系统信息</h4>
+                                <div class="space-y-1 text-sm text-gray-600">
+                                    <div>操作系统: Windows 11 Pro</div>
+                                    <div>.NET版本: 6.0.21</div>
+                                    <div>运行时间: 5天 12:30:22</div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="font-medium text-gray-900 mb-2">开发者信息</h4>
+                                <div class="space-y-1 text-sm text-gray-600">
+                                    <div>开发者: OS Monitor Team</div>
+                                    <div>官方网站: www.osmonitor.com</div>
+                                    <div>技术支持: support@osmonitor.com</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3 pt-4 border-t">
+                            <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                检查更新
+                            </button>
+                            <button class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                用户手册
+                            </button>
+                            <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+                                反馈建议
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 保存确认模态框 -->
+    <div id="saveConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-2xl">✅</span>
+                </div>
+                <h3 class="text-xl font-semibold mb-2">设置已保存</h3>
+                <p class="text-gray-600 mb-6">您的设置已成功保存并生效</p>
+                <button id="closeSaveModal" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                    确定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 设置管理系统
+        class SettingsManager {
+            constructor() {
+                this.settings = {};
+                this.init();
+            }
+
+            init() {
+                this.loadSettings();
+                this.bindEvents();
+                this.updateUI();
+            }
+
+            // 加载设置
+            loadSettings() {
+                // 模拟加载保存的设置
+                this.settings = {
+                    language: 'zh-CN',
+                    theme: 'light',
+                    autoStart: true,
+                    minimizeToTray: true,
+                    updateFrequency: 5,
+                    cpuThreshold: 80,
+                    memoryThreshold: 85,
+                    diskThreshold: 90,
+                    soundAlert: true,
+                    desktopNotification: true,
+                    autoSnapshot: false,
+                    debugMode: false,
+                    performanceMode: true,
+                    dataCompression: true
+                };
+            }
+
+            // 更新UI
+            updateUI() {
+                // 更新语言选择
+                document.getElementById('languageSelect').value = this.settings.language;
+                
+                // 更新主题选择
+                document.querySelectorAll('.theme-preview').forEach(preview => {
+                    preview.classList.remove('active');
+                    if (preview.dataset.theme === this.settings.theme) {
+                        preview.classList.add('active');
+                    }
+                });
+                
+                // 更新滑块值
+                document.getElementById('updateFrequency').value = this.settings.updateFrequency;
+                document.getElementById('frequencyValue').textContent = this.settings.updateFrequency + '秒';
+                
+                document.getElementById('cpuThreshold').value = this.settings.cpuThreshold;
+                document.getElementById('cpuThresholdValue').textContent = this.settings.cpuThreshold + '%';
+                
+                document.getElementById('memoryThreshold').value = this.settings.memoryThreshold;
+                document.getElementById('memoryThresholdValue').textContent = this.settings.memoryThreshold + '%';
+                
+                document.getElementById('diskThreshold').value = this.settings.diskThreshold;
+                document.getElementById('diskThresholdValue').textContent = this.settings.diskThreshold + '%';
+                
+                // 更新开关状态
+                document.querySelectorAll('.toggle-switch').forEach(toggle => {
+                    const setting = toggle.dataset.setting;
+                    if (this.settings[setting]) {
+                        toggle.classList.add('active');
+                    } else {
+                        toggle.classList.remove('active');
+                    }
+                });
+            }
+
+            // 绑定事件
+            bindEvents() {
+                // 语言选择
+                document.getElementById('languageSelect').addEventListener('change', (e) => {
+                    this.settings.language = e.target.value;
+                    this.showLanguageChangeMessage();
+                });
+
+                // 主题选择
+                document.querySelectorAll('.theme-preview').forEach(preview => {
+                    preview.addEventListener('click', () => {
+                        document.querySelectorAll('.theme-preview').forEach(p => p.classList.remove('active'));
+                        preview.classList.add('active');
+                        this.settings.theme = preview.dataset.theme;
+                        this.applyTheme(preview.dataset.theme);
+                    });
+                });
+
+                // 滑块事件
+                document.getElementById('updateFrequency').addEventListener('input', (e) => {
+                    this.settings.updateFrequency = parseInt(e.target.value);
+                    document.getElementById('frequencyValue').textContent = e.target.value + '秒';
+                });
+
+                document.getElementById('cpuThreshold').addEventListener('input', (e) => {
+                    this.settings.cpuThreshold = parseInt(e.target.value);
+                    document.getElementById('cpuThresholdValue').textContent = e.target.value + '%';
+                });
+
+                document.getElementById('memoryThreshold').addEventListener('input', (e) => {
+                    this.settings.memoryThreshold = parseInt(e.target.value);
+                    document.getElementById('memoryThresholdValue').textContent = e.target.value + '%';
+                });
+
+                document.getElementById('diskThreshold').addEventListener('input', (e) => {
+                    this.settings.diskThreshold = parseInt(e.target.value);
+                    document.getElementById('diskThresholdValue').textContent = e.target.value + '%';
+                });
+
+                // 开关事件
+                document.querySelectorAll('.toggle-switch').forEach(toggle => {
+                    toggle.addEventListener('click', () => {
+                        const setting = toggle.dataset.setting;
+                        this.settings[setting] = !this.settings[setting];
+                        
+                        if (this.settings[setting]) {
+                            toggle.classList.add('active');
+                        } else {
+                            toggle.classList.remove('active');
+                        }
+                        
+                        // 特殊处理自动快照设置
+                        if (setting === 'autoSnapshot') {
+                            const autoSettings = document.getElementById('autoSnapshotSettings');
+                            if (this.settings[setting]) {
+                                autoSettings.style.display = 'block';
+                            } else {
+                                autoSettings.style.display = 'none';
+                            }
+                        }
+                    });
+                });
+
+                // 保存设置
+                document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+                    this.saveSettings();
+                });
+
+                // 恢复默认设置
+                document.getElementById('resetSettingsBtn').addEventListener('click', () => {
+                    this.resetSettings();
+                });
+
+                // 关闭保存确认模态框
+                document.getElementById('closeSaveModal').addEventListener('click', () => {
+                    document.getElementById('saveConfirmModal').classList.add('hidden');
+                });
+
+                // 其他按钮事件
+                document.querySelectorAll('button').forEach(btn => {
+                    if (btn.textContent.includes('浏览')) {
+                        btn.addEventListener('click', () => {
+                            alert('文件夹选择对话框\n\n在实际应用中，这里会打开文件夹选择对话框让您选择快照存储位置。');
+                        });
+                    } else if (btn.textContent.includes('导出配置')) {
+                        btn.addEventListener('click', () => {
+                            alert('导出配置\n\n正在导出当前配置文件...\n配置文件将保存为 config.json');
+                        });
+                    } else if (btn.textContent.includes('导入配置')) {
+                        btn.addEventListener('click', () => {
+                            alert('导入配置\n\n请选择要导入的配置文件。\n支持 config.json 格式的配置文件。');
+                        });
+                    } else if (btn.textContent.includes('重置配置')) {
+                        btn.addEventListener('click', () => {
+                            this.resetSettings();
+                        });
+                    } else if (btn.textContent.includes('检查更新')) {
+                        btn.addEventListener('click', () => {
+                            alert('检查更新\n\n当前版本: v2.1.0\n已是最新版本！');
+                        });
+                    } else if (btn.textContent.includes('用户手册')) {
+                        btn.addEventListener('click', () => {
+                            alert('用户手册\n\n正在打开用户手册...\n\n在实际应用中，这里会打开PDF或网页版的用户手册。');
+                        });
+                    } else if (btn.textContent.includes('反馈建议')) {
+                        btn.addEventListener('click', () => {
+                            alert('反馈建议\n\n感谢您的反馈！\n\n请发送邮件至: support@osmonitor.com\n或在官方论坛提交反馈。');
+                        });
+                    }
+                });
+            }
+
+            // 应用主题
+            applyTheme(theme) {
+                const body = document.body;
+                body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+                body.classList.add('theme-' + theme);
+                
+                if (theme === 'dark') {
+                    document.body.style.backgroundColor = '#1e293b';
+                    document.body.style.color = '#f8fafc';
+                } else if (theme === 'light') {
+                    document.body.style.backgroundColor = '#f8fafc';
+                    document.body.style.color = '#1e293b';
+                } else {
+                    // 自动主题，根据系统时间决定
+                    const hour = new Date().getHours();
+                    if (hour >= 6 && hour < 18) {
+                        document.body.style.backgroundColor = '#f8fafc';
+                        document.body.style.color = '#1e293b';
+                    } else {
+                        document.body.style.backgroundColor = '#1e293b';
+                        document.body.style.color = '#f8fafc';
+                    }
+                }
+            }
+
+            // 显示语言更改消息
+            showLanguageChangeMessage() {
+                // 在实际应用中，这里会显示一个提示，告知用户需要重启应用
+                console.log('语言已更改为:', this.settings.language);
+            }
+
+            // 保存设置
+            saveSettings() {
+                // 模拟保存设置
+                localStorage.setItem('osMonitorSettings', JSON.stringify(this.settings));
+                
+                // 显示保存成功模态框
+                document.getElementById('saveConfirmModal').classList.remove('hidden');
+                
+                // 3秒后自动关闭
+                setTimeout(() => {
+                    document.getElementById('saveConfirmModal').classList.add('hidden');
+                }, 3000);
+            }
+
+            // 恢复默认设置
+            resetSettings() {
+                if (confirm('确定要恢复默认设置吗？这将重置所有自定义配置。')) {
+                    this.settings = {
+                        language: 'zh-CN',
+                        theme: 'light',
+                        autoStart: true,
+                        minimizeToTray: true,
+                        updateFrequency: 5,
+                        cpuThreshold: 80,
+                        memoryThreshold: 85,
+                        diskThreshold: 90,
+                        soundAlert: true,
+                        desktopNotification: true,
+                        autoSnapshot: false,
+                        debugMode: false,
+                        performanceMode: true,
+                        dataCompression: true
+                    };
+                    
+                    this.updateUI();
+                    this.saveSettings();
+                }
+            }
+        }
+
+        // 初始化设置管理器
+        document.addEventListener('DOMContentLoaded', () => {
+            window.settingsManager = new SettingsManager();
+        });
+    </script>
+</body>
+</html>
