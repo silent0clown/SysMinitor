@@ -73,8 +73,9 @@ void HttpServer::Stop() {
 
 void HttpServer::SetupRoutes() {
     // 静态文件服务（用于前端页面）
-    server_->set_mount_point("/", "../www");
-    
+    // server_->set_mount_point("/", "../www");//测试页面
+    server_->set_mount_point("/", "webclient");
+
     // API路由 CPU相关
     server_->Get("/api/cpu/info", [this](const httplib::Request& req, httplib::Response& res) {
         HandleGetCPUInfo(req, res);
