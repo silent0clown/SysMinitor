@@ -12,16 +12,16 @@ public:
     SnapshotManager(const std::string& storage_path = "snapshots");
     ~SnapshotManager() = default;
     
-    // 蹇収绠＄悊
+    // 快照管理
     bool save_snapshot(const std::shared_ptr<SystemSnapshot>& snapshot);
     std::shared_ptr<SystemSnapshot> load_snapshot(const std::string& snapshot_id);
     bool delete_snapshot(const std::string& snapshot_id);
     
-    // 蹇収鍒楄〃
+    // 快照列表
     std::vector<std::string> list_snapshots() const;
     std::unordered_map<std::string, std::string> get_snapshot_metadata() const;
     
-    // 瀛樺偍璺緞绠＄悊
+    // 存储路径管理
     void set_storage_path(const std::string& path) { storage_path_ = path; }
     const std::string& get_storage_path() const { return storage_path_; }
 

@@ -15,21 +15,21 @@ public:
     DataCollector();
     ~DataCollector() = default;
     
-    // é‡‡é›†å®Œæ•´å¿«ç…§
+    // ²É¼¯ÍêÕû¿ìÕÕ
     std::shared_ptr<SystemSnapshot> collect_snapshot(const std::string& name = "");
     
-    // å•ç‹¬é‡‡é›†å„ä¸ªç»„ä»¶
+    // µ¥¶À²É¼¯¸÷¸ö×é¼ş
     std::vector<RegistryValue> collect_registry_data();
     std::vector<DiskInfo> collect_disk_info();
     std::vector<ProcessInfo> collect_process_info();
     SystemMemoryInfo collect_system_memory_info();
 
 private:
-    // æ³¨å†Œè¡¨é‡‡é›†
+    // ×¢²á±í²É¼¯
     void collect_registry_key(const std::string& key_path, std::vector<RegistryValue>& results);
     std::vector<std::string> get_registry_subkeys(HKEY hKey);
     
-    // è¿›ç¨‹CPUä½¿ç”¨ç‡è®¡ç®—
+    // ½ø³ÌCPUÊ¹ÓÃÂÊ¼ÆËã
     void initialize_cpu_counters();
     double calculate_process_cpu_usage(uint32_t pid);
     

@@ -41,17 +41,17 @@ std::shared_ptr<SystemSnapshot> DataCollector::collect_snapshot(const std::strin
         auto disk_info = collect_disk_info();
         snapshot->set_disk_info(std::move(disk_info));
         
-        LOG_INFO("采集系统内存信息...");
+        LOG_INFO("閲囬泦绯荤粺鍐呭瓨淇℃伅...");
         auto system_memory = collect_system_memory_info();
         snapshot->set_system_memory(system_memory);
 
-        LOG_INFO("初始化 CPU 计数器以便采样...");
-        // 初始化 CPU 计数基线，然后等待一小段时间再采样进程，
-        // 以便 calculate_process_cpu_usage 能基于差分计算出有效值。
+        LOG_INFO("鍒濆鍖� CPU 璁℃暟鍣ㄤ互渚块噰鏍�...");
+        // 鍒濆鍖� CPU 璁℃暟鍩虹嚎锛岀劧鍚庣瓑寰呬竴灏忔鏃堕棿鍐嶉噰鏍疯繘绋嬶紝
+        // 浠ヤ究 calculate_process_cpu_usage 鑳藉熀浜庡樊鍒嗚绠楀嚭鏈夋晥鍊笺��
         initialize_cpu_counters();
         std::this_thread::sleep_for(std::chrono::milliseconds(300));
 
-        LOG_INFO("采集进程信息...");
+        LOG_INFO("閲囬泦杩涚▼淇℃伅...");
         auto process_info = collect_process_info();
         snapshot->set_process_info(std::move(process_info));
         
@@ -206,7 +206,7 @@ std::vector<ProcessInfo> DataCollector::collect_process_info() {
             PROCESS_MEMORY_COUNTERS pmc;
             if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
                 info.memory_usage = pmc.WorkingSetSize;
-                // 如果可用，使用扩展结构获取 PrivateUsage
+                // 濡傛灉鍙敤锛屼娇鐢ㄦ墿灞曠粨鏋勮幏鍙� PrivateUsage
                 PROCESS_MEMORY_COUNTERS_EX pmce;
                 if (GetProcessMemoryInfo(hProcess, reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&pmce), sizeof(pmce))) {
                     info.private_bytes = pmce.PrivateUsage;
@@ -251,11 +251,11 @@ SystemMemoryInfo DataCollector::collect_system_memory_info() {
 }
 
 double DataCollector::calculate_process_cpu_usage(uint32_t pid) {
-    // 实际实现：使用 GetProcessTimes 与 GetSystemTimes 的差分法计算百分比
-    // 打开进程以获取时间信息
+    // 瀹為檯瀹炵幇锛氫娇鐢� GetProcessTimes 涓� GetSystemTimes 鐨勫樊鍒嗘硶璁＄畻鐧惧垎姣�
+    // 鎵撳紑杩涚▼浠ヨ幏鍙栨椂闂翠俊鎭�
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
     if (!hProcess) {
-        // 无权限或进程已结束
+        // 鏃犳潈闄愭垨杩涚▼宸茬粨鏉�
         return 0.0;
     }
 
@@ -267,7 +267,7 @@ double DataCollector::calculate_process_cpu_usage(uint32_t pid) {
 
     uint64_t procTime = filetime_to_uint64(ftKernel) + filetime_to_uint64(ftUser);
 
-    // 获取系统时间（kernel + user）
+    // 鑾峰彇绯荤粺鏃堕棿锛坘ernel + user锛�
     FILETIME sysIdle, sysKernel, sysUser;
     if (!GetSystemTimes(&sysIdle, &sysKernel, &sysUser)) {
         CloseHandle(hProcess);
@@ -290,17 +290,17 @@ double DataCollector::calculate_process_cpu_usage(uint32_t pid) {
         if (sysTime >= prevSys) deltaSys = sysTime - prevSys; else deltaSys = 0;
 
         if (deltaSys > 0) {
-            // FILETIME 的单位是 100ns ticks，比例相同可直接用
+            // FILETIME 鐨勫崟浣嶆槸 100ns ticks锛屾瘮渚嬬浉鍚屽彲鐩存帴鐢�
             cpuPercent = (double)deltaProc / (double)deltaSys * 100.0 * static_cast<double>(processor_count_);
         } else {
             cpuPercent = 0.0;
         }
 
-        // 更新缓存
+        // 鏇存柊缂撳瓨
         prev.last_time = procTime;
         prev.last_system_time = sysTime;
     } else {
-        // 首次见到该进程：初始化缓存项并返回 0（下一次将有基线）
+        // 棣栨瑙佸埌璇ヨ繘绋嬶細鍒濆鍖栫紦瀛橀」骞惰繑鍥� 0锛堜笅涓�娆″皢鏈夊熀绾匡級
         ProcessCpuData data;
         data.last_time = procTime;
         data.last_system_time = sysTime;
@@ -310,9 +310,9 @@ double DataCollector::calculate_process_cpu_usage(uint32_t pid) {
 
     CloseHandle(hProcess);
 
-    // clamp 值，防止极端读数（例如多核上理论上可能超过100）
+    // clamp 鍊硷紝闃叉鏋佺璇绘暟锛堜緥濡傚鏍镐笂鐞嗚涓婂彲鑳借秴杩�100锛�
     if (cpuPercent < 0.0) cpuPercent = 0.0;
-    // 上限为 100 * processor_count_
+    // 涓婇檺涓� 100 * processor_count_
     double maxPossible = 100.0 * static_cast<double>(processor_count_);
     if (cpuPercent > maxPossible) cpuPercent = maxPossible;
 
@@ -320,21 +320,21 @@ double DataCollector::calculate_process_cpu_usage(uint32_t pid) {
 }
 
 void DataCollector::initialize_cpu_counters() {
-    // 初始化系统和进程 CPU 计数缓存，以便后续计算使用差值
+    // 鍒濆鍖栫郴缁熷拰杩涚▼ CPU 璁℃暟缂撳瓨锛屼互渚垮悗缁绠椾娇鐢ㄥ樊鍊�
     cpu_cache_.clear();
 
-    // 获取系统总的 CPU 时间（User + Kernel + Idle）
+    // 鑾峰彇绯荤粺鎬荤殑 CPU 鏃堕棿锛圲ser + Kernel + Idle锛�
     FILETIME idleTime, kernelTime, userTime;
     if (GetSystemTimes(&idleTime, &kernelTime, &userTime)) {
         uint64_t k = filetime_to_uint64(kernelTime);
         uint64_t u = filetime_to_uint64(userTime);
-        // 合并 kernel + user 作为系统活动时间
+        // 鍚堝苟 kernel + user 浣滀负绯荤粺娲诲姩鏃堕棿
         last_system_cpu_time_ = k + u;
     } else {
         last_system_cpu_time_ = 0;
     }
 
-    // 枚举当前进程以初始化每个进程的时间戳
+    // 鏋氫妇褰撳墠杩涚▼浠ュ垵濮嬪寲姣忎釜杩涚▼鐨勬椂闂存埑
     HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hProcessSnap == INVALID_HANDLE_VALUE) return;
 
@@ -364,5 +364,6 @@ void DataCollector::initialize_cpu_counters() {
 
     CloseHandle(hProcessSnap);
 }
+
 
 } // namespace snapshot

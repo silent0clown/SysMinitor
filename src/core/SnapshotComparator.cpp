@@ -38,12 +38,12 @@ ComparisonResult SnapshotComparator::compare(
     const std::shared_ptr<SystemSnapshot>& current) {
     
     // auto logger = AsyncLogger::get_instance();
-    LOG_INFO("å¼€å§‹æ¯”è¾ƒå¿«ç…§: {} vs {}", baseline->get_name(), current->get_name());
+    LOG_INFO("¿ªÊ¼±È½Ï¿ìÕÕ: {} vs {}", baseline->get_name(), current->get_name());
     
     ComparisonResult result;
     
     if (!baseline || !current) {
-        LOG_ERROR("æ¯”è¾ƒå¤±è´¥: å¿«ç…§ä¸ºç©º");
+        LOG_ERROR("±È½ÏÊ§°Ü: ¿ìÕÕÎª¿Õ");
         return result;
     }
     
@@ -55,12 +55,12 @@ ComparisonResult SnapshotComparator::compare(
         result.process_diff = compare_processes(baseline->get_process_info(), 
                                                current->get_process_info());
         
-        LOG_INFO("å¿«ç…§æ¯”è¾ƒå®Œæˆï¼Œå‘ç° {} å¤„å˜åŒ–", 
+        LOG_INFO("¿ìÕÕ±È½ÏÍê³É£¬·¢ÏÖ {} ´¦±ä»¯", 
                     result.registry_diff.added.size() + result.registry_diff.removed.size() + result.registry_diff.modified.size() +
                     result.disk_diff.changed.size() +
                     result.process_diff.added.size() + result.process_diff.removed.size() + result.process_diff.modified.size());
     } catch (const std::exception& e) {
-        LOG_ERROR("æ¯”è¾ƒå¿«ç…§æ—¶å‘ç”Ÿé”™è¯¯: {}", e.what());
+        LOG_ERROR("±È½Ï¿ìÕÕÊ±·¢Éú´íÎó: {}", e.what());
     }
     
     return result;
@@ -72,7 +72,7 @@ ComparisonResult::RegistryDiff SnapshotComparator::compare_registry(
     
     ComparisonResult::RegistryDiff diff;
     
-    // æŸ¥æ‰¾æ–°å¢çš„æ³¨å†Œè¡¨é¡¹
+    // ²éÕÒĞÂÔöµÄ×¢²á±íÏî
     for (const auto& current_val : current) {
         auto it = std::find(baseline.begin(), baseline.end(), current_val);
         if (it == baseline.end()) {
@@ -80,7 +80,7 @@ ComparisonResult::RegistryDiff SnapshotComparator::compare_registry(
         }
     }
     
-    // æŸ¥æ‰¾åˆ é™¤çš„æ³¨å†Œè¡¨é¡¹
+    // ²éÕÒÉ¾³ıµÄ×¢²á±íÏî
     for (const auto& baseline_val : baseline) {
         auto it = std::find(current.begin(), current.end(), baseline_val);
         if (it == current.end()) {
@@ -117,7 +117,7 @@ ComparisonResult::ProcessDiff SnapshotComparator::compare_processes(
     
     ComparisonResult::ProcessDiff diff;
     
-    // æŸ¥æ‰¾æ–°å¢çš„è¿›ç¨‹
+    // ²éÕÒĞÂÔöµÄ½ø³Ì
     for (const auto& current_proc : current) {
         auto it = std::find_if(baseline.begin(), baseline.end(),
             [&](const ProcessInfo& proc) { return proc.pid == current_proc.pid; });
@@ -127,7 +127,7 @@ ComparisonResult::ProcessDiff SnapshotComparator::compare_processes(
         }
     }
     
-    // æŸ¥æ‰¾ç»“æŸçš„è¿›ç¨‹
+    // ²éÕÒ½áÊøµÄ½ø³Ì
     for (const auto& baseline_proc : baseline) {
         auto it = std::find_if(current.begin(), current.end(),
             [&](const ProcessInfo& proc) { return proc.pid == baseline_proc.pid; });
@@ -135,7 +135,7 @@ ComparisonResult::ProcessDiff SnapshotComparator::compare_processes(
         if (it == current.end()) {
             diff.removed.push_back(baseline_proc);
         } else {
-            // æ£€æŸ¥èµ„æºä½¿ç”¨å˜åŒ–
+            // ¼ì²é×ÊÔ´Ê¹ÓÃ±ä»¯
             const auto& current_proc = *it;
             double cpu_change = std::abs(current_proc.cpu_usage - baseline_proc.cpu_usage);
             double memory_change = std::abs(static_cast<double>(current_proc.memory_usage - baseline_proc.memory_usage) / 
