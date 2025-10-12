@@ -3,6 +3,7 @@
 #include <thread>
 #include <chrono>
 #include <csignal>
+#include "core/stdafx.h"
 #include "core/CPUInfo/cpu_monitor.h"
 #include "core/CPUInfo/wmi_helper.h"
 #include "server/WebServer.h"

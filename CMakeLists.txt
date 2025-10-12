@@ -25,6 +25,11 @@ if(MSVC)
     
     # 璁剧疆鎵ц?屽瓧绗﹂泦锛堝彲閫夛級
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/execution-charset:GB2312>")
+
+        # 添加/FS选项解决PDB文件访问冲突
+    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/FS>")
+    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/FS>")
+    
 else()
     add_compile_options(-Wall -Wextra -Wpedantic -g)
 endif()
@@ -37,9 +42,10 @@ add_executable(SnapshotTool
     src/core/SnapshotManager.cpp
     src/core/SnapshotComparator.cpp
     src/core/CPUInfo/cpu_monitor.cpp
+    src/core/CPUInfo/wmi_helper.cpp
     src/core/Process/process_monitor.cpp
     src/core/Disk/disk_monitor.cpp
-    src/core/CPUInfo/wmi_helper.cpp
+    src/core/Register/registry_monitor.cpp
     src/server/WebServer.cpp
 )
 

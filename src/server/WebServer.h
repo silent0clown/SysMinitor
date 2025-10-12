@@ -6,11 +6,16 @@
 #include "../core/CPUInfo/cpu_monitor.h"
 #include "../core/Process/process_monitor.h"
 #include "../core/Disk/disk_monitor.h"
+// #include "../core/Register/register_minitor.h"
+#include "../core/Register/registry_monitor.h"
 #include "../third_party/httplib.h"
+#include "../third_party/nlohmann/json.hpp"
 #include <memory>
 #include <thread>
 #include <atomic>
 #include <mutex>
+
+using json = nlohmann::json;
 
 namespace sysmonitor {
 
@@ -44,7 +49,22 @@ private:
     // 添加磁盘相关的HTTP路由处理函数
     void HandleGetDiskInfo(const httplib::Request& req, httplib::Response& res);
     void HandleGetDiskPerformance(const httplib::Request& req, httplib::Response& res);
-    private:
+
+    // 添加注册表相关的HTTP路由处理函数
+    void HandleGetRegistrySnapshot(const httplib::Request& req, httplib::Response& res);
+    void HandleSaveRegistrySnapshot(const httplib::Request& req, httplib::Response& res);
+    void HandleGetSavedSnapshots(const httplib::Request& req, httplib::Response& res);
+    void HandleCompareSnapshots(const httplib::Request& req, httplib::Response& res);
+    void HandleDeleteSnapshot(const httplib::Request& req, httplib::Response& res);
+
+    // 修改函数名称，避免冲突
+    json CompareRegistrySnapshots(const std::vector<RegistryKey>& keys1, const std::vector<RegistryKey>& keys2);
+    std::string GetCurrentTimeString();
+    std::vector<RegistryKey> ParseRegistryKeysFromJson(const json& json_array);
+    std::string SafeJsonToString(const json& json_value);
+    std::string SanitizeUTF8(const std::string& str);
+
+private:
     std::unique_ptr<httplib::Server> server_;
     std::unique_ptr<std::thread> serverThread_;
     std::atomic<bool> isRunning_{false};
@@ -57,6 +77,10 @@ private:
     ProcessMonitor processMonitor_;
     
     DiskMonitor diskMonitor_;  // 添加磁盘监控器
+
+    RegistryMonitor registryMonitor_;  // 添加注册表监控器
+    std::map<std::string, RegistrySnapshot> registrySnapshots_;  // 存储多个快照
+
     int port_;
 };
 
