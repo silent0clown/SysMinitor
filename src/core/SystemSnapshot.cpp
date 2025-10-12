@@ -48,7 +48,7 @@ std::string ProcessInfo::to_string() const {
 }
 
 SystemSnapshot::SystemSnapshot() {
-    // ç”Ÿæˆå”¯ä¸€ID
+    // Éú³ÉÎ¨Ò»ID
     std::random_device rd;
     std::mt19937_64 gen(rd());
     std::uniform_int_distribution<uint64_t> dis;
@@ -58,7 +58,7 @@ SystemSnapshot::SystemSnapshot() {
     
     timestamp_ = std::time(nullptr);
     
-    // è·å–ä¸»æœºå
+    // »ñÈ¡Ö÷»úÃû
     char hostname[256];
     DWORD size = sizeof(hostname);
     if (GetComputerNameA(hostname, &size)) {
@@ -84,10 +84,10 @@ static std::string time_to_string(time_t t) {
 }
 
 std::string SystemSnapshot::to_json() const {
-    // ç®€åŒ–å®ç°ï¼Œå®é™…åº”ä½¿ç”¨nlohmann/json
+    // ¼ò»¯ÊµÏÖ£¬Êµ¼ÊÓ¦Ê¹ÓÃnlohmann/json
   using nlohmann::json;
 
-  // 1. æ„é€  JSON å¯¹è±¡
+  // 1. ¹¹Ôì JSON ¶ÔÏó
   json j;
   j["id"] = id_;
   j["name"] = name_;
@@ -122,14 +122,14 @@ std::string SystemSnapshot::to_json() const {
                                  {"executable_path", p.executable_path}});
   }
 
-  // 5. è¿”å›ç´§å‡‘ JSON å­—ç¬¦ä¸²ï¼ˆå¦‚éœ€ç¾åŒ–å¯ç”¨ dump(4)ï¼‰
+  // 5. ·µ»Ø½ô´Õ JSON ×Ö·û´®£¨ÈçĞèÃÀ»¯¿ÉÓÃ dump(4)£©
   return j.dump();
 }
 
 std::shared_ptr<SystemSnapshot> SystemSnapshot::from_json(const std::string& json_str) {
-    // ç®€åŒ–å®ç°ï¼Œå®é™…åº”ä½¿ç”¨nlohmann/jsonè§£æ
+    // ¼ò»¯ÊµÏÖ£¬Êµ¼ÊÓ¦Ê¹ÓÃnlohmann/json½âÎö
     auto snapshot = std::make_shared<SystemSnapshot>();
-    // è¿™é‡Œåº”è¯¥å®ç°å®Œæ•´çš„JSONè§£æ
+    // ÕâÀïÓ¦¸ÃÊµÏÖÍêÕûµÄJSON½âÎö
     return snapshot;
 }
 

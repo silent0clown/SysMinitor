@@ -44,7 +44,7 @@ public:
     SystemSnapshot();
     explicit SystemSnapshot(const std::string& name);
     
-    // åºåˆ—åŒ–/ååºåˆ—åŒ–
+    // ĞòÁĞ»¯/·´ĞòÁĞ»¯
     std::string to_json() const;
     static std::shared_ptr<SystemSnapshot> from_json(const std::string& json_str);
     
@@ -54,12 +54,12 @@ public:
     const std::string& get_hostname() const { return hostname_; }
     time_t get_timestamp() const { return timestamp_; }
     
-    // æ•°æ®è®¿é—®
+    // Êı¾İ·ÃÎÊ
     const std::vector<RegistryValue>& get_registry_data() const { return registry_data_; }
     const std::vector<DiskInfo>& get_disk_info() const { return disk_info_; }
     const std::vector<ProcessInfo>& get_process_info() const { return process_info_; }
     
-    // æ•°æ®è®¾ç½®
+    // Êı¾İÉèÖÃ
     void set_registry_data(std::vector<RegistryValue> data) { registry_data_ = std::move(data); }
     void set_disk_info(std::vector<DiskInfo> info) { disk_info_ = std::move(info); }
     void set_process_info(std::vector<ProcessInfo> info) { process_info_ = std::move(info); }

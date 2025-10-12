@@ -1,128 +1,332 @@
 #include "WebServer.h"
 #include "../utils/AsyncLogger.h"
+#include "../third_party/nlohmann/json.hpp"
 #include <sstream>
 #include <iomanip>
 
-namespace snapshot {
+using json = nlohmann::json;
 
-WebServer::WebServer(std::shared_ptr<SnapshotManager> snapshot_manager,
-                     std::shared_ptr<SnapshotComparator> comparator)
-    : snapshot_manager_(snapshot_manager), comparator_(comparator) {
+namespace sysmonitor {
+
+HttpServer::HttpServer() : port_(8080) {
+    cpuInfo_ = SystemInfo::GetCPUInfo();
 }
 
-WebServer::~WebServer() {
-    stop();
+HttpServer::~HttpServer() {
+    Stop();
 }
 
-bool WebServer::start(int port) {
-    if (running_) {
-        return true;
+bool HttpServer::Start(int port) {
+    if (isRunning_) return true;
+    
+    port_ = port;
+    server_ = std::make_unique<httplib::Server>();
+    
+    // …Ë÷√¬∑”…
+    SetupRoutes();
+    
+    // ≥ı ºªØCPUº‡øÿ
+    if (!cpuMonitor_.Initialize()) {
+        std::cerr << "CPUº‡øÿ≥ı ºªØ ß∞‹" << std::endl;
+        return false;
     }
     
-    server_ = std::make_unique<httplib::Server>();
-    setup_routes();
+    // ∆Ù∂Ø∫ÛÃ®º‡øÿ
+    StartBackgroundMonitoring();
     
-    server_thread_ = std::thread([this, port]() {
-        // auto logger = AsyncLogger::get_instance();
-        LOG_INFO("ÂêØÂä®HTTPÊúçÂä°Âô®ÔºåÁ´ØÂè£: {}", port);
+    // ∆Ù∂ØHTTP∑˛ŒÒ∆˜
+    serverThread_ = std::make_unique<std::thread>([this]() {
+        std::cout << "∆Ù∂ØHTTP∑˛ŒÒ∆˜£¨∂Àø⁄: " << port_ << std::endl;
+        std::cout << "API∂Àµ„:" << std::endl;
+        std::cout << "  GET /api/cpu/info     - ªÒ»°CPU–≈œ¢" << std::endl;
+        std::cout << "  GET /api/cpu/usage    - ªÒ»°µ±«∞CPU π”√¬ " << std::endl;
+        std::cout << "  GET /api/system/info  - ªÒ»°œµÕ≥–≈œ¢" << std::endl;
+        std::cout << "  GET /api/cpu/stream   -  µ ±¡˜ ΩCPU π”√¬ " << std::endl;
         
-        running_ = true;
-        bool success = server_->listen("0.0.0.0", port);
-        running_ = false;
-        
-        if (!success) {
-            LOG_ERROR("HTTPÊúçÂä°Âô®ÂêØÂä®Â§±Ë¥•");
-        } else {
-            LOG_INFO("HTTPÊúçÂä°Âô®Â∑≤ÂÅúÊ≠¢");
-        }
+        isRunning_ = true;
+        server_->listen("0.0.0.0", port_);
+        isRunning_ = false;
     });
     
-    // Á≠âÂæÖÊúçÂä°Âô®ÂêØÂä®
+    // µ»¥˝∑˛ŒÒ∆˜∆Ù∂Ø
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    return running_;
+    return true;
 }
 
-void WebServer::stop() {
+void HttpServer::Stop() {
     if (server_) {
         server_->stop();
     }
     
-    if (server_thread_.joinable()) {
-        server_thread_.join();
+    cpuMonitor_.StopMonitoring();
+    
+    if (serverThread_ && serverThread_->joinable()) {
+        serverThread_->join();
     }
     
-    running_ = false;
+    isRunning_ = false;
 }
 
-void WebServer::setup_routes() {
-  auto &server = *server_;
+void HttpServer::SetupRoutes() {
+    // æ≤Ã¨Œƒº˛∑˛ŒÒ£®”√”⁄«∞∂À“≥√Ê£©
+    server_->set_mount_point("/", "../www");
     
-    // ‰ª™Ë°®ÊùøÈ°µÈù¢
-  // server.Get("/", [this](const httplib::Request& req, httplib::Response& res)
-  // {
-  //     res.set_content(generate_html_dashboard(), "text/html");
-  // });
-    
-    // Ëé∑ÂèñÂø´ÁÖßÂàóË°®
-    server.Get("/api/snapshots", [this](const httplib::Request& req, httplib::Response& res) {
-        auto snapshots = snapshot_manager_->list_snapshots();
-        
-        std::ostringstream oss;
-        oss << "{\"snapshots\":[";
-        bool first = true;
-        for (const auto& id : snapshots) {
-            if (!first) oss << ",";
-            oss << "\"" << id << "\"";
-            first = false;
-        }
-        oss << "]}";
-        
-        res.set_content(oss.str(), "application/json");
+    // API¬∑”… CPUœ‡πÿ
+    server_->Get("/api/cpu/info", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetCPUInfo(req, res);
     });
     
-    // Ëé∑ÂèñÁâπÂÆöÂø´ÁÖß
-    server.Get(R"(/api/snapshot/([a-f0-9]+))", [this](const httplib::Request& req, httplib::Response& res) {
-        auto snapshot_id = req.matches[1];
-        auto snapshot = snapshot_manager_->load_snapshot(snapshot_id);
-        
-        if (snapshot) {
-            res.set_content(snapshot->to_json(), "application/json");
-        } else {
-            res.status = 404;
-            res.set_content("{\"error\":\"Snapshot not found\"}", "application/json");
-        }
+    server_->Get("/api/cpu/usage", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetCPUUsage(req, res);
     });
     
-    // ÊØîËæÉ‰∏§‰∏™Âø´ÁÖß
-    server.Get(R"(/api/compare/([a-f0-9]+)/([a-f0-9]+))", [this](const httplib::Request& req, httplib::Response& res) {
-        auto id1 = req.matches[1];
-        auto id2 = req.matches[2];
+    server_->Get("/api/system/info", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetSystemInfo(req, res);
+    });
+    
+    server_->Get("/api/cpu/stream", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleStreamCPUUsage(req, res);
+    });
+    
+    // ÃÌº”–¬µƒAPI¬∑”… Ω¯≥Ãœ‡πÿ
+    server_->Get("/api/processes", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetProcesses(req, res);
+    });
+    
+    server_->Get("/api/process/(\\d+)", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetProcessInfo(req, res);
+    });
+    
+    server_->Get("/api/process/find", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleFindProcesses(req, res);
+    });
+    
+    server_->Post("/api/process/(\\d+)/terminate", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleTerminateProcess(req, res);
+    });
+
+    // ƒ¨»œ¬∑”…
+    server_->Get("/", [](const httplib::Request& req, httplib::Response& res) {
+        res.set_redirect("/index.html");
+    });
+}
+
+void HttpServer::StartBackgroundMonitoring() {
+    // …Ë÷√CPU π”√¬ ªÿµ˜
+    cpuMonitor_.SetUsageCallback([this](const CPUUsage& usage) {
+        currentUsage_.store(usage.totalUsage);
+    });
+    
+    // ∆Ù∂Øº‡øÿ
+    cpuMonitor_.StartMonitoring(1000);
+}
+
+void HttpServer::HandleGetCPUInfo(const httplib::Request& req, httplib::Response& res) {
+    json response;
+    
+    response["name"] = cpuInfo_.name;
+    response["vendor"] = cpuInfo_.vendor;
+    response["architecture"] = cpuInfo_.architecture;
+    response["physicalCores"] = cpuInfo_.physicalCores;
+    response["logicalCores"] = cpuInfo_.logicalCores;
+    response["packages"] = cpuInfo_.packages;
+    response["baseFrequency"] = cpuInfo_.baseFrequency;
+    response["maxFrequency"] = cpuInfo_.maxFrequency;
+    
+    res.set_content(response.dump(), "application/json");
+}
+
+void HttpServer::HandleGetCPUUsage(const httplib::Request& req, httplib::Response& res) {
+    json response;
+    
+    double usage = currentUsage_.load();
+    response["usage"] = usage;
+    response["timestamp"] = GetTickCount64();
+    response["unit"] = "percent";
+    
+    res.set_content(response.dump(), "application/json");
+}
+
+void HttpServer::HandleGetSystemInfo(const httplib::Request& req, httplib::Response& res) {
+    json response;
+    
+    // ª˘¥°œµÕ≥–≈œ¢
+    response["cpu"]["info"] = {
+        {"name", cpuInfo_.name},
+        {"cores", cpuInfo_.physicalCores},
+        {"threads", cpuInfo_.logicalCores}
+    };
+    
+    response["cpu"]["currentUsage"] = currentUsage_.load();
+    response["timestamp"] = GetTickCount64();
+    
+    res.set_content(response.dump(), "application/json");
+}
+
+void HttpServer::HandleStreamCPUUsage(const httplib::Request& req, httplib::Response& res) {
+    // …Ë÷√Server-Sent Events (SSE) Õ∑
+    res.set_header("Content-Type", "text/event-stream");
+    res.set_header("Cache-Control", "no-cache");
+    res.set_header("Connection", "keep-alive");
+    res.set_header("Access-Control-Allow-Origin", "*");
+    
+    // ∑¢ÀÕ≥ı º ˝æ›
+    std::stringstream initialData;
+    initialData << "data: " << json{{"usage", currentUsage_.load()}, {"timestamp", GetTickCount64()}}.dump() << "\n\n";
+    res.set_content(initialData.str(), "text/event-stream");
+    
+    // ◊¢“‚£∫’‚ «“ª∏ˆºÚªØµƒ¡˜ µœ÷£¨ µº …˙≤˙ª∑æ≥–Ë“™∏¸∏¥‘”µƒ¡¨Ω”π‹¿Ì
+}
+
+
+
+// ÃÌº”–¬µƒ¥¶¿Ì∫Ø ˝ µœ÷
+void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Response& res) {
+    try {
+        auto snapshot = processMonitor_.GetProcessSnapshot();
+        json response;
         
-        auto snapshot1 = snapshot_manager_->load_snapshot(id1);
-        auto snapshot2 = snapshot_manager_->load_snapshot(id2);
+        response["timestamp"] = snapshot.timestamp;
+        response["totalProcesses"] = snapshot.totalProcesses;
+        response["totalThreads"] = snapshot.totalThreads;
         
-        if (!snapshot1 || !snapshot2) {
+        json processesJson = json::array();
+        for (const auto& process : snapshot.processes) {
+            json processJson;
+            processJson["pid"] = process.pid;
+            processJson["parentPid"] = process.parentPid;
+            processJson["name"] = process.name;
+            processJson["fullPath"] = process.fullPath;
+            processJson["state"] = process.state;
+            processJson["username"] = process.username;
+            processJson["cpuUsage"] = process.cpuUsage;
+            processJson["memoryUsage"] = process.memoryUsage;
+            processJson["workingSetSize"] = process.workingSetSize;
+            processJson["pagefileUsage"] = process.pagefileUsage;
+            processJson["createTime"] = process.createTime;
+            processJson["priority"] = process.priority;
+            processJson["threadCount"] = process.threadCount;
+            processJson["commandLine"] = process.commandLine;
+            
+            processesJson.push_back(processJson);
+        }
+        
+        response["processes"] = processesJson;
+        res.set_content(response.dump(), "application/json");
+        
+    } catch (const std::exception& e) {
+        json error;
+        error["error"] = e.what();
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
+void HttpServer::HandleGetProcessInfo(const httplib::Request& req, httplib::Response& res) {
+    try {
+        uint32_t pid = std::stoi(req.matches[1]);
+        auto processInfo = processMonitor_.GetProcessInfo(pid);
+        
+        if (processInfo.pid == 0) {
             res.status = 404;
-            res.set_content("{\"error\":\"One or both snapshots not found\"}", "application/json");
+            json error;
+            error["error"] = "Process not found";
+            res.set_content(error.dump(), "application/json");
             return;
         }
         
-        auto result = comparator_->compare(snapshot1, snapshot2);
-        res.set_content(result.to_string(), "text/plain");
-    });
-    
-    // Ëé∑ÂèñÂΩìÂâçÁ≥ªÁªüÁä∂ÊÄÅ
-    server.Get("/api/current", [this](const httplib::Request& req, httplib::Response& res) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        if (current_snapshot_) {
-            res.set_content(current_snapshot_->to_json(), "application/json");
-        } else {
-            res.status = 404;
-            res.set_content("{\"error\":\"No current snapshot available\"}", "application/json");
-        }
-    });
+        json response;
+        response["pid"] = processInfo.pid;
+        response["parentPid"] = processInfo.parentPid;
+        response["name"] = processInfo.name;
+        response["fullPath"] = processInfo.fullPath;
+        response["state"] = processInfo.state;
+        response["username"] = processInfo.username;
+        response["cpuUsage"] = processInfo.cpuUsage;
+        response["memoryUsage"] = processInfo.memoryUsage;
+        response["workingSetSize"] = processInfo.workingSetSize;
+        response["pagefileUsage"] = processInfo.pagefileUsage;
+        response["createTime"] = processInfo.createTime;
+        response["priority"] = processInfo.priority;
+        response["threadCount"] = processInfo.threadCount;
+        response["commandLine"] = processInfo.commandLine;
+        
+        res.set_content(response.dump(), "application/json");
+        
+    } catch (const std::exception& e) {
+        json error;
+        error["error"] = e.what();
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
 
-  server.set_mount_point("/", "webclient");
+void HttpServer::HandleFindProcesses(const httplib::Request& req, httplib::Response& res) {
+    try {
+        std::string name = req.get_param_value("name");
+        if (name.empty()) {
+            res.status = 400;
+            json error;
+            error["error"] = "Name parameter is required";
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        
+        auto processes = processMonitor_.FindProcessesByName(name);
+        json response = json::array();
+        
+        for (const auto& process : processes) {
+            json processJson;
+            processJson["pid"] = process.pid;
+            processJson["name"] = process.name;
+            processJson["cpuUsage"] = process.cpuUsage;
+            processJson["memoryUsage"] = process.memoryUsage;
+            processJson["username"] = process.username;
+            processJson["threadCount"] = process.threadCount;
+            
+            response.push_back(processJson);
+        }
+        
+        res.set_content(response.dump(), "application/json");
+        
+    } catch (const std::exception& e) {
+        json error;
+        error["error"] = e.what();
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
+void HttpServer::HandleTerminateProcess(const httplib::Request& req, httplib::Response& res) {
+    try {
+        uint32_t pid = std::stoi(req.matches[1]);
+        uint32_t exitCode = 0;
+        
+        // Ω‚Œˆø…—°µƒÕÀ≥ˆ¥˙¬Î
+        auto exitCodeParam = req.get_param_value("exitCode");
+        if (!exitCodeParam.empty()) {
+            exitCode = std::stoi(exitCodeParam);
+        }
+        
+        bool success = processMonitor_.TerminateProcess(pid, exitCode);
+        
+        json response;
+        response["success"] = success;
+        response["pid"] = pid;
+        
+        if (!success) {
+            res.status = 500;
+            response["error"] = "Failed to terminate process";
+        }
+        
+        res.set_content(response.dump(), "application/json");
+        
+    } catch (const std::exception& e) {
+        json error;
+        error["error"] = e.what();
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
 }
 
 } // namespace snapshot

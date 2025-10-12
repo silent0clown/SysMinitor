@@ -1,41 +1,55 @@
 #pragma once
-#include "../core/SystemSnapshot.h"
-#include "../core/SnapshotManager.h"
-#include "../core/SnapshotComparator.h"
+// #include "../core/SystemSnapshot.h"
+// #include "../core/SnapshotManager.h"
+// #include "../core/SnapshotComparator.h"
+#include "../core/CPUInfo/system_info.h"
+#include "../core/CPUInfo/cpu_monitor.h"
+#include "../core/Process/process_monitor.h"
 #include "../third_party/httplib.h"
 #include <memory>
 #include <thread>
 #include <atomic>
 #include <mutex>
 
-namespace snapshot {
+namespace sysmonitor {
 
-class WebServer {
+class HttpServer {
 public:
-  WebServer(std::shared_ptr<SnapshotManager> snapshot_manager,
-            std::shared_ptr<SnapshotComparator> comparator);
-  ~WebServer();
+    HttpServer();
+    ~HttpServer();
 
-  bool start(int port = 8080);
-  void stop();
-  bool is_running() const { return running_; }
-
-  void set_current_snapshot(std::shared_ptr<SystemSnapshot> snapshot) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    current_snapshot_ = snapshot;
-  }
+    bool Start(int port = 8080);
+    void Stop();
+    bool IsRunning() const { return isRunning_; }
 
 private:
-  std::shared_ptr<SnapshotManager> snapshot_manager_;
-  std::shared_ptr<SnapshotComparator> comparator_;
-  std::unique_ptr<httplib::Server> server_;
-  std::thread server_thread_;
-  std::atomic<bool> running_{false};
+    void SetupRoutes();
+    void StartBackgroundMonitoring();
+    
+    // HTTP路由处理函数 CPU相关
+    void HandleGetCPUInfo(const httplib::Request& req, httplib::Response& res);
+    void HandleGetCPUUsage(const httplib::Request& req, httplib::Response& res);
+    void HandleGetSystemInfo(const httplib::Request& req, httplib::Response& res);
+    void HandleStreamCPUUsage(const httplib::Request& req, httplib::Response& res);
 
-  std::shared_ptr<SystemSnapshot> current_snapshot_;
-  mutable std::mutex mutex_;
+    // 添加新的HTTP路由处理函数 进程相关
+    void HandleGetProcesses(const httplib::Request& req, httplib::Response& res);
+    void HandleGetProcessInfo(const httplib::Request& req, httplib::Response& res);
+    void HandleFindProcesses(const httplib::Request& req, httplib::Response& res);
+    void HandleTerminateProcess(const httplib::Request& req, httplib::Response& res);
+private:
+    std::unique_ptr<httplib::Server> server_;
+    std::unique_ptr<std::thread> serverThread_;
+    std::atomic<bool> isRunning_{false};
+    
+    CPUMonitor cpuMonitor_;
+    CPUInfo cpuInfo_;
+    std::atomic<double> currentUsage_{0.0};
 
-  void setup_routes();
+    // 添加进程监控器
+    ProcessMonitor processMonitor_;
+
+    int port_;
 };
 
 } // namespace snapshot

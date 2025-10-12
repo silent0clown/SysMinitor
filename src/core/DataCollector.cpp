@@ -22,26 +22,26 @@ DataCollector::DataCollector() : last_system_cpu_time_(0), processor_count_(0) {
 
 std::shared_ptr<SystemSnapshot> DataCollector::collect_snapshot(const std::string& name) {
     // auto logger = AsyncLogger::get_instance();
-    LOG_INFO("å¼€å§‹é‡‡é›†ç³»ç»Ÿå¿«ç…§: {}", name);
+    LOG_INFO("¿ªÊ¼²É¼¯ÏµÍ³¿ìÕÕ: {}", name);
     
     auto snapshot = std::make_shared<SystemSnapshot>(name);
     
     try {
-        LOG_INFO("é‡‡é›†æ³¨å†Œè¡¨æ•°æ®...");
+        LOG_INFO("²É¼¯×¢²á±íÊı¾İ...");
         auto registry_data = collect_registry_data();
         snapshot->set_registry_data(std::move(registry_data));
         
-        LOG_INFO("é‡‡é›†ç£ç›˜ä¿¡æ¯...");
+        LOG_INFO("²É¼¯´ÅÅÌĞÅÏ¢...");
         auto disk_info = collect_disk_info();
         snapshot->set_disk_info(std::move(disk_info));
         
-        LOG_INFO("é‡‡é›†è¿›ç¨‹ä¿¡æ¯...");
+        LOG_INFO("²É¼¯½ø³ÌĞÅÏ¢...");
         auto process_info = collect_process_info();
         snapshot->set_process_info(std::move(process_info));
         
-        LOG_INFO("ç³»ç»Ÿå¿«ç…§é‡‡é›†å®Œæˆ: {}", name);
+        LOG_INFO("ÏµÍ³¿ìÕÕ²É¼¯Íê³É: {}", name);
     } catch (const std::exception& e) {
-        LOG_ERROR("é‡‡é›†ç³»ç»Ÿå¿«ç…§æ—¶å‘ç”Ÿé”™è¯¯: {}", e.what());
+        LOG_ERROR("²É¼¯ÏµÍ³¿ìÕÕÊ±·¢Éú´íÎó: {}", e.what());
         throw;
     }
     
@@ -52,7 +52,7 @@ std::vector<RegistryValue> DataCollector::collect_registry_data() {
     std::vector<RegistryValue> results;
     // auto logger = AsyncLogger::get_instance();
     
-    // é¢„å®šä¹‰çš„å…³é”®æ³¨å†Œè¡¨è·¯å¾„
+    // Ô¤¶¨ÒåµÄ¹Ø¼ü×¢²á±íÂ·¾¶
     std::vector<std::string> key_paths = {
         "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run",
         "SYSTEM\\CurrentControlSet\\Services",
@@ -61,10 +61,10 @@ std::vector<RegistryValue> DataCollector::collect_registry_data() {
     
     for (const auto& path : key_paths) {
         try {
-            LOG_DEBUG("é‡‡é›†æ³¨å†Œè¡¨è·¯å¾„: HKEY_LOCAL_MACHINE\\{}", path);
+            LOG_DEBUG("²É¼¯×¢²á±íÂ·¾¶: HKEY_LOCAL_MACHINE\\{}", path);
             collect_registry_key("HKEY_LOCAL_MACHINE\\" + path, results);
         } catch (const std::exception& e) {
-            LOG_WARN("æ— æ³•é‡‡é›†æ³¨å†Œè¡¨è·¯å¾„ {}: {}", path, e.what());
+            LOG_WARN("ÎŞ·¨²É¼¯×¢²á±íÂ·¾¶ {}: {}", path, e.what());
         }
     }
     
@@ -78,7 +78,7 @@ void DataCollector::collect_registry_key(const std::string& key_path, std::vecto
     
     LONG result = RegOpenKeyExA(hRoot, actual_path.c_str(), 0, KEY_READ, &hKey);
     if (result != ERROR_SUCCESS) {
-        throw std::runtime_error("æ— æ³•æ‰“å¼€æ³¨å†Œè¡¨é”®: " + key_path);
+        throw std::runtime_error("ÎŞ·¨´ò¿ª×¢²á±í¼ü: " + key_path);
     }
     
     char value_name[16383];
@@ -105,7 +105,7 @@ void DataCollector::collect_registry_key(const std::string& key_path, std::vecto
             reg_value.value_name = value_name;
             reg_value.type = value_type;
             
-            // ç®€åŒ–æ•°æ®å¤„ç†ï¼Œå®é™…åº”æ ¹æ®ç±»å‹è¿›è¡Œé€‚å½“è½¬æ¢
+            // ¼ò»¯Êı¾İ´¦Àí£¬Êµ¼ÊÓ¦¸ù¾İÀàĞÍ½øĞĞÊÊµ±×ª»»
             if (value_type == REG_SZ || value_type == REG_EXPAND_SZ) {
                 reg_value.data = std::string(reinterpret_cast<char*>(value_data));
             } else if (value_type == REG_DWORD) {
@@ -146,7 +146,7 @@ std::vector<DiskInfo> DataCollector::collect_disk_info() {
                     info.used_space = total_bytes.QuadPart - free_bytes.QuadPart;
                     
                     disks.push_back(info);
-                    LOG_DEBUG("é‡‡é›†ç£ç›˜ä¿¡æ¯: {} - Total: {}GB, Free: {}GB", 
+                    LOG_DEBUG("²É¼¯´ÅÅÌĞÅÏ¢: {} - Total: {}GB, Free: {}GB", 
                                  info.drive_letter,
                                  info.total_size / (1024*1024*1024),
                                  info.free_space / (1024*1024*1024));
@@ -162,10 +162,10 @@ std::vector<ProcessInfo> DataCollector::collect_process_info() {
     std::vector<ProcessInfo> processes;
     // auto logger = AsyncLogger::get_instance();
     
-    // è·å–è¿›ç¨‹å¿«ç…§
+    // »ñÈ¡½ø³Ì¿ìÕÕ
     HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (hProcessSnap == INVALID_HANDLE_VALUE) {
-        LOG_ERROR("æ— æ³•åˆ›å»ºè¿›ç¨‹å¿«ç…§");
+        LOG_ERROR("ÎŞ·¨´´½¨½ø³Ì¿ìÕÕ");
         return processes;
     }
     
@@ -173,7 +173,7 @@ std::vector<ProcessInfo> DataCollector::collect_process_info() {
     pe32.dwSize = sizeof(PROCESSENTRY32);
     
     if (!Process32First(hProcessSnap, &pe32)) {
-        LOG_ERROR("æ— æ³•è·å–ç¬¬ä¸€ä¸ªè¿›ç¨‹");
+        LOG_ERROR("ÎŞ·¨»ñÈ¡µÚÒ»¸ö½ø³Ì");
         CloseHandle(hProcessSnap);
         return processes;
     }
@@ -183,19 +183,19 @@ std::vector<ProcessInfo> DataCollector::collect_process_info() {
         info.pid = pe32.th32ProcessID;
         info.name = pe32.szExeFile;
         
-        // æ‰“å¼€è¿›ç¨‹è·å–è¯¦ç»†ä¿¡æ¯
+        // ´ò¿ª½ø³Ì»ñÈ¡ÏêÏ¸ĞÅÏ¢
         HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pe32.th32ProcessID);
         if (hProcess) {
-            // è·å–å†…å­˜ä¿¡æ¯
+            // »ñÈ¡ÄÚ´æĞÅÏ¢
             PROCESS_MEMORY_COUNTERS pmc;
             if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
                 info.memory_usage = pmc.WorkingSetSize;
             }
             
-            // è·å–CPUä½¿ç”¨ç‡
+            // »ñÈ¡CPUÊ¹ÓÃÂÊ
             info.cpu_usage = calculate_process_cpu_usage(pe32.th32ProcessID);
             
-            // è·å–å¯æ‰§è¡Œæ–‡ä»¶è·¯å¾„
+            // »ñÈ¡¿ÉÖ´ĞĞÎÄ¼şÂ·¾¶
             char path[MAX_PATH];
             DWORD path_size = MAX_PATH;
             if (QueryFullProcessImageNameA(hProcess, 0, path, &path_size)) {
@@ -210,18 +210,19 @@ std::vector<ProcessInfo> DataCollector::collect_process_info() {
     } while (Process32Next(hProcessSnap, &pe32));
     
     CloseHandle(hProcessSnap);
-    LOG_INFO("é‡‡é›†äº† {} ä¸ªè¿›ç¨‹ä¿¡æ¯", processes.size());
+    LOG_INFO("²É¼¯ÁË {} ¸ö½ø³ÌĞÅÏ¢", processes.size());
     return processes;
 }
 
 double DataCollector::calculate_process_cpu_usage(uint32_t pid) {
-    // ç®€åŒ–å®ç° - å®é™…åº”è¯¥ä½¿ç”¨PDHåº“è·å–å‡†ç¡®çš„CPUä½¿ç”¨ç‡
-    // è¿™é‡Œè¿”å›ä¸€ä¸ªæ¨¡æ‹Ÿå€¼
+    // ¼ò»¯ÊµÏÖ - Êµ¼ÊÓ¦¸ÃÊ¹ÓÃPDH¿â»ñÈ¡×¼È·µÄCPUÊ¹ÓÃÂÊ
+    // ÕâÀï·µ»ØÒ»¸öÄ£ÄâÖµ
     static std::random_device rd;
     static std::mt19937 gen(rd());
     static std::uniform_real_distribution<> dis(0.0, 5.0);
     
     return dis(gen);
 }
+
 
 } // namespace snapshot

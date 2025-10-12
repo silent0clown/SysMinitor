@@ -14,12 +14,12 @@ bool SnapshotManager::save_snapshot(const std::shared_ptr<SystemSnapshot>& snaps
     // auto logger = AsyncLogger::get_instance();
     
     if (!snapshot) {
-        LOG_ERROR("å°è¯•ä¿å­˜ç©ºçš„å¿«ç…§");
+        LOG_ERROR("³¢ÊÔ±£´æ¿ÕµÄ¿ìÕÕ");
         return false;
     }
     
     if (!ensure_storage_directory()) {
-        LOG_ERROR("æ— æ³•åˆ›å»ºå­˜å‚¨ç›®å½•: {}", storage_path_);
+        LOG_ERROR("ÎŞ·¨´´½¨´æ´¢Ä¿Â¼: {}", storage_path_);
         return false;
     }
     
@@ -28,7 +28,7 @@ bool SnapshotManager::save_snapshot(const std::shared_ptr<SystemSnapshot>& snaps
     try {
         std::ofstream file(file_path);
         if (!file.is_open()) {
-            LOG_ERROR("æ— æ³•æ‰“å¼€æ–‡ä»¶è¿›è¡Œå†™å…¥: {}", file_path);
+            LOG_ERROR("ÎŞ·¨´ò¿ªÎÄ¼ş½øĞĞĞ´Èë: {}", file_path);
             return false;
         }
         
@@ -36,10 +36,10 @@ bool SnapshotManager::save_snapshot(const std::shared_ptr<SystemSnapshot>& snaps
         file << json_data;
         file.close();
         
-        LOG_INFO("å¿«ç…§ä¿å­˜æˆåŠŸ: {} -> {}", snapshot->get_name(), file_path);
+        LOG_INFO("¿ìÕÕ±£´æ³É¹¦: {} -> {}", snapshot->get_name(), file_path);
         return true;
     } catch (const std::exception& e) {
-        LOG_ERROR("ä¿å­˜å¿«ç…§æ—¶å‘ç”Ÿé”™è¯¯: {}", e.what());
+        LOG_ERROR("±£´æ¿ìÕÕÊ±·¢Éú´íÎó: {}", e.what());
         return false;
     }
 }
@@ -49,14 +49,14 @@ std::shared_ptr<SystemSnapshot> SnapshotManager::load_snapshot(const std::string
     std::string file_path = get_snapshot_path(snapshot_id);
     
     if (!std::filesystem::exists(file_path)) {
-        LOG_ERROR("å¿«ç…§æ–‡ä»¶ä¸å­˜åœ¨: {}", file_path);
+        LOG_ERROR("¿ìÕÕÎÄ¼ş²»´æÔÚ: {}", file_path);
         return nullptr;
     }
     
     try {
         std::ifstream file(file_path);
         if (!file.is_open()) {
-            LOG_ERROR("æ— æ³•æ‰“å¼€å¿«ç…§æ–‡ä»¶: {}", file_path);
+            LOG_ERROR("ÎŞ·¨´ò¿ª¿ìÕÕÎÄ¼ş: {}", file_path);
             return nullptr;
         }
         
@@ -66,12 +66,12 @@ std::shared_ptr<SystemSnapshot> SnapshotManager::load_snapshot(const std::string
         
         auto snapshot = SystemSnapshot::from_json(json_data);
         if (snapshot) {
-            LOG_INFO("å¿«ç…§åŠ è½½æˆåŠŸ: {}", snapshot_id);
+            LOG_INFO("¿ìÕÕ¼ÓÔØ³É¹¦: {}", snapshot_id);
         }
         
         return snapshot;
     } catch (const std::exception& e) {
-        LOG_ERROR("åŠ è½½å¿«ç…§æ—¶å‘ç”Ÿé”™è¯¯: {}", e.what());
+        LOG_ERROR("¼ÓÔØ¿ìÕÕÊ±·¢Éú´íÎó: {}", e.what());
         return nullptr;
     }
 }
@@ -82,14 +82,14 @@ bool SnapshotManager::delete_snapshot(const std::string& snapshot_id) {
     
     try {
         if (std::filesystem::remove(file_path)) {
-            LOG_INFO("å¿«ç…§åˆ é™¤æˆåŠŸ: {}", snapshot_id);
+            LOG_INFO("¿ìÕÕÉ¾³ı³É¹¦: {}", snapshot_id);
             return true;
         } else {
-            LOG_ERROR("å¿«ç…§æ–‡ä»¶ä¸å­˜åœ¨ï¼Œæ— æ³•åˆ é™¤: {}", snapshot_id);
+            LOG_ERROR("¿ìÕÕÎÄ¼ş²»´æÔÚ£¬ÎŞ·¨É¾³ı: {}", snapshot_id);
             return false;
         }
     } catch (const std::filesystem::filesystem_error& e) {
-        LOG_ERROR("åˆ é™¤å¿«ç…§æ—¶å‘ç”Ÿé”™è¯¯: {}", e.what());
+        LOG_ERROR("É¾³ı¿ìÕÕÊ±·¢Éú´íÎó: {}", e.what());
         return false;
     }
 }
@@ -121,7 +121,7 @@ bool SnapshotManager::ensure_storage_directory() const {
         }
         return true;
     } catch (const std::filesystem::filesystem_error& e) {
-        LOG_ERROR("åˆ›å»ºå­˜å‚¨ç›®å½•å¤±è´¥: {}", e.what());
+        LOG_ERROR("´´½¨´æ´¢Ä¿Â¼Ê§°Ü: {}", e.what());
         return false;
     }
 }

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统监控面板</title>
+    <style>
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .usage-meter {
+            width: 100%;
+            height: 30px;
+            background-color: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .usage-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #FFC107, #F44336);
+            transition: width 0.5s ease;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>?? 系统监控面板</h1>
+        
+        <div class="card">
+            <h2>CPU使用率</h2>
+            <div class="usage-meter">
+                <div id="usageBar" class="usage-bar" style="width: 0%"></div>
+            </div>
+            <div id="usageText" style="text-align: center; font-size: 24px; font-weight: bold;">0%</div>
+        </div>
+
+        <div class="card">
+            <h2>CPU信息</h2>
+            <div id="cpuInfo">
+                <p>加载中...</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>实时数据</h2>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="currentUsage">0%</div>
+                    <div class="stat-label">当前使用率</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="coreCount">0</div>
+                    <div class="stat-label">物理核心</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="threadCount">0</div>
+                    <div class="stat-label">逻辑核心</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="frequency">0</div>
+                    <div class="stat-label">基础频率 (MHz)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取CPU信息
+        async function fetchCPUInfo() {
+            try {
+                const response = await fetch('/api/cpu/info');
+                const data = await response.json();
+                
+                document.getElementById('cpuInfo').innerHTML = `
+                    <p><strong>名称:</strong> ${data.name}</p>
+                    <p><strong>架构:</strong> ${data.architecture}</p>
+                    <p><strong>物理核心:</strong> ${data.physicalCores}</p>
+                    <p><strong>逻辑核心:</strong> ${data.logicalCores}</p>
+                    <p><strong>基础频率:</strong> ${data.baseFrequency} MHz</p>
+                    ${data.maxFrequency ? `<p><strong>最大频率:</strong> ${data.maxFrequency} MHz</p>` : ''}
+                `;
+                
+                document.getElementById('coreCount').textContent = data.physicalCores;
+                document.getElementById('threadCount').textContent = data.logicalCores;
+                document.getElementById('frequency').textContent = data.baseFrequency;
+            } catch (error) {
+                console.error('获取CPU信息失败:', error);
+            }
+        }
+
+        // 更新CPU使用率
+        function updateCPUUsage() {
+            fetch('/api/cpu/usage')
+                .then(response => response.json())
+                .then(data => {
+                    const usage = data.usage.toFixed(1);
+                    document.getElementById('usageText').textContent = usage + '%';
+                    document.getElementById('usageBar').style.width = usage + '%';
+                    document.getElementById('currentUsage').textContent = usage + '%';
+                })
+                .catch(error => console.error('获取CPU使用率失败:', error));
+        }
+
+        // 初始化
+        fetchCPUInfo();
+        updateCPUUsage();
+        
+        // 每秒更新使用率
+        setInterval(updateCPUUsage, 1000);
+        
+        // 每30秒更新CPU信息
+        setInterval(fetchCPUInfo, 30000);
+    </script>
+</body>
+</html>

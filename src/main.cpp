@@ -1,145 +1,80 @@
 #include <iostream>
-#include <string>
+#include <iomanip>
 #include <thread>
-#include <atomic>
-#include <signal.h>
-#include "core/SystemSnapshot.h"
-#include "core/DataCollector.h"
-#include "core/SnapshotManager.h"
-#include "core/SnapshotComparator.h"
+#include <chrono>
+#include <csignal>
+#include "core/CPUInfo/cpu_monitor.h"
+#include "core/CPUInfo/wmi_helper.h"
 #include "server/WebServer.h"
-#include "utils/AsyncLogger.h"
 
-using namespace snapshot;
+using namespace sysmonitor;
 
-std::atomic<bool> running{true};
+// È«¾Ö±äÁ¿ÓÃÓÚĞÅºÅ´¦Àí
+std::atomic<bool> g_running{true};
 
-void signal_handler(int signal) {
-    // auto logger = AsyncLogger::get_instance();
-    LOG_INFO("æ¥æ”¶åˆ°ç»ˆæ­¢ä¿¡å·ï¼Œæ­£åœ¨å…³é—­...");
-    running = false;
+void SignalHandler(int signal) {
+    std::cout << "\n½ÓÊÕµ½ÖĞ¶ÏĞÅºÅ£¬ÕıÔÚ¹Ø±Õ·şÎñÆ÷..." << std::endl;
+    g_running = false;
 }
 
-void print_usage() {
-    std::cout << "System Snapshot Tool Usage:\n";
-    std::cout << "  create <name>    åˆ›å»ºæ–°çš„ç³»ç»Ÿå¿«ç…§\n";
-    std::cout << "  list            åˆ—å‡ºæ‰€æœ‰å¿«ç…§\n";
-    std::cout << "  view <id>       æŸ¥çœ‹ç‰¹å®šå¿«ç…§\n";
-    std::cout << "  compare <id1> <id2>  æ¯”è¾ƒä¸¤ä¸ªå¿«ç…§\n";
-    std::cout << "  server [port]   å¯åŠ¨HTTPæœåŠ¡å™¨ï¼ˆé»˜è®¤ç«¯å£8080ï¼‰\n";
-    std::cout << "  help            æ˜¾ç¤ºæ­¤å¸®åŠ©ä¿¡æ¯\n";
+void PrintCPUInfo(const CPUInfo& info) {
+    std::cout << "=== CPUÏêÏ¸ĞÅÏ¢ ===" << std::endl;
+    std::cout << "Ãû³Æ: " << info.name << std::endl;
+    std::cout << "¼Ü¹¹: " << info.architecture << std::endl;
+    std::cout << "ÎïÀíºËĞÄ: " << info.physicalCores << std::endl;
+    std::cout << "Âß¼­ºËĞÄ: " << info.logicalCores << std::endl;
+    std::cout << "´¦ÀíÆ÷·â×°: " << info.packages << std::endl;
+    std::cout << "»ù´¡ÆµÂÊ: " << info.baseFrequency << " MHz" << std::endl;
+    if (info.maxFrequency > 0) {
+        std::cout << "×î´óÆµÂÊ: " << info.maxFrequency << " MHz" << std::endl;
+    }
+    std::cout << std::endl;
 }
 
-int main(int argc, char* argv[]) {
-    // è®¾ç½®ä¿¡å·å¤„ç†
-    signal(SIGINT, signal_handler);
-    signal(SIGTERM, signal_handler);
+int main() {
+    // ÉèÖÃ¿ØÖÆÌ¨Êä³ö±àÂë
+    system("chcp 936 > nul");
     
-    // auto logger = AsyncLogger::get_instance();
-    LOG_INFO("ç³»ç»Ÿå¿«ç…§å·¥å…·å¯åŠ¨");
+    // ×¢²áĞÅºÅ´¦Àí
+    std::signal(SIGINT, SignalHandler);
+    std::signal(SIGTERM, SignalHandler);
+
+    std::cout << "ÏµÍ³¼à¿Ø¹¤¾ß - HTTP·şÎñÆ÷°æ±¾" << std::endl;
     
-    // åˆå§‹åŒ–æ ¸å¿ƒç»„ä»¶
-    auto data_collector = std::make_shared<DataCollector>();
-    auto snapshot_manager = std::make_shared<SnapshotManager>();
-    auto comparator = std::make_shared<SnapshotComparator>();
-    auto web_server = std::make_shared<WebServer>(snapshot_manager, comparator);
+    // ÏÔÊ¾CPUĞÅÏ¢
+    CPUInfo info = SystemInfo::GetCPUInfo();
+    PrintCPUInfo(info);
     
-    // å‘½ä»¤è¡Œå‚æ•°å¤„ç†
-    if (argc < 2) {
-        print_usage();
-        return 1;
+    // Ê¹ÓÃWMI»ñÈ¡¸üÏêÏ¸ĞÅÏ¢£¨¿ÉÑ¡£©
+    CPUInfo detailedInfo = WMIHelper::GetDetailedCPUInfo();
+    if (!detailedInfo.name.empty()) {
+        std::cout << "=== WMIÏêÏ¸ĞÅÏ¢ ===" << std::endl;
+        std::cout << "WMI´¦ÀíÆ÷Ãû³Æ: " << detailedInfo.name << std::endl;
+        std::cout << "WMIÎïÀíºËĞÄ: " << detailedInfo.physicalCores << std::endl;
+        std::cout << "WMIÂß¼­ºËĞÄ: " << detailedInfo.logicalCores << std::endl;
+        std::cout << "WMI×î´óÆµÂÊ: " << detailedInfo.maxFrequency << " MHz" << std::endl;
+        std::cout << std::endl;
     }
     
-    std::string command = argv[1];
-    
-    try {
-        if (command == "create") {
-            std::string name = (argc > 2) ? argv[2] : "manual_snapshot";
-            auto snapshot = data_collector->collect_snapshot(name);
-            if (snapshot_manager->save_snapshot(snapshot)) {
-                std::cout << "å¿«ç…§åˆ›å»ºæˆåŠŸ: " << snapshot->get_id() << std::endl;
-            } else {
-                std::cerr << "å¿«ç…§ä¿å­˜å¤±è´¥" << std::endl;
-                return 1;
-            }
-            
-        } else if (command == "list") {
-            auto snapshots = snapshot_manager->list_snapshots();
-            std::cout << "å¯ç”¨å¿«ç…§ (" << snapshots.size() << "):\n";
-            for (const auto& id : snapshots) {
-                std::cout << "  " << id << std::endl;
-            }
-            
-        } else if (command == "view" && argc > 2) {
-            std::string snapshot_id = argv[2];
-            auto snapshot = snapshot_manager->load_snapshot(snapshot_id);
-            if (snapshot) {
-                std::cout << snapshot->to_json() << std::endl;
-            } else {
-                std::cerr << "å¿«ç…§æœªæ‰¾åˆ°: " << snapshot_id << std::endl;
-                return 1;
-            }
-            
-        } else if (command == "compare" && argc > 3) {
-            std::string id1 = argv[2];
-            std::string id2 = argv[3];
-            
-            auto snapshot1 = snapshot_manager->load_snapshot(id1);
-            auto snapshot2 = snapshot_manager->load_snapshot(id2);
-            
-            if (snapshot1 && snapshot2) {
-                auto result = comparator->compare(snapshot1, snapshot2);
-                std::cout << result.to_string() << std::endl;
-            } else {
-                std::cerr << "ä¸€ä¸ªæˆ–å¤šä¸ªå¿«ç…§æœªæ‰¾åˆ°" << std::endl;
-                return 1;
-            }
-            
-        } else if (command == "server") {
-            int port = (argc > 2) ? std::stoi(argv[2]) : 8080;
-            
-            if (web_server->start(port)) {
-                std::cout << "HTTPæœåŠ¡å™¨è¿è¡Œåœ¨ http://localhost:" << port << std::endl;
-                std::cout << "æŒ‰ Ctrl+C åœæ­¢æœåŠ¡å™¨" << std::endl;
-                
-                // åˆ›å»ºåˆå§‹å¿«ç…§ç”¨äºWebæ˜¾ç¤º
-                auto current_snapshot = data_collector->collect_snapshot("web_current");
-                web_server->set_current_snapshot(current_snapshot);
-                
-                // ä¸»å¾ªç¯
-                while (running) {
-                    std::this_thread::sleep_for(std::chrono::seconds(1));
-                    
-                    // å®šæœŸæ›´æ–°å½“å‰çŠ¶æ€ï¼ˆå¯é€‰ï¼‰
-                    static int counter = 0;
-                    if (++counter % 30 == 0) { // æ¯30ç§’æ›´æ–°ä¸€æ¬¡
-                        auto new_snapshot = data_collector->collect_snapshot("web_current");
-                        web_server->set_current_snapshot(new_snapshot);
-                        counter = 0;
-                    }
-                }
-                
-                web_server->stop();
-            } else {
-                std::cerr << "æ— æ³•å¯åŠ¨HTTPæœåŠ¡å™¨" << std::endl;
-                return 1;
-            }
-            
-        } else if (command == "help") {
-            print_usage();
-            
-        } else {
-            std::cerr << "æœªçŸ¥å‘½ä»¤: " << command << std::endl;
-            print_usage();
-            return 1;
+    // Æô¶¯HTTP·şÎñÆ÷
+    HttpServer server;
+    if (server.Start(8080)) {
+        std::cout << "·şÎñÆ÷Æô¶¯³É¹¦£¡" << std::endl;
+        std::cout << "´ò¿ªä¯ÀÀÆ÷·ÃÎÊ: http://localhost:8080" << std::endl;
+        std::cout << "°´ Ctrl+C Í£Ö¹·şÎñÆ÷" << std::endl;
+        
+        // µÈ´ıÍË³öĞÅºÅ
+        while (g_running) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         
-    } catch (const std::exception& e) {
-        LOG_ERROR("ç¨‹åºæ‰§è¡Œé”™è¯¯: {}", e.what());
-        std::cerr << "é”™è¯¯: " << e.what() << std::endl;
-        return 1;
+        server.Stop();
+        std::cout << "·şÎñÆ÷ÒÑÍ£Ö¹" << std::endl;
+    } else {
+        std::cerr << "·şÎñÆ÷Æô¶¯Ê§°Ü" << std::endl;
+        return -1;
     }
     
-    LOG_INFO("ç³»ç»Ÿå¿«ç…§å·¥å…·æ­£å¸¸é€€å‡º");
+    WMIHelper::Uninitialize();
     return 0;
 }
