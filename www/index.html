@@ -12,7 +12,7 @@
             background-color: #f5f5f5;
         }
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
         }
         .card {
@@ -33,6 +33,18 @@
         .usage-bar {
             height: 100%;
             background: linear-gradient(90deg, #4CAF50, #FFC107, #F44336);
+            transition: width 0.5s ease;
+        }
+        .disk-usage-bar {
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 5px 0;
+        }
+        .disk-usage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2196F3, #03A9F4);
             transition: width 0.5s ease;
         }
         .stats-grid {
@@ -56,14 +68,218 @@
             font-size: 12px;
             color: #666;
         }
+        
+        /* 进程列表样式 */
+        .process-header, .disk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            cursor: pointer;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .process-header:hover, .disk-header:hover {
+            background: #e9ecef;
+        }
+        .process-controls, .disk-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .sort-select {
+            padding: 5px 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: white;
+        }
+        .refresh-btn {
+            padding: 5px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .refresh-btn:hover {
+            background: #0056b3;
+        }
+        .process-list, .disk-list {
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+        }
+        .process-table, .disk-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .process-table th, .disk-table th {
+            background: #f8f9fa;
+            padding: 12px 8px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+            position: sticky;
+            top: 0;
+        }
+        .process-table td, .disk-table td {
+            padding: 8px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .process-table tr:hover, .disk-table tr:hover {
+            background: #f8f9fa;
+        }
+        .process-name {
+            font-weight: 500;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .process-pid {
+            color: #666;
+            font-family: monospace;
+        }
+        .process-cpu {
+            color: #e74c3c;
+            font-weight: 500;
+        }
+        .process-memory {
+            color: #3498db;
+            font-weight: 500;
+        }
+        .process-user {
+            max-width: 150px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .process-state {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .state-running {
+            background: #d4edda;
+            color: #155724;
+        }
+        .collapsed .process-list, .collapsed .disk-list {
+            display: none;
+        }
+        .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        .collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+        .show-all-btn {
+            width: 100%;
+            padding: 10px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .show-all-btn:hover {
+            background: #545b62;
+        }
+        
+        /* 磁盘信息样式 */
+        .disk-drive-letter {
+            font-weight: bold;
+            color: #2196F3;
+            font-size: 16px;
+        }
+        .disk-usage-percent {
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .disk-size {
+            color: #666;
+            font-family: monospace;
+        }
+        .disk-file-system {
+            color: #27ae60;
+            font-weight: 500;
+        }
+        .disk-status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .status-healthy {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        /* 性能指标样式 */
+        .performance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .performance-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+        }
+        .performance-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2196F3;
+        }
+        .performance-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        /* 选项卡样�? */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 15px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            border-bottom: none;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+        .tab.active {
+            background: white;
+            border-color: #ddd;
+            border-bottom-color: white;
+            margin-bottom: -1px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>?? 系统监控面板</h1>
+        <h1>🖥�? 系统监控面板</h1>
         
         <div class="card">
-            <h2>CPU使用率</h2>
+            <h2>CPU使用�?</h2>
             <div class="usage-meter">
                 <div id="usageBar" class="usage-bar" style="width: 0%"></div>
             </div>
@@ -73,7 +289,7 @@
         <div class="card">
             <h2>CPU信息</h2>
             <div id="cpuInfo">
-                <p>加载中...</p>
+                <p>加载�?...</p>
             </div>
         </div>
 
@@ -82,7 +298,7 @@
             <div class="stats-grid">
                 <div class="stat-item">
                     <div class="stat-value" id="currentUsage">0%</div>
-                    <div class="stat-label">当前使用率</div>
+                    <div class="stat-label">当前使用�?</div>
                 </div>
                 <div class="stat-item">
                     <div class="stat-value" id="coreCount">0</div>
@@ -94,13 +310,143 @@
                 </div>
                 <div class="stat-item">
                     <div class="stat-value" id="frequency">0</div>
-                    <div class="stat-label">基础频率 (MHz)</div>
+                    <div class="stat-label">基�?�频率 (MHz)</div>
                 </div>
+            </div>
+        </div>
+
+        <!-- 磁盘信息窗口 -->
+        <div class="card">
+            <div class="disk-header" onclick="toggleDiskList()">
+                <h2 style="margin: 0;">磁盘信息 
+                    <span id="diskCount" style="font-size: 14px; color: #666; margin-left: 10px;"></span>
+                </h2>
+                <div class="disk-controls" onclick="event.stopPropagation()">
+                    <button class="refresh-btn" onclick="loadDiskInfo()">刷新</button>
+                    <span class="toggle-icon">�?</span>
+                </div>
+            </div>
+            
+            <div id="diskList" class="disk-list">
+                <!-- 选项�? -->
+                <div class="tabs">
+                    <div class="tab active" onclick="switchDiskTab('partitions')">分区信息</div>
+                    <div class="tab" onclick="switchDiskTab('performance')">性能监控</div>
+                    <div class="tab" onclick="switchDiskTab('drives')">磁盘驱动�?</div>
+                </div>
+                
+                <!-- 分区信息标�?�页 -->
+                <div id="partitionsTab" class="tab-content active">
+                    <table class="disk-table">
+                        <thead>
+                            <tr>
+                                <th width="8%">盘�??</th>
+                                <th width="15%">卷标</th>
+                                <th width="12%">文件系统</th>
+                                <th width="15%">总空�?</th>
+                                <th width="15%">已用空间</th>
+                                <th width="15%">�?用空�?</th>
+                                <th width="10%">使用�?</th>
+                                <th width="10%">状�?</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partitionsTableBody">
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px;">
+                                    加载�?...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- 性能监控标�?�页 -->
+                <div id="performanceTab" class="tab-content">
+                    <div id="performanceContent">
+                        <p style="text-align: center; padding: 20px;">加载�?...</p>
+                    </div>
+                </div>
+                
+                <!-- 磁盘驱动器标签页 -->
+                <div id="drivesTab" class="tab-content">
+                    <table class="disk-table">
+                        <thead>
+                            <tr>
+                                <th width="20%">型号</th>
+                                <th width="15%">序列�?</th>
+                                <th width="10%">接口类型</th>
+                                <th width="10%">介质类型</th>
+                                <th width="15%">总�?�量</th>
+                                <th width="10%">扇区大小</th>
+                                <th width="10%">状�?</th>
+                                <th width="10%">设�?�ID</th>
+                            </tr>
+                        </thead>
+                        <tbody id="drivesTableBody">
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px;">
+                                    加载�?...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 进程信息窗口 -->
+        <div class="card">
+            <div class="process-header" onclick="toggleProcessList()">
+                <h2 style="margin: 0;">进程信息 
+                    <span id="processCount" style="font-size: 14px; color: #666; margin-left: 10px;"></span>
+                </h2>
+                <div class="process-controls" onclick="event.stopPropagation()">
+                    <span>排序方式:</span>
+                    <select class="sort-select" id="sortSelect" onchange="sortProcesses()">
+                        <option value="name">进程名称</option>
+                        <option value="cpu">CPU占用�?</option>
+                        <option value="memory">内存占用</option>
+                        <option value="pid">进程ID</option>
+                    </select>
+                    <button class="refresh-btn" onclick="loadProcesses()">刷新</button>
+                    <span class="toggle-icon">�?</span>
+                </div>
+            </div>
+            
+            <div id="processList" class="process-list">
+                <table class="process-table">
+                    <thead>
+                        <tr>
+                            <th width="5%">PID</th>
+                            <th width="20%">进程名称</th>
+                            <th width="10%">CPU</th>
+                            <th width="15%">内存</th>
+                            <th width="10%">线程</th>
+                            <th width="15%">用户�?</th>
+                            <th width="10%">状�?</th>
+                            <th width="15%">�?�?</th>
+                        </tr>
+                    </thead>
+                    <tbody id="processTableBody">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px;">
+                                加载�?...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button class="show-all-btn" onclick="toggleAllProcesses()">显示全部进程</button>
             </div>
         </div>
     </div>
 
     <script>
+        // 全局变量
+        let allProcesses = [];
+        let showAllProcesses = false;
+        let currentSort = 'name';
+        let diskData = {};
+
         // 获取CPU信息
         async function fetchCPUInfo() {
             try {
@@ -112,8 +458,8 @@
                     <p><strong>架构:</strong> ${data.architecture}</p>
                     <p><strong>物理核心:</strong> ${data.physicalCores}</p>
                     <p><strong>逻辑核心:</strong> ${data.logicalCores}</p>
-                    <p><strong>基础频率:</strong> ${data.baseFrequency} MHz</p>
-                    ${data.maxFrequency ? `<p><strong>最大频率:</strong> ${data.maxFrequency} MHz</p>` : ''}
+                    <p><strong>基�?�频率:</strong> ${data.baseFrequency} MHz</p>
+                    ${data.maxFrequency ? `<p><strong>最大�?�率:</strong> ${data.maxFrequency} MHz</p>` : ''}
                 `;
                 
                 document.getElementById('coreCount').textContent = data.physicalCores;
@@ -124,7 +470,7 @@
             }
         }
 
-        // 更新CPU使用率
+        // 更新CPU使用�?
         function updateCPUUsage() {
             fetch('/api/cpu/usage')
                 .then(response => response.json())
@@ -134,18 +480,390 @@
                     document.getElementById('usageBar').style.width = usage + '%';
                     document.getElementById('currentUsage').textContent = usage + '%';
                 })
-                .catch(error => console.error('获取CPU使用率失败:', error));
+                .catch(error => console.error('获取CPU使用率失�?:', error));
         }
 
-        // 初始化
+        // 加载磁盘信息
+        async function loadDiskInfo() {
+            try {
+                const response = await fetch('/api/disk/info');
+                const data = await response.json();
+                
+                diskData = data;
+                document.getElementById('diskCount').textContent = `(${data.partitions ? data.partitions.length : 0} �?分区)`;
+                
+                displayPartitions(data.partitions || []);
+                displayDrives(data.drives || []);
+                
+            } catch (error) {
+                console.error('获取磁盘信息失败:', error);
+                document.getElementById('partitionsTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #dc3545; padding: 20px;">
+                            加载失败: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+            
+            // 加载性能数据
+            loadDiskPerformance();
+        }
+
+        // 显示分区信息
+        function displayPartitions(partitions) {
+            const tbody = document.getElementById('partitionsTableBody');
+            
+            if (partitions.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px;">
+                            没有找到分区信息
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = partitions.map(partition => {
+                const usagePercentage = partition.usagePercentage || 0;
+                const status = usagePercentage > 90 ? 'Warning' : 'Healthy';
+                
+                return `
+                    <tr>
+                        <td class="disk-drive-letter">${partition.driveLetter}</td>
+                        <td>${partition.label || '无卷�?'}</td>
+                        <td class="disk-file-system">${partition.fileSystem || '�?�?'}</td>
+                        <td class="disk-size">${formatBytes(partition.totalSize)}</td>
+                        <td class="disk-size">${formatBytes(partition.usedSpace)}</td>
+                        <td class="disk-size">${formatBytes(partition.freeSpace)}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="disk-usage-percent">${usagePercentage.toFixed(1)}%</span>
+                                <div class="disk-usage-bar" style="flex: 1;">
+                                    <div class="disk-usage-fill" style="width: ${usagePercentage}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="disk-status status-${status.toLowerCase()}">${status === 'Healthy' ? '正常' : '警告'}</span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 显示磁盘驱动器信�?
+        function displayDrives(drives) {
+            const tbody = document.getElementById('drivesTableBody');
+            
+            if (drives.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px;">
+                            没有找到磁盘驱动器信�?
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = drives.map(drive => `
+                <tr>
+                    <td title="${drive.model}">${truncateText(drive.model, 25)}</td>
+                    <td>${drive.serialNumber || '�?�?'}</td>
+                    <td>${drive.interfaceType || '�?�?'}</td>
+                    <td>${drive.mediaType || '�?�?'}</td>
+                    <td class="disk-size">${formatBytes(drive.totalSize)}</td>
+                    <td>${drive.bytesPerSector ? drive.bytesPerSector + ' 字节' : '�?�?'}</td>
+                    <td>
+                        <span class="disk-status status-healthy">${drive.status || '正常'}</span>
+                    </td>
+                    <td>${drive.deviceId || '�?�?'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 加载磁盘性能数据
+        async function loadDiskPerformance() {
+            try {
+                const response = await fetch('/api/disk/performance');
+                const data = await response.json();
+                
+                displayPerformance(data.performance || []);
+            } catch (error) {
+                console.error('获取磁盘性能失败:', error);
+                document.getElementById('performanceContent').innerHTML = `
+                    <p style="text-align: center; color: #dc3545;">
+                        加载性能数据失败: ${error.message}
+                    </p>
+                `;
+            }
+        }
+
+        // 显示性能数据
+        function displayPerformance(performance) {
+            const container = document.getElementById('performanceContent');
+            
+            if (performance.length === 0) {
+                container.innerHTML = `
+                    <p style="text-align: center; padding: 20px;">
+                        没有性能数据�?�?
+                    </p>
+                `;
+                return;
+            }
+            
+            container.innerHTML = performance.map(perf => `
+                <div style="margin-bottom: 20px;">
+                    <h4>${perf.driveLetter === '_Total' ? '总体磁盘性能' : '磁盘 ' + perf.driveLetter}</h4>
+                    <div class="performance-grid">
+                        <div class="performance-card">
+                            <div class="performance-value">${perf.readSpeed ? perf.readSpeed.toFixed(2) : '0'} MB/s</div>
+                            <div class="performance-label">读取速度</div>
+                        </div>
+                        <div class="performance-card">
+                            <div class="performance-value">${perf.writeSpeed ? perf.writeSpeed.toFixed(2) : '0'} MB/s</div>
+                            <div class="performance-label">写入速度</div>
+                        </div>
+                        <div class="performance-card">
+                            <div class="performance-value">${perf.usagePercentage ? perf.usagePercentage.toFixed(1) : '0'}%</div>
+                            <div class="performance-label">磁盘使用�?</div>
+                        </div>
+                        <div class="performance-card">
+                            <div class="performance-value">${perf.queueLength ? perf.queueLength.toFixed(2) : '0'}</div>
+                            <div class="performance-label">队列长度</div>
+                        </div>
+                        <div class="performance-card">
+                            <div class="performance-value">${formatBytes(perf.readBytesPerSec || 0)}/s</div>
+                            <div class="performance-label">读取字节�?</div>
+                        </div>
+                        <div class="performance-card">
+                            <div class="performance-value">${formatBytes(perf.writeBytesPerSec || 0)}/s</div>
+                            <div class="performance-label">写入字节�?</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 切换磁盘标�?�页
+        function switchDiskTab(tabName) {
+            // 隐藏所有标签页内�??
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 移除所有标签的激活状�?
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 显示选中的标签页内�??
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            
+            // 激活选中的标�?
+            event.target.classList.add('active');
+        }
+
+        // 切换磁盘列表显示/隐藏
+        function toggleDiskList() {
+            const diskList = document.getElementById('diskList');
+            const card = diskList.closest('.card');
+            card.classList.toggle('collapsed');
+        }
+
+        // 格式化字节大�?
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // �?�?文本
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        // 进程相关函数（保持不变）
+        async function loadProcesses() {
+            try {
+                const response = await fetch('/api/processes');
+                const data = await response.json();
+                
+                allProcesses = data.processes || [];
+                document.getElementById('processCount').textContent = `(${allProcesses.length} �?进程)`;
+                
+                sortAndDisplayProcesses();
+            } catch (error) {
+                console.error('获取进程列表失败:', error);
+                document.getElementById('processTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; color: #dc3545; padding: 20px;">
+                            加载失败: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function sortAndDisplayProcesses() {
+            const sortedProcesses = [...allProcesses];
+            
+            switch (currentSort) {
+                case 'name':
+                    sortedProcesses.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                case 'cpu':
+                    sortedProcesses.sort((a, b) => b.cpuUsage - a.cpuUsage);
+                    break;
+                case 'memory':
+                    sortedProcesses.sort((a, b) => b.memoryUsage - a.memoryUsage);
+                    break;
+                case 'pid':
+                    sortedProcesses.sort((a, b) => a.pid - b.pid);
+                    break;
+            }
+            
+            const displayProcesses = showAllProcesses ? sortedProcesses : sortedProcesses.slice(0, 20);
+            displayProcessList(displayProcesses);
+        }
+
+        function displayProcessList(processes) {
+            const tbody = document.getElementById('processTableBody');
+            
+            if (processes.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px;">
+                            没有找到进程信息
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            const validProcesses = processes.map(process => {
+                let cpuUsage = process.cpuUsage;
+                if (!isFinite(cpuUsage) || cpuUsage < 0 || cpuUsage > 100) {
+                    cpuUsage = 0;
+                }
+                
+                return {
+                    ...process,
+                    cpuUsage: cpuUsage
+                };
+            });
+            
+            tbody.innerHTML = validProcesses.map(process => `
+                <tr>
+                    <td class="process-pid">${process.pid}</td>
+                    <td class="process-name" title="${process.name}">${process.name}</td>
+                    <td class="process-cpu">${process.cpuUsage.toFixed(1)}%</td>
+                    <td class="process-memory">${formatBytes(process.memoryUsage)}</td>
+                    <td>${process.threadCount}</td>
+                    <td class="process-user" title="${process.username}">${process.username}</td>
+                    <td>
+                        <span class="process-state state-running">${process.state}</span>
+                    </td>
+                    <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" 
+                        title="${process.fullPath || ''}">
+                        ${process.fullPath || 'N/A'}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function sortProcesses() {
+            currentSort = document.getElementById('sortSelect').value;
+            sortAndDisplayProcesses();
+        }
+
+        function toggleProcessList() {
+            const processList = document.getElementById('processList');
+            const card = processList.closest('.card');
+            card.classList.toggle('collapsed');
+        }
+
+        function toggleAllProcesses() {
+            showAllProcesses = !showAllProcesses;
+            const button = document.querySelector('.show-all-btn');
+            button.textContent = showAllProcesses ? '显示�?20�?进程' : '显示全部进程';
+            sortAndDisplayProcesses();
+        }
+
+        // // ���ش�����Ϣ
+        // async function loadDiskInfo() {
+        //     try {
+        //         console.log('��ʼ���������Ϣ...');
+        //         const response = await fetch('/api/disk/info');
+                
+        //         if (!response.ok) {
+        //             throw new Error(`HTTP����: ${response.status} ${response.statusText}`);
+        //         }
+                
+        //         const data = await response.json();
+        //         console.log('����API��Ӧ:', data);
+                
+        //         diskData = data;
+        //         document.getElementById('diskCount').textContent = `(${data.partitions ? data.partitions.length : 0} ������)`;
+                
+        //         displayPartitions(data.partitions || []);
+        //         displayDrives(data.drives || []);
+                
+        //     } catch (error) {
+        //         console.error('��ȡ������Ϣʧ��:', error);
+        //         document.getElementById('partitionsTableBody').innerHTML = `
+        //             <tr>
+        //                 <td colspan="8" style="text-align: center; color: #dc3545; padding: 20px;">
+        //                     ����ʧ��: ${error.message}
+        //                 </td>
+        //             </tr>
+        //         `;
+        //     }
+            
+        //     // ������������
+        //     loadDiskPerformance();
+        // }
+
+        // // ���ش�����������
+        // async function loadDiskPerformance() {
+        //     try {
+        //         console.log('��ʼ���������������...');
+        //         const response = await fetch('/api/disk/performance');
+                
+        //         if (!response.ok) {
+        //             throw new Error(`HTTP����: ${response.status} ${response.statusText}`);
+        //         }
+                
+        //         const data = await response.json();
+        //         console.log('��������API��Ӧ:', data);
+                
+        //         displayPerformance(data.performance || []);
+        //     } catch (error) {
+        //         console.error('��ȡ��������ʧ��:', error);
+        //         document.getElementById('performanceContent').innerHTML = `
+        //             <p style="text-align: center; color: #dc3545;">
+        //                 ������������ʧ��: ${error.message}
+        //             </p>
+        //         `;
+        //     }
+        // }
+
+        // 初�?�化
         fetchCPUInfo();
         updateCPUUsage();
+        loadProcesses();
+        loadDiskInfo();
         
-        // 每秒更新使用率
+        // 定时更新
         setInterval(updateCPUUsage, 1000);
-        
-        // 每30秒更新CPU信息
         setInterval(fetchCPUInfo, 30000);
+        setInterval(loadProcesses, 5000);
+        setInterval(loadDiskInfo, 10000); // 10秒更新一次�?�盘信息
     </script>
 </body>
 </html>

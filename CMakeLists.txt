@@ -38,6 +38,7 @@ add_executable(SnapshotTool
     src/core/SnapshotComparator.cpp
     src/core/CPUInfo/cpu_monitor.cpp
     src/core/Process/process_monitor.cpp
+    src/core/Disk/disk_monitor.cpp
     src/core/CPUInfo/wmi_helper.cpp
     src/server/WebServer.cpp
 )
@@ -65,6 +66,7 @@ if(WIN32)
         psapi       # 进程信息
         pdh         # 性能数据
         wtsapi32
+        setupapi
         ws2_32      # Winsock (HTTP库需�?)
         kernel32
         wbemuuid

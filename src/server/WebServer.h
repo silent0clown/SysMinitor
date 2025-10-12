@@ -5,6 +5,7 @@
 #include "../core/CPUInfo/system_info.h"
 #include "../core/CPUInfo/cpu_monitor.h"
 #include "../core/Process/process_monitor.h"
+#include "../core/Disk/disk_monitor.h"
 #include "../third_party/httplib.h"
 #include <memory>
 #include <thread>
@@ -37,7 +38,13 @@ private:
     void HandleGetProcessInfo(const httplib::Request& req, httplib::Response& res);
     void HandleFindProcesses(const httplib::Request& req, httplib::Response& res);
     void HandleTerminateProcess(const httplib::Request& req, httplib::Response& res);
-private:
+
+    // 磁盘相关路由
+    
+    // 添加磁盘相关的HTTP路由处理函数
+    void HandleGetDiskInfo(const httplib::Request& req, httplib::Response& res);
+    void HandleGetDiskPerformance(const httplib::Request& req, httplib::Response& res);
+    private:
     std::unique_ptr<httplib::Server> server_;
     std::unique_ptr<std::thread> serverThread_;
     std::atomic<bool> isRunning_{false};
@@ -45,10 +52,11 @@ private:
     CPUMonitor cpuMonitor_;
     CPUInfo cpuInfo_;
     std::atomic<double> currentUsage_{0.0};
-
+    
     // 添加进程监控器
     ProcessMonitor processMonitor_;
-
+    
+    DiskMonitor diskMonitor_;  // 添加磁盘监控器
     int port_;
 };
 

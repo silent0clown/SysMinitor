@@ -105,6 +105,31 @@ void HttpServer::SetupRoutes() {
         HandleTerminateProcess(req, res);
     });
 
+
+    // 磁盘相关路由
+    server_->Get("/api/disk/info", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetDiskInfo(req, res);
+    });
+    
+    server_->Get("/api/disk/performance", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetDiskPerformance(req, res);
+    });
+
+    // 添加OPTIONS请求处理（用于CORS预检）
+    server_->Options("/api/disk/info", [](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        res.status = 200;
+    });
+    
+    server_->Options("/api/disk/performance", [](const httplib::Request& req, httplib::Response& res) {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        res.status = 200;
+    });
+
     // 默认路由
     server_->Get("/", [](const httplib::Request& req, httplib::Response& res) {
         res.set_redirect("/index.html");
@@ -328,5 +353,132 @@ void HttpServer::HandleTerminateProcess(const httplib::Request& req, httplib::Re
         res.set_content(error.dump(), "application/json");
     }
 }
+
+// 添加磁盘信息处理函数
+void HttpServer::HandleGetDiskInfo(const httplib::Request& req, httplib::Response& res) {
+    try {
+        // 设置CORS头
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        
+        auto snapshot = diskMonitor_.GetDiskSnapshot();
+        json response;
+        
+        response["timestamp"] = snapshot.timestamp;
+        
+        // 磁盘驱动器信息 - 使用更安全的JSON构建方式
+        json drivesJson = json::array();
+        for (const auto& drive : snapshot.drives) {
+            try {
+                json driveJson;
+                // 确保所有字符串都是有效的UTF-8
+                driveJson["model"] = drive.model.empty() ? "Unknown" : drive.model;
+                driveJson["serialNumber"] = drive.serialNumber.empty() ? "" : drive.serialNumber;
+                driveJson["interfaceType"] = drive.interfaceType.empty() ? "Unknown" : drive.interfaceType;
+                driveJson["mediaType"] = drive.mediaType.empty() ? "Unknown" : drive.mediaType;
+                driveJson["totalSize"] = drive.totalSize;
+                driveJson["bytesPerSector"] = drive.bytesPerSector;
+                driveJson["status"] = drive.status.empty() ? "Unknown" : drive.status;
+                driveJson["deviceId"] = drive.deviceId.empty() ? "Unknown" : drive.deviceId;
+                
+                // 验证JSON对象是否可以序列化
+                std::string test = driveJson.dump();
+                drivesJson.push_back(driveJson);
+            } catch (const std::exception& e) {
+                std::cerr << "跳过有问题的驱动器数据: " << e.what() << std::endl;
+                continue;
+            }
+        }
+        response["drives"] = drivesJson;
+        
+        // 分区信息 - 使用更安全的JSON构建方式
+        json partitionsJson = json::array();
+        for (const auto& partition : snapshot.partitions) {
+            try {
+                json partitionJson;
+                partitionJson["driveLetter"] = partition.driveLetter.empty() ? "Unknown" : partition.driveLetter;
+                partitionJson["label"] = partition.label.empty() ? "Local Disk" : partition.label;
+                partitionJson["fileSystem"] = partition.fileSystem.empty() ? "Unknown" : partition.fileSystem;
+                partitionJson["totalSize"] = partition.totalSize;
+                partitionJson["freeSpace"] = partition.freeSpace;
+                partitionJson["usedSpace"] = partition.usedSpace;
+                partitionJson["usagePercentage"] = partition.usagePercentage;
+                partitionJson["serialNumber"] = partition.serialNumber;
+                
+                // 验证JSON对象是否可以序列化
+                std::string test = partitionJson.dump();
+                partitionsJson.push_back(partitionJson);
+            } catch (const std::exception& e) {
+                std::cerr << "跳过有问题的分区数据: " << e.what() << std::endl;
+                continue;
+            }
+        }
+        response["partitions"] = partitionsJson;
+        
+        std::string responseStr = response.dump();
+        std::cout << "返回磁盘信息，驱动器数量: " << snapshot.drives.size() 
+                  << ", 分区数量: " << snapshot.partitions.size() 
+                  << ", JSON长度: " << responseStr.length() << std::endl;
+        
+        res.set_content(responseStr, "application/json");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "HandleGetDiskInfo 异常: " << e.what() << std::endl;
+        json error;
+        error["error"] = "Internal server error";
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
+void HttpServer::HandleGetDiskPerformance(const httplib::Request& req, httplib::Response& res) {
+    try {
+        // 设置CORS头
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        
+        auto snapshot = diskMonitor_.GetDiskSnapshot();
+        json response;
+        
+        response["timestamp"] = snapshot.timestamp;
+        
+        json performanceJson = json::array();
+        for (const auto& perf : snapshot.performance) {
+            json perfJson;
+            perfJson["driveLetter"] = perf.driveLetter;
+            perfJson["readSpeed"] = perf.readSpeed;
+            perfJson["writeSpeed"] = perf.writeSpeed;
+            perfJson["readBytesPerSec"] = perf.readBytesPerSec;
+            perfJson["writeBytesPerSec"] = perf.writeBytesPerSec;
+            perfJson["readCountPerSec"] = perf.readCountPerSec;
+            perfJson["writeCountPerSec"] = perf.writeCountPerSec;
+            perfJson["queueLength"] = perf.queueLength;
+            perfJson["usagePercentage"] = perf.usagePercentage;
+            perfJson["responseTime"] = perf.responseTime;
+            performanceJson.push_back(perfJson);
+        }
+        response["performance"] = performanceJson;
+        
+        std::cout << "返回磁盘性能数据，性能计数器数量: " << snapshot.performance.size() << std::endl;
+        
+        res.set_content(response.dump(), "application/json");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "HandleGetDiskPerformance 异常: " << e.what() << std::endl;
+        json error;
+        error["error"] = e.what();
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
+
+
+
+
+
+
 
 } // namespace snapshot
