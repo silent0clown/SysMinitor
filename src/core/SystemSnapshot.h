@@ -34,8 +34,20 @@ struct ProcessInfo {
     double cpu_usage;
     uint64_t memory_usage;
     std::string executable_path;
+    uint64_t private_bytes;
+    uint32_t handle_count;
     
     bool operator==(const ProcessInfo& other) const;
+    std::string to_string() const;
+};
+
+struct SystemMemoryInfo {
+    uint64_t total_physical;
+    uint64_t avail_physical;
+    uint64_t total_pagefile;
+    uint64_t avail_pagefile;
+        
+    bool operator==(const SystemMemoryInfo& other) const;
     std::string to_string() const;
 };
 
@@ -63,6 +75,7 @@ public:
     void set_registry_data(std::vector<RegistryValue> data) { registry_data_ = std::move(data); }
     void set_disk_info(std::vector<DiskInfo> info) { disk_info_ = std::move(info); }
     void set_process_info(std::vector<ProcessInfo> info) { process_info_ = std::move(info); }
+    void set_system_memory(SystemMemoryInfo mem) { system_memory_ = std::move(mem); }
     
 private:
     std::string id_;
@@ -73,6 +86,7 @@ private:
     std::vector<RegistryValue> registry_data_;
     std::vector<DiskInfo> disk_info_;
     std::vector<ProcessInfo> process_info_;
+    SystemMemoryInfo system_memory_;
 };
 
 } // namespace snapshot

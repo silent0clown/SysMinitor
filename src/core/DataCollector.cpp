@@ -8,9 +8,15 @@
 #include <tlhelp32.h>
 #include <algorithm>
 #include <random>
+#include <thread>
+#include <chrono>
 // #include <processthreadsapi.h> // For QueryFullProcessImageNameA
 
 #pragma comment(lib, "pdh.lib")
+
+static uint64_t filetime_to_uint64(const FILETIME &ft) {
+    return (static_cast<uint64_t>(ft.dwHighDateTime) << 32) | ft.dwLowDateTime;
+}
 
 namespace snapshot {
 
@@ -35,6 +41,16 @@ std::shared_ptr<SystemSnapshot> DataCollector::collect_snapshot(const std::strin
         auto disk_info = collect_disk_info();
         snapshot->set_disk_info(std::move(disk_info));
         
+        LOG_INFO("采集系统内存信息...");
+        auto system_memory = collect_system_memory_info();
+        snapshot->set_system_memory(system_memory);
+
+        LOG_INFO("初始化 CPU 计数器以便采样...");
+        // 初始化 CPU 计数基线，然后等待一小段时间再采样进程，
+        // 以便 calculate_process_cpu_usage 能基于差分计算出有效值。
+        initialize_cpu_counters();
+        std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
         LOG_INFO("采集进程信息...");
         auto process_info = collect_process_info();
         snapshot->set_process_info(std::move(process_info));
@@ -190,6 +206,13 @@ std::vector<ProcessInfo> DataCollector::collect_process_info() {
             PROCESS_MEMORY_COUNTERS pmc;
             if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
                 info.memory_usage = pmc.WorkingSetSize;
+                // 如果可用，使用扩展结构获取 PrivateUsage
+                PROCESS_MEMORY_COUNTERS_EX pmce;
+                if (GetProcessMemoryInfo(hProcess, reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&pmce), sizeof(pmce))) {
+                    info.private_bytes = pmce.PrivateUsage;
+                } else {
+                    info.private_bytes = 0;
+                }
             }
             
             // 获取CPU使用率
@@ -214,14 +237,132 @@ std::vector<ProcessInfo> DataCollector::collect_process_info() {
     return processes;
 }
 
+SystemMemoryInfo DataCollector::collect_system_memory_info() {
+    SystemMemoryInfo memInfo = {};
+    MEMORYSTATUSEX mse;
+    mse.dwLength = sizeof(mse);
+    if (GlobalMemoryStatusEx(&mse)) {
+        memInfo.total_physical = mse.ullTotalPhys;
+        memInfo.avail_physical = mse.ullAvailPhys;
+        memInfo.total_pagefile = mse.ullTotalPageFile;
+        memInfo.avail_pagefile = mse.ullAvailPageFile;
+    }
+    return memInfo;
+}
+
 double DataCollector::calculate_process_cpu_usage(uint32_t pid) {
-    // 简化实现 - 实际应该使用PDH库获取准确的CPU使用率
-    // 这里返回一个模拟值
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_real_distribution<> dis(0.0, 5.0);
-    
-    return dis(gen);
+    // 实际实现：使用 GetProcessTimes 与 GetSystemTimes 的差分法计算百分比
+    // 打开进程以获取时间信息
+    HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+    if (!hProcess) {
+        // 无权限或进程已结束
+        return 0.0;
+    }
+
+    FILETIME ftCreation, ftExit, ftKernel, ftUser;
+    if (!GetProcessTimes(hProcess, &ftCreation, &ftExit, &ftKernel, &ftUser)) {
+        CloseHandle(hProcess);
+        return 0.0;
+    }
+
+    uint64_t procTime = filetime_to_uint64(ftKernel) + filetime_to_uint64(ftUser);
+
+    // 获取系统时间（kernel + user）
+    FILETIME sysIdle, sysKernel, sysUser;
+    if (!GetSystemTimes(&sysIdle, &sysKernel, &sysUser)) {
+        CloseHandle(hProcess);
+        return 0.0;
+    }
+
+    uint64_t sysTime = filetime_to_uint64(sysKernel) + filetime_to_uint64(sysUser);
+
+    double cpuPercent = 0.0;
+
+    auto it = cpu_cache_.find(pid);
+    if (it != cpu_cache_.end()) {
+        ProcessCpuData &prev = it->second;
+        uint64_t prevProc = prev.last_time;
+        uint64_t prevSys = prev.last_system_time;
+
+        uint64_t deltaProc = 0;
+        uint64_t deltaSys = 0;
+        if (procTime >= prevProc) deltaProc = procTime - prevProc; else deltaProc = 0;
+        if (sysTime >= prevSys) deltaSys = sysTime - prevSys; else deltaSys = 0;
+
+        if (deltaSys > 0) {
+            // FILETIME 的单位是 100ns ticks，比例相同可直接用
+            cpuPercent = (double)deltaProc / (double)deltaSys * 100.0 * static_cast<double>(processor_count_);
+        } else {
+            cpuPercent = 0.0;
+        }
+
+        // 更新缓存
+        prev.last_time = procTime;
+        prev.last_system_time = sysTime;
+    } else {
+        // 首次见到该进程：初始化缓存项并返回 0（下一次将有基线）
+        ProcessCpuData data;
+        data.last_time = procTime;
+        data.last_system_time = sysTime;
+        cpu_cache_[pid] = data;
+        cpuPercent = 0.0;
+    }
+
+    CloseHandle(hProcess);
+
+    // clamp 值，防止极端读数（例如多核上理论上可能超过100）
+    if (cpuPercent < 0.0) cpuPercent = 0.0;
+    // 上限为 100 * processor_count_
+    double maxPossible = 100.0 * static_cast<double>(processor_count_);
+    if (cpuPercent > maxPossible) cpuPercent = maxPossible;
+
+    return cpuPercent;
+}
+
+void DataCollector::initialize_cpu_counters() {
+    // 初始化系统和进程 CPU 计数缓存，以便后续计算使用差值
+    cpu_cache_.clear();
+
+    // 获取系统总的 CPU 时间（User + Kernel + Idle）
+    FILETIME idleTime, kernelTime, userTime;
+    if (GetSystemTimes(&idleTime, &kernelTime, &userTime)) {
+        uint64_t k = filetime_to_uint64(kernelTime);
+        uint64_t u = filetime_to_uint64(userTime);
+        // 合并 kernel + user 作为系统活动时间
+        last_system_cpu_time_ = k + u;
+    } else {
+        last_system_cpu_time_ = 0;
+    }
+
+    // 枚举当前进程以初始化每个进程的时间戳
+    HANDLE hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (hProcessSnap == INVALID_HANDLE_VALUE) return;
+
+    PROCESSENTRY32 pe32;
+    pe32.dwSize = sizeof(PROCESSENTRY32);
+    if (!Process32First(hProcessSnap, &pe32)) {
+        CloseHandle(hProcessSnap);
+        return;
+    }
+
+    do {
+        uint32_t pid = pe32.th32ProcessID;
+        HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, pid);
+        if (hProcess) {
+            FILETIME ftCreation, ftExit, ftKernel, ftUser;
+            if (GetProcessTimes(hProcess, &ftCreation, &ftExit, &ftKernel, &ftUser)) {
+                uint64_t kt = filetime_to_uint64(ftKernel);
+                uint64_t ut = filetime_to_uint64(ftUser);
+                ProcessCpuData data;
+                data.last_time = kt + ut;
+                data.last_system_time = last_system_cpu_time_;
+                cpu_cache_[pid] = data;
+            }
+            CloseHandle(hProcess);
+        }
+    } while (Process32Next(hProcessSnap, &pe32));
+
+    CloseHandle(hProcessSnap);
 }
 
 } // namespace snapshot

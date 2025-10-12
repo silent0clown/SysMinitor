@@ -3,7 +3,9 @@
 #include <memory>
 #include <vector>
 #define WIN32_LEAN_AND_MEAN
-#define NOMINMAX 
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
 #include <windows.h>
 // #include <tlhelp32.h>
 namespace snapshot {
@@ -20,6 +22,7 @@ public:
     std::vector<RegistryValue> collect_registry_data();
     std::vector<DiskInfo> collect_disk_info();
     std::vector<ProcessInfo> collect_process_info();
+    SystemMemoryInfo collect_system_memory_info();
 
 private:
     // 注册表采集
