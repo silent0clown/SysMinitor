@@ -9,69 +9,70 @@
 
 using namespace sysmonitor;
 
-// È«¾Ö±äÁ¿ÓÃÓÚĞÅºÅ´¦Àí
+// å…¨å±€å˜é‡ç”¨äºä¿¡å·å¤„ç†
 std::atomic<bool> g_running{true};
 
 void SignalHandler(int signal) {
-    std::cout << "\n½ÓÊÕµ½ÖĞ¶ÏĞÅºÅ£¬ÕıÔÚ¹Ø±Õ·şÎñÆ÷..." << std::endl;
+    std::cout << "\næ¥æ”¶åˆ°ä¸­æ–­ä¿¡å·ï¼Œæ­£åœ¨å…³é—­æœåŠ¡å™¨..." << std::endl;
     g_running = false;
 }
 
 void PrintCPUInfo(const CPUInfo& info) {
-    std::cout << "=== CPUÏêÏ¸ĞÅÏ¢ ===" << std::endl;
-    std::cout << "Ãû³Æ: " << info.name << std::endl;
-    std::cout << "¼Ü¹¹: " << info.architecture << std::endl;
-    std::cout << "ÎïÀíºËĞÄ: " << info.physicalCores << std::endl;
-    std::cout << "Âß¼­ºËĞÄ: " << info.logicalCores << std::endl;
-    std::cout << "´¦ÀíÆ÷·â×°: " << info.packages << std::endl;
-    std::cout << "»ù´¡ÆµÂÊ: " << info.baseFrequency << " MHz" << std::endl;
+    std::cout << "=== CPUè¯¦ç»†ä¿¡æ¯ ===" << std::endl;
+    std::cout << "åç§°: " << info.name << std::endl;
+    std::cout << "æ¶æ„: " << info.architecture << std::endl;
+    std::cout << "ç‰©ç†æ ¸å¿ƒ: " << info.physicalCores << std::endl;
+    std::cout << "é€»è¾‘æ ¸å¿ƒ: " << info.logicalCores << std::endl;
+    std::cout << "å¤„ç†å™¨å°è£…: " << info.packages << std::endl;
+    std::cout << "åŸºç¡€é¢‘ç‡: " << info.baseFrequency << " MHz" << std::endl;
     if (info.maxFrequency > 0) {
-        std::cout << "×î´óÆµÂÊ: " << info.maxFrequency << " MHz" << std::endl;
+        std::cout << "æœ€å¤§é¢‘ç‡: " << info.maxFrequency << " MHz" << std::endl;
     }
     std::cout << std::endl;
 }
 
 int main() {
-    // ÉèÖÃ¿ØÖÆÌ¨Êä³ö±àÂë
-    system("chcp 936 > nul");
+    // è®¾ç½®æ§åˆ¶å°ä¸º UTF-8
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
     
-    // ×¢²áĞÅºÅ´¦Àí
+    // æ³¨å†Œä¿¡å·å¤„ç†
     std::signal(SIGINT, SignalHandler);
     std::signal(SIGTERM, SignalHandler);
 
-    std::cout << "ÏµÍ³¼à¿Ø¹¤¾ß - HTTP·şÎñÆ÷°æ±¾" << std::endl;
+    std::cout << "ç³»ç»Ÿç›‘æ§å·¥å…· - HTTPæœåŠ¡å™¨ç‰ˆæœ¬" << std::endl;
     
-    // ÏÔÊ¾CPUĞÅÏ¢
+    // æ˜¾ç¤ºCPUä¿¡æ¯
     CPUInfo info = SystemInfo::GetCPUInfo();
     PrintCPUInfo(info);
     
-    // Ê¹ÓÃWMI»ñÈ¡¸üÏêÏ¸ĞÅÏ¢£¨¿ÉÑ¡£©
+    // ä½¿ç”¨WMIè·å–æ›´è¯¦ç»†ä¿¡æ¯ï¼ˆå¯é€‰ï¼‰
     CPUInfo detailedInfo = WMIHelper::GetDetailedCPUInfo();
     if (!detailedInfo.name.empty()) {
-        std::cout << "=== WMIÏêÏ¸ĞÅÏ¢ ===" << std::endl;
-        std::cout << "WMI´¦ÀíÆ÷Ãû³Æ: " << detailedInfo.name << std::endl;
-        std::cout << "WMIÎïÀíºËĞÄ: " << detailedInfo.physicalCores << std::endl;
-        std::cout << "WMIÂß¼­ºËĞÄ: " << detailedInfo.logicalCores << std::endl;
-        std::cout << "WMI×î´óÆµÂÊ: " << detailedInfo.maxFrequency << " MHz" << std::endl;
+        std::cout << "=== WMIè¯¦ç»†ä¿¡æ¯ ===" << std::endl;
+        std::cout << "WMIå¤„ç†å™¨åç§°: " << detailedInfo.name << std::endl;
+        std::cout << "WMIç‰©ç†æ ¸å¿ƒ: " << detailedInfo.physicalCores << std::endl;
+        std::cout << "WMIé€»è¾‘æ ¸å¿ƒ: " << detailedInfo.logicalCores << std::endl;
+        std::cout << "WMIæœ€å¤§é¢‘ç‡: " << detailedInfo.maxFrequency << " MHz" << std::endl;
         std::cout << std::endl;
     }
     
-    // Æô¶¯HTTP·şÎñÆ÷
+    // å¯åŠ¨HTTPæœåŠ¡å™¨
     HttpServer server;
     if (server.Start(8080)) {
-        std::cout << "·şÎñÆ÷Æô¶¯³É¹¦£¡" << std::endl;
-        std::cout << "´ò¿ªä¯ÀÀÆ÷·ÃÎÊ: http://localhost:8080" << std::endl;
-        std::cout << "°´ Ctrl+C Í£Ö¹·şÎñÆ÷" << std::endl;
+        std::cout << "æœåŠ¡å™¨å¯åŠ¨æˆåŠŸï¼" << std::endl;
+        std::cout << "æ‰“å¼€æµè§ˆå™¨è®¿é—®: http://localhost:8080" << std::endl;
+        std::cout << "æŒ‰ Ctrl+C åœæ­¢æœåŠ¡å™¨" << std::endl;
         
-        // µÈ´ıÍË³öĞÅºÅ
+        // ç­‰å¾…é€€å‡ºä¿¡å·
         while (g_running) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         
         server.Stop();
-        std::cout << "·şÎñÆ÷ÒÑÍ£Ö¹" << std::endl;
+        std::cout << "æœåŠ¡å™¨å·²åœæ­¢" << std::endl;
     } else {
-        std::cerr << "·şÎñÆ÷Æô¶¯Ê§°Ü" << std::endl;
+        std::cerr << "æœåŠ¡å™¨å¯åŠ¨å¤±è´¥" << std::endl;
         return -1;
     }
     

@@ -1,10 +1,22 @@
 #include "wmi_helper.h"
 #include <windows.h>
-#include <comdef.h>
 #include <wbemidl.h>
 #include <iostream>
 
 #pragma comment(lib, "wbemuuid.lib")
+
+// Helper: convert BSTR to UTF-8 std::string without using _bstr_t/comsupp
+static std::string BSTRToUtf8(BSTR bstr) {
+    if (!bstr) return std::string();
+    const wchar_t* wstr = static_cast<const wchar_t*>(bstr);
+    if (!wstr) return std::string();
+    int len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
+    if (len <= 0) return std::string();
+    std::string out(len, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wstr, -1, &out[0], len, NULL, NULL);
+    if (!out.empty() && out.back() == '\0') out.pop_back();
+    return out;
+}
 
 namespace sysmonitor {
 
@@ -52,9 +64,9 @@ CPUInfo WMIHelper::GetDetailedCPUInfo() {
     );
     
     if (SUCCEEDED(hres)) {
-        hres = pLoc->ConnectServer(
-            _bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, &pSvc
-        );
+        BSTR ns = SysAllocString(L"ROOT\\CIMV2");
+        hres = pLoc->ConnectServer(ns, NULL, NULL, 0, NULL, 0, 0, &pSvc);
+        SysFreeString(ns);
         
         if (SUCCEEDED(hres)) {
             hres = CoSetProxyBlanket(
@@ -65,12 +77,14 @@ CPUInfo WMIHelper::GetDetailedCPUInfo() {
             
             if (SUCCEEDED(hres)) {
                 IEnumWbemClassObject* pEnumerator = nullptr;
-                hres = pSvc->ExecQuery(
-                    bstr_t("WQL"),
-                    bstr_t("SELECT * FROM Win32_Processor"),
+                BSTR lang = SysAllocString(L"WQL");
+                BSTR query = SysAllocString(L"SELECT * FROM Win32_Processor");
+                hres = pSvc->ExecQuery(lang, query,
                     WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
                     NULL, &pEnumerator
                 );
+                SysFreeString(lang);
+                SysFreeString(query);
                 
                 if (SUCCEEDED(hres)) {
                     IWbemClassObject* pclsObj = nullptr;
@@ -80,7 +94,7 @@ CPUInfo WMIHelper::GetDetailedCPUInfo() {
                         VARIANT vtProp;
                         
                         if (pclsObj->Get(L"Name", 0, &vtProp, 0, 0) == S_OK) {
-                            info.name = _bstr_t(vtProp.bstrVal);
+                            info.name = BSTRToUtf8(vtProp.bstrVal);
                             VariantClear(&vtProp);
                         }
                         

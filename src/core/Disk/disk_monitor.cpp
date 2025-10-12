@@ -47,33 +47,17 @@ std::string SafeString(const char* str) {
     return Gb2312ToUtf8(str);
 }
 
-// 在编码转换工具函数部分添加
-std::string WmiStringToUtf8(const _bstr_t& bstr) {
-    if (bstr.length() == 0) return "";
-    
-    const wchar_t* wstr = bstr;
-    if (wstr == nullptr) return "";
-    
+// Helper: convert BSTR to UTF-8 std::string without using _bstr_t/comsupp
+static std::string BSTRToUtf8(BSTR bstr) {
+    if (!bstr) return std::string();
+    const wchar_t* wstr = static_cast<const wchar_t*>(bstr);
+    if (!wstr) return std::string();
     int len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL, NULL);
-    if (len == 0) return "";
-    
-    std::string utf8Str(len, 0);
-    WideCharToMultiByte(CP_UTF8, 0, wstr, -1, &utf8Str[0], len, NULL, NULL);
-    
-    if (!utf8Str.empty() && utf8Str.back() == '\0') {
-        utf8Str.pop_back();
-    }
-    
-    return utf8Str;
-}
-
-// 安全的WMI字符串转换
-std::string SafeWmiString(const _bstr_t& bstr) {
-    try {
-        return WmiStringToUtf8(bstr);
-    } catch (...) {
-        return "";
-    }
+    if (len <= 0) return std::string();
+    std::string out(len, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wstr, -1, &out[0], len, NULL, NULL);
+    if (!out.empty() && out.back() == '\0') out.pop_back();
+    return out;
 }
 
 // 过滤非UTF8字符的辅助函数
@@ -153,9 +137,9 @@ bool InitializeWMI(IWbemLocator** ppLoc, IWbemServices** ppSvc) {
     }
 
     // 连接到WMI
-    hres = (*ppLoc)->ConnectServer(
-        _bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, ppSvc
-    );
+    BSTR ns = SysAllocString(L"ROOT\\CIMV2");
+    hres = (*ppLoc)->ConnectServer(ns, NULL, NULL, 0, NULL, 0, 0, ppSvc);
+    SysFreeString(ns);
 
     if (FAILED(hres)) {
         (*ppLoc)->Release();
@@ -609,12 +593,11 @@ std::vector<DiskSMARTData> DiskMonitor::GetSMARTData() {
     
     try {
         IEnumWbemClassObject* pEnumerator = NULL;
-        HRESULT hres = pSvc->ExecQuery(
-            bstr_t("WQL"),
-            bstr_t("SELECT * FROM MSStorageDriver_FailurePredictStatus"),
-            WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-            NULL, &pEnumerator
-        );
+        BSTR lang = SysAllocString(L"WQL");
+        BSTR query = SysAllocString(L"SELECT * FROM MSStorageDriver_FailurePredictStatus");
+        HRESULT hres = pSvc->ExecQuery(lang, query, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &pEnumerator);
+        SysFreeString(lang);
+        SysFreeString(query);
         
         if (SUCCEEDED(hres)) {
             IWbemClassObject* pclsObj = NULL;
@@ -627,7 +610,7 @@ std::vector<DiskSMARTData> DiskMonitor::GetSMARTData() {
                 
                 // 获取实例名称（设备ID）
                 if (pclsObj->Get(L"__RELPATH", 0, &vtProp, 0, 0) == S_OK) {
-                    data.deviceId = _bstr_t(vtProp.bstrVal);
+                    data.deviceId = BSTRToUtf8(vtProp.bstrVal);
                     VariantClear(&vtProp);
                 }
                 
@@ -674,12 +657,11 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDrivesViaWMI() {
     
     try {
         IEnumWbemClassObject* pEnumerator = NULL;
-        HRESULT hres = pSvc->ExecQuery(
-            bstr_t("WQL"),
-            bstr_t("SELECT * FROM Win32_DiskDrive"),
-            WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-            NULL, &pEnumerator
-        );
+        BSTR lang2 = SysAllocString(L"WQL");
+        BSTR query2 = SysAllocString(L"SELECT * FROM Win32_DiskDrive");
+        HRESULT hres = pSvc->ExecQuery(lang2, query2, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &pEnumerator);
+        SysFreeString(lang2);
+        SysFreeString(query2);
         
         if (SUCCEEDED(hres)) {
             IWbemClassObject* pclsObj = NULL;
@@ -692,25 +674,25 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDrivesViaWMI() {
                 
                 // 获取磁盘型号 - 使用安全的字符串转换
                 if (pclsObj->Get(L"Model", 0, &vtProp, 0, 0) == S_OK) {
-                    drive.model = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
+                    drive.model = FilterToValidUtf8(BSTRToUtf8(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
                 // 获取序列号
                 if (pclsObj->Get(L"SerialNumber", 0, &vtProp, 0, 0) == S_OK) {
-                    drive.serialNumber = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
+                    drive.serialNumber = FilterToValidUtf8(BSTRToUtf8(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
                 // 获取接口类型
                 if (pclsObj->Get(L"InterfaceType", 0, &vtProp, 0, 0) == S_OK) {
-                    drive.interfaceType = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
+                    drive.interfaceType = FilterToValidUtf8(BSTRToUtf8(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
                 // 获取介质类型
                 if (pclsObj->Get(L"MediaType", 0, &vtProp, 0, 0) == S_OK) {
-                    drive.mediaType = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
+                    drive.mediaType = FilterToValidUtf8(BSTRToUtf8(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
@@ -728,7 +710,7 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDrivesViaWMI() {
                 
                 // 获取设备ID
                 if (pclsObj->Get(L"DeviceID", 0, &vtProp, 0, 0) == S_OK) {
-                    drive.deviceId = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
+                    drive.deviceId = FilterToValidUtf8(BSTRToUtf8(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
@@ -760,12 +742,11 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitionsViaWMI() {
     
     try {
         IEnumWbemClassObject* pEnumerator = NULL;
-        HRESULT hres = pSvc->ExecQuery(
-            bstr_t("WQL"),
-            bstr_t("SELECT * FROM Win32_LogicalDisk"),
-            WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY,
-            NULL, &pEnumerator
-        );
+        BSTR lang3 = SysAllocString(L"WQL");
+        BSTR query3 = SysAllocString(L"SELECT * FROM Win32_LogicalDisk");
+        HRESULT hres = pSvc->ExecQuery(lang3, query3, WBEM_FLAG_FORWARD_ONLY | WBEM_FLAG_RETURN_IMMEDIATELY, NULL, &pEnumerator);
+        SysFreeString(lang3);
+        SysFreeString(query3);
         
         if (SUCCEEDED(hres)) {
             IWbemClassObject* pclsObj = NULL;
@@ -778,19 +759,19 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitionsViaWMI() {
                 
                 // 获取盘符
                 if (pclsObj->Get(L"DeviceID", 0, &vtProp, 0, 0) == S_OK) {
-                    partition.driveLetter = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
+                    partition.driveLetter = FilterToValidUtf8(BSTRToUtf8(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
                 // 获取卷标
                 if (pclsObj->Get(L"VolumeName", 0, &vtProp, 0, 0) == S_OK) {
-                    partition.label = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
+                    partition.label = FilterToValidUtf8(BSTRToUtf8(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
                 // 获取文件系统
                 if (pclsObj->Get(L"FileSystem", 0, &vtProp, 0, 0) == S_OK) {
-                    partition.fileSystem = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
+                    partition.fileSystem = FilterToValidUtf8(BSTRToUtf8(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 

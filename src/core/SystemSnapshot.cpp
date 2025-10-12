@@ -100,10 +100,10 @@ static std::string time_to_string(time_t t) {
 }
 
 std::string SystemSnapshot::to_json() const {
-    // 绠�鍖栧疄鐜帮紝瀹為檯搴斾娇鐢╪lohmann/json
+    // 简化实现，实际应使用nlohmann/json
     using nlohmann::json;
 
-    // 1. 鏋勯�� JSON 瀵硅薄
+    // 1. 构造 JSON 对象
     json j;
     j["id"] = id_;
     j["name"] = name_;
@@ -147,7 +147,7 @@ std::string SystemSnapshot::to_json() const {
             {"total_pagefile", system_memory_.total_pagefile},
             {"avail_pagefile", system_memory_.avail_pagefile}};
 
-    // 5. 杩斿洖绱у噾 JSON 瀛楃涓诧紙濡傞渶缇庡寲鍙敤 dump(4)锛�
+    // 6. 返回紧凑 JSON 字符串（如需美化可用 dump(4)）
     return j.dump();
 }
 
@@ -222,8 +222,8 @@ std::shared_ptr<SystemSnapshot> SystemSnapshot::from_json(const std::string& jso
         }
 
     } catch (const std::exception &ex) {
-        // 瑙ｆ瀽閿欒锛氳繑鍥炵┖蹇収鎴栧彲鑰冭檻鎶涘嚭寮傚父銆傝繖閲岄�夋嫨杩斿洖閮ㄥ垎/榛樿濉厖鐨� snapshot
-        // 鑻ラ」鐩娇鐢ㄦ棩蹇楋紝鍙褰� ex.what()
+        // 解析错误：返回空快照或可考虑抛出异常。这里选择返回部分/默认填充的 snapshot
+        // 若项目使用日志，可记录 ex.what()
     }
 
     return snapshot;
