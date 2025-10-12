@@ -1,108 +1,90 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-
 <head>
-    <!-- 设置字符编码为UTF-8 -->
     <meta charset="UTF-8">
-    <!-- 视口设置，使页面响应式适配不同设备屏幕 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 页面标题 -->
     <title>OS Monitor Pro - 系统监控仪表盘</title>
-
-    <!-- 引入Tailwind CSS样式库 -->
     <link rel="stylesheet" href="assets/css/tailwind.min.css">
-    <!-- 引入anime.js动画库 -->
     <script src="assets/js/anime.min.js"></script>
-    <!-- 引入ECharts图表库 -->
     <script src="assets/js/echarts.min.js"></script>
-    <!-- 引入自定义字体样式 -->
     <link href="assets/css/fonts.css" rel="stylesheet">
-
-
-    <!-- 自定义CSS样式 -->
     <style>
-        /* 设置默认字体 */
         body {
             font-family: 'Noto Sans SC', sans-serif;
         }
-
-        /* 英雄区域背景渐变 */
         .hero-bg {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
         }
-
-        /* 半透明卡片样式 */
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
-        /* 不同状态的颜色类 */
         .status-good {
             color: #059669;
         }
-
         .status-warning {
             color: #d97706;
         }
-
         .status-critical {
             color: #dc2626;
         }
-
-        /* 脉冲动画效果 */
         .pulse-animation {
             animation: pulse 2s infinite;
         }
-
         @keyframes pulse {
-
-            0%,
-            100% {
+            0%, 100% {
                 opacity: 1;
             }
-
             50% {
                 opacity: 0.5;
             }
         }
-
-        /* 图表容器高度 */
         .chart-container {
             height: 200px;
         }
-
-        /* 指标卡片过渡效果 */
         .metric-card {
             transition: all 0.3s ease;
         }
-
         .metric-card:hover {
             transform: translateY(-2px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
         }
-
-        /* 更小的图表容器 */
         .chart-container-sm {
             width: 64px;
             height: 64px;
         }
+        .disk-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1rem;
+        }
+        .disk-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            background-color: #f9fafb;
+        }
+        .performance-metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        .performance-value {
+            font-weight: 500;
+        }
+        .io-high { color: #dc2626; }
+        .io-medium { color: #d97706; }
+        .io-low { color: #059669; }
     </style>
-
+</head>
 <body class="bg-gray-50 text-gray-800">
-
-
-    </head>
-    <!-- 顶部导航栏 -->
     <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <!-- 左侧品牌标识 -->
                 <div class="flex items-center space-x-4">
                     <div class="flex items-center space-x-2">
-                        <div
-                            class="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-600 rounded-lg flex items-center justify-center">
+                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-teal-600 rounded-lg flex items-center justify-center">
                             <span class="text-white font-bold text-sm">OS</span>
                         </div>
                         <h1 class="text-xl font-bold text-gray-900">Monitor Pro</h1>
@@ -113,190 +95,576 @@
     </nav>
 
     <div class="flex">
-        <!-- 左侧边栏 -->
         <div class="w-64 bg-white shadow-sm min-h-screen">
             <div class="p-6">
-                <!-- 导航菜单 -->
                 <nav class="space-y-2">
-                    <a href="index.html"
-                        class="flex items-center space-x-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium">
+                    <a href="index.html" class="flex items-center space-x-3 px-4 py-3 bg-blue-50 text-blue-700 rounded-lg font-medium">
                         <span class="text-blue-600">📊</span>
                         <span>实时仪表盘</span>
                     </a>
-                    <a href="snapshot.html"
-                        class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                    <a href="snapshot.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
                         <span>📸</span>
                         <span>快照管理</span>
                     </a>
-                    <a href="settings.html"
-                        class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
+                    <a href="settings.html" class="flex items-center space-x-3 px-4 py-3 text-gray-600 hover:bg-gray-50 rounded-lg transition-colors">
                         <span>⚙️</span>
                         <span>设置</span>
                     </a>
                 </nav>
             </div>
 
-            <!-- 系统信息展示区域 -->
             <div class="p-6 border-t border-gray-200">
                 <h3 class="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">系统信息</h3>
                 <div class="space-y-2 text-sm">
                     <div class="flex justify-between">
-                        <span class="text-gray-600">操作系统:</span>
-                        <span class="font-medium" id="system-os">Windows 11 Pro</span>
-                    </div>
-                    <div class="flex justify-between">
                         <span class="text-gray-600">运行时间:</span>
-                        <span class="font-medium" id="uptime">5天 12:30:22</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">主机名:</span>
-                        <span class="font-medium" id="system-hostname">DESKTOP-ABC123</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">CPU架构:</span>
-                        <span class="font-medium" id="system-arch">DESKTOP-ABC123</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-600">系统版本:</span>
-                        <span class="font-medium" id="system-version">DESKTOP-ABC123</span>
+                        <span class="font-medium" id="system-uptime">-</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 右侧内容区域 -->
         <div class="flex-1 p-6">
-            <!-- 状态概览 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
-                <!-- CPU使用率 -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <!-- CPU信息卡片 -->
                 <div class="metric-card glass-card rounded-xl p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-gray-700">CPU 信息</h3>
-                        <span class="status-good text-sm font-medium" id="cpuStatus">良好</span>
+                        <span class="status-good text-sm font-medium" id="cpu-status">良好</span>
                     </div>
                     <div class="flex items-center space-x-4">
                         <div class="flex-1">
-                            <div class="chart-container" id="cpuChart"></div>
-                            <!-- CPU名称显示在仪表盘下方 -->
-                            <div class="text-center mt-2 text-sm font-medium text-gray-700" id="cpuName">-</div>
+                            <div class="chart-container" id="cpu-chart"></div>
+                            <div class="text-center mt-2 text-sm font-medium text-gray-700" id="cpu-name">-</div>
                         </div>
                         <div class="text-right">
-                            <!-- 显示CPU详细信息 -->
-                            <div class="text-sm text-gray-500 mb-1" id="cpuVendor">厂商: -</div>
-                            <div class="text-sm text-gray-500 mb-1" id="cpuArchitecture">架构: -</div>
-                            <div class="text-sm text-gray-500 mb-1" id="cpuPhysicalCores">物理核心: -</div>
-                            <div class="text-sm text-gray-500 mb-1" id="cpuLogicalCores">逻辑核心: -</div>
-                            <div class="text-sm text-gray-500 mb-1" id="cpuBaseFrequency">基准频率: -</div>
-                            <div class="text-sm text-gray-500" id="cpuMaxFrequency">最大频率: -</div>
+                            <div class="text-sm text-gray-500 mb-1" id="cpu-vendor">厂商: -</div>
+                            <div class="text-sm text-gray-500 mb-1" id="cpu-architecture">架构: -</div>
+                            <div class="text-sm text-gray-500 mb-1" id="cpu-physical-cores">物理核心: -</div>
+                            <div class="text-sm text-gray-500 mb-1" id="cpu-logical-cores">逻辑核心: -</div>
+                            <div class="text-sm text-gray-500 mb-1" id="cpu-base-frequency">基准频率: -</div>
+                            <div class="text-sm text-gray-500" id="cpu-max-frequency">最大频率: -</div>
                         </div>
                     </div>
-                    <!-- CPU使用率显示在底部 -->
                     <div class="mt-4 text-center">
-                        <div class="text-2xl font-bold text-gray-900" id="cpuUsage">0%</div>
+                        <div class="text-2xl font-bold text-gray-900" id="cpu-usage">0%</div>
                         <div class="text-sm text-gray-500">当前使用率</div>
                     </div>
                 </div>
 
-                <!-- 内存使用率 -->
+                <!-- 内存信息卡片 -->
                 <div class="metric-card glass-card rounded-xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-700">内存使用率</h3>
-                        <span class="status-warning text-sm font-medium" id="memoryStatus">警告</span>
+                        <h3 class="text-lg font-semibold text-gray-700">内存信息</h3>
+                        <span class="status-good text-sm font-medium" id="memory-status">良好</span>
                     </div>
                     <div class="flex items-center space-x-4">
                         <div class="flex-1">
-                            <div class="chart-container" id="memoryChart"></div>
+                            <div class="chart-container" id="memory-chart"></div>
                         </div>
                         <div class="text-right">
-                            <div class="text-3xl font-bold text-gray-900" id="memoryUsage">80.0%</div>
-                            <div class="text-sm text-gray-500" id="memoryUsed">12GB</div>
-                            <div class="text-sm text-gray-500" id="memoryTotal">16GB</div>
+                            <div class="text-3xl font-bold text-gray-900" id="memory-usage-percent">0%</div>
+                            <div class="text-sm text-gray-500" id="memory-used">0 GB</div>
+                            <div class="text-sm text-gray-500" id="memory-total">0 GB</div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full" id="memory-progress-bar" style="width: 0%"></div>
                         </div>
                     </div>
                 </div>
-
             </div>
 
-            <!-- 详细信息区域 -->
-            <div class="grid grid-cols-1  gap-6">
-                <!-- 磁盘状态  -->
+            <div class="grid grid-cols-1 gap-6">
+                <!-- 磁盘信息卡片 -->
                 <div class="glass-card rounded-xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-700">磁盘状态</h3>
-                        <span class="status-good text-sm font-medium" id="diskOverallStatus">良好</span>
+                        <h3 class="text-lg font-semibold text-gray-700">磁盘信息</h3>
+                        <span class="status-good text-sm font-medium" id="disk-status">良好</span>
                     </div>
-                    <div class="overflow-y-auto max-h-96">
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="diskContainer">
+                    <div class="overflow-y-auto max-h-screen">
+                        <div class="disk-grid" id="disk-container">
                             <!-- 磁盘信息将通过JavaScript动态生成 -->
                         </div>
                     </div>
                 </div>
 
-                <!-- 进程列表 -->
+                <!-- 进程信息卡片 -->
                 <div class="glass-card rounded-xl p-6">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-700">进程监控</h3>
+                        <h3 class="text-lg font-semibold text-gray-700">进程信息</h3>
                         <div class="flex space-x-2">
-                            <button class="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-lg"
-                                onclick="filterProcesses('all')">全部</button>
-                            <button class="text-sm px-3 py-1 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                                onclick="filterProcesses('user')">用户</button>
-                            <button class="text-sm px-3 py-1 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                                onclick="filterProcesses('system')">系统</button>
+                            <button class="text-sm px-3 py-1 bg-blue-100 text-blue-700 rounded-lg" onclick="filterProcesses('all')">全部</button>
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <div class="max-h-96 overflow-y-auto"> <!-- 新增的容器，限制高度并添加垂直滚动条 -->
+                        <div class="max-h-96 overflow-y-auto">
                             <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50 sticky top-0 z-10"> <!-- 使表头固定在顶部 -->
+                                <thead class="bg-gray-50 sticky top-0 z-10">
                                     <tr>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                                            onclick="sortProcesses('name')">
-                                            <div class="flex items-center">
-                                                <span>进程名称</span>
-                                                <span class="ml-1" id="sort-name"></span>
-                                            </div>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            进程名称
                                         </th>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                                            onclick="sortProcesses('pid')">
-                                            <div class="flex items-center">
-                                                <span>PID</span>
-                                                <span class="ml-1" id="sort-pid"></span>
-                                            </div>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            PID
                                         </th>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                                            onclick="sortProcesses('cpu')">
-                                            <div class="flex items-center">
-                                                <span>CPU</span>
-                                                <span class="ml-1" id="sort-cpu"></span>
-                                            </div>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            CPU使用率
                                         </th>
-                                        <th scope="col"
-                                            class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                                            onclick="sortProcesses('memory')">
-                                            <div class="flex items-center">
-                                                <span>内存</span>
-                                                <span class="ml-1" id="sort-memory"></span>
-                                            </div>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            内存使用
+                                        </th>
+                                        <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            线程数
                                         </th>
                                     </tr>
                                 </thead>
-                                <tbody class="bg-white divide-y divide-gray-200" id="processList">
-                                    <!-- 进程列表将通过JavaScript动态生成 -->
+                                <tbody class="bg-white divide-y divide-gray-200" id="process-list">
+                                    <!-- 进程信息将通过JavaScript动态生成 -->
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-
-
             </div>
         </div>
+    </div>
 
-        <script src="main.js"></script>
+    <script>
+        // API客户端
+        class ApiClient {
+            constructor() {
+                this.baseURL = '';
+            }
+
+            async request(endpoint) {
+                try {
+                    const response = await fetch(`${this.baseURL}${endpoint}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return await response.json();
+                } catch (error) {
+                    console.error('API请求失败:', error);
+                    throw error;
+                }
+            }
+
+            get(endpoint) {
+                return this.request(endpoint);
+            }
+        }
+
+        // 系统监控主类
+        class SystemMonitor {
+            constructor() {
+                this.apiClient = new ApiClient();
+                this.charts = {};
+                this.diskPerformanceData = {};
+                this.init();
+            }
+
+            async init() {
+                // 初始化图表
+                this.initCharts();
+                
+                // 获取初始数据
+                await this.fetchInitialData();
+                
+                // 启动实时更新
+                this.startRealTimeUpdates();
+            }
+
+            initCharts() {
+                // CPU图表
+                this.charts.cpu = echarts.init(document.getElementById('cpu-chart'));
+                this.charts.cpu.setOption({
+                    series: [{
+                        type: 'gauge',
+                        startAngle: 90,
+                        endAngle: -270,
+                        pointer: { show: true },
+                        progress: {
+                            show: true,
+                            overlap: false,
+                            roundCap: true,
+                            clip: false,
+                            itemStyle: { borderWidth: 1, borderColor: '#fff' }
+                        },
+                        axisLine: { lineStyle: { width: 8 } },
+                        splitLine: { show: false },
+                        axisTick: { show: false },
+                        axisLabel: { show: false },
+                        data: [{
+                            value: 0,
+                            name: 'CPU使用率',
+                            title: { offsetCenter: ['0%', '0%'] },
+                            detail: { show: false },
+                            itemStyle: { color: '#059669' }
+                        }],
+                        radius: '100%'
+                    }]
+                });
+
+                // 内存图表
+                this.charts.memory = echarts.init(document.getElementById('memory-chart'));
+                this.charts.memory.setOption({
+                    series: [{
+                        type: 'gauge',
+                        startAngle: 90,
+                        endAngle: -270,
+                        pointer: { show: true },
+                        progress: {
+                            show: true,
+                            overlap: false,
+                            roundCap: true,
+                            clip: false,
+                            itemStyle: { borderWidth: 1, borderColor: '#fff' }
+                        },
+                        axisLine: { lineStyle: { width: 8 } },
+                        splitLine: { show: false },
+                        axisTick: { show: false },
+                        axisLabel: { show: false },
+                        data: [{
+                            value: 0,
+                            name: '内存使用率',
+                            title: { offsetCenter: ['0%', '0%'] },
+                            detail: { show: false },
+                            itemStyle: { color: '#3b82f6' }
+                        }],
+                        radius: '100%'
+                    }]
+                });
+            }
+
+            async fetchInitialData() {
+                try {
+                    // 获取CPU信息
+                    const cpuInfo = await this.apiClient.get('/api/cpu/info');
+                    this.updateCPUInfo(cpuInfo);
+
+                    // 获取磁盘信息
+                    const diskInfo = await this.apiClient.get('/api/disk/info');
+                    const diskPerformance = await this.apiClient.get('/api/disk/performance');
+                    this.updateDiskInfo(diskInfo, diskPerformance);
+
+                    // 获取进程信息
+                    const processes = await this.apiClient.get('/api/processes');
+                    this.updateProcessList(processes);
+                } catch (error) {
+                    console.error('获取初始数据失败:', error);
+                }
+            }
+
+            updateCPUInfo(cpuInfo) {
+                // 更新CPU基本信息
+                document.getElementById('cpu-name').textContent = cpuInfo.name || '-';
+                document.getElementById('cpu-vendor').textContent = `厂商: ${cpuInfo.vendor || '-'}`;
+                document.getElementById('cpu-architecture').textContent = `架构: ${cpuInfo.architecture || '-'}`;
+                document.getElementById('cpu-physical-cores').textContent = `物理核心: ${cpuInfo.physicalCores || '-'}`;
+                document.getElementById('cpu-logical-cores').textContent = `逻辑核心: ${cpuInfo.logicalCores || '-'}`;
+                
+                if (cpuInfo.baseFrequency) {
+                    const baseFreqGHz = (cpuInfo.baseFrequency / 1000).toFixed(2);
+                    document.getElementById('cpu-base-frequency').textContent = `基准频率: ${baseFreqGHz} GHz`;
+                }
+                
+                if (cpuInfo.maxFrequency) {
+                    const maxFreqGHz = (cpuInfo.maxFrequency / 1000 / 1000 / 1000).toFixed(2);
+                    document.getElementById('cpu-max-frequency').textContent = `最大频率: ${maxFreqGHz} GHz`;
+                }
+            }
+
+            updateDiskInfo(diskInfo, diskPerformance) {
+                const container = document.getElementById('disk-container');
+                container.innerHTML = '';
+
+                if (!diskInfo.partitions || diskInfo.partitions.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-4">未检测到磁盘分区</div>';
+                    return;
+                }
+
+                // 创建driveLetter到performance的映射
+                const performanceMap = {};
+                if (diskPerformance.performance) {
+                    diskPerformance.performance.forEach(perf => {
+                        performanceMap[perf.driveLetter] = perf;
+                    });
+                }
+
+                // 合并drives和partitions信息
+                const driveMap = {};
+                if (diskInfo.drives) {
+                    diskInfo.drives.forEach(drive => {
+                        if (drive.deviceId) {
+                            driveMap[drive.deviceId] = drive;
+                        }
+                    });
+                }
+
+                diskInfo.partitions.forEach(partition => {
+                    const usagePercent = partition.usagePercentage || 0;
+                    let statusClass = 'bg-green-500';
+                    if (usagePercent > 90) statusClass = 'bg-red-500';
+                    else if (usagePercent > 80) statusClass = 'bg-yellow-500';
+
+                    const performance = performanceMap[partition.driveLetter] || {};
+                    
+                    // 获取对应驱动器的详细信息
+                    const driveInfo = driveMap[partition.driveLetter + "\\"] || {};
+
+                    const formatBytes = (bytes) => {
+                        if (bytes === 0) return '0 Bytes';
+                        const k = 1024;
+                        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+                        const i = Math.floor(Math.log(bytes) / Math.log(k));
+                        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                    };
+
+                    // 根据IO速度确定颜色类
+                    const getIOColorClass = (speed) => {
+                        if (speed > 10) return 'io-high';
+                        if (speed > 5) return 'io-medium';
+                        return 'io-low';
+                    };
+
+                    const formatSpeed = (bytesPerSec) => {
+                        if (bytesPerSec === 0) return '0 B/s';
+                        const k = 1024;
+                        const sizes = ['B/s', 'KB/s', 'MB/s', 'GB/s'];
+                        const i = Math.floor(Math.log(bytesPerSec) / Math.log(k));
+                        return parseFloat((bytesPerSec / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                    };
+
+                    const diskCard = document.createElement('div');
+                    diskCard.className = 'disk-card';
+                    diskCard.innerHTML = `
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <h4 class="font-medium text-gray-800">${partition.driveLetter || '未知'}: 盘</h4>
+                                <div class="text-sm text-gray-500">${partition.label || '无卷标'}</div>
+                            </div>
+                            <span class="text-sm font-medium ${usagePercent > 90 ? 'text-red-600' : usagePercent > 80 ? 'text-yellow-600' : 'text-green-600'}">
+                                ${usagePercent.toFixed(1)}%
+                            </span>
+                        </div>
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                            <div class="h-2 rounded-full ${statusClass}" style="width: ${usagePercent}%"></div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-3 mb-4 text-sm">
+                            <div>
+                                <div class="text-gray-500">已使用</div>
+                                <div class="font-medium">${formatBytes(partition.usedSpace || 0)}</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-500">总容量</div>
+                                <div class="font-medium">${formatBytes(partition.totalSize || 0)}</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-500">文件系统</div>
+                                <div class="font-medium">${partition.fileSystem || '未知'}</div>
+                            </div>
+                            <div>
+                                <div class="text-gray-500">扇区大小</div>
+                                <div class="font-medium">${driveInfo.bytesPerSector || '未知'} Bytes</div>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-gray-200 pt-3">
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">硬件信息</h5>
+                            <div class="grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                    <div class="text-gray-500">型号</div>
+                                    <div class="font-medium">${driveInfo.model || '未知'}</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">接口类型</div>
+                                    <div class="font-medium">${driveInfo.interfaceType || '未知'}</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">健康状态</div>
+                                    <div class="font-medium">${driveInfo.status || '未知'}</div>
+                                </div>
+                                <div>
+                                    <div class="text-gray-500">序列号</div>
+                                    <div class="font-medium">${driveInfo.serialNumber || '无'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t border-gray-200 pt-3 mt-3">
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">性能数据</h5>
+                            <div class="space-y-1 text-xs">
+                                <div class="performance-metric">
+                                    <span class="text-gray-500">读取速度</span>
+                                    <span class="performance-value ${getIOColorClass(performance.readSpeed || 0)}">${(performance.readSpeed || 0).toFixed(2)} MB/s</span>
+                                </div>
+                                <div class="performance-metric">
+                                    <span class="text-gray-500">写入速度</span>
+                                    <span class="performance-value ${getIOColorClass(performance.writeSpeed || 0)}">${(performance.writeSpeed || 0).toFixed(2)} MB/s</span>
+                                </div>
+                                <div class="performance-metric">
+                                    <span class="text-gray-500">磁盘使用率</span>
+                                    <span class="performance-value">${(performance.usagePercentage || 0).toFixed(1)}%</span>
+                                </div>
+                                <div class="performance-metric">
+                                    <span class="text-gray-500">响应时间</span>
+                                    <span class="performance-value">${performance.responseTime || 0} ms</span>
+                                </div>
+                                <div class="performance-metric">
+                                    <span class="text-gray-500">读取字节</span>
+                                    <span class="performance-value">${formatSpeed(performance.readBytesPerSec || 0)}</span>
+                                </div>
+                                <div class="performance-metric">
+                                    <span class="text-gray-500">写入字节</span>
+                                    <span class="performance-value">${formatSpeed(performance.writeBytesPerSec || 0)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(diskCard);
+                });
+            }
+
+            updateProcessList(processesData) {
+                const container = document.getElementById('process-list');
+                container.innerHTML = '';
+
+                if (!processesData.processes || processesData.processes.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="5" class="px-4 py-3 text-center text-gray-500">未检测到进程</td>';
+                    container.appendChild(row);
+                    return;
+                }
+
+                // 按CPU使用率排序，显示前20个
+                const processes = processesData.processes
+                    .sort((a, b) => (b.cpuUsage || 0) - (a.cpuUsage || 0))
+                    .slice(0, 20);
+
+                processes.forEach(process => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50 transition-colors';
+                    
+                    // 根据CPU使用率设置颜色
+                    let cpuColorClass = 'text-gray-900';
+                    if (process.cpuUsage > 50) cpuColorClass = 'text-red-600';
+                    else if (process.cpuUsage > 20) cpuColorClass = 'text-orange-600';
+                    else if (process.cpuUsage > 5) cpuColorClass = 'text-yellow-600';
+                    
+                    // 根据内存使用量设置颜色
+                    let memoryColorClass = 'text-gray-900';
+                    const memoryMB = (process.workingSetSize || 0) / (1024 * 1024);
+                    if (memoryMB > 1000) memoryColorClass = 'text-red-600';
+                    else if (memoryMB > 500) memoryColorClass = 'text-orange-600';
+                    else if (memoryMB > 100) memoryColorClass = 'text-yellow-600';
+                    
+                    const formatMemory = (bytes) => {
+                        if (bytes === 0) return '0 MB';
+                        const mb = bytes / (1024 * 1024);
+                        if (mb < 1) return `${Math.round(mb * 1024)} KB`;
+                        return `${mb.toFixed(1)} MB`;
+                    };
+
+                    row.innerHTML = `
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${process.name || '-'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${process.pid || '-'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${cpuColorClass}">${(process.cpuUsage || 0).toFixed(1)}%</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm font-medium ${memoryColorClass}">${formatMemory(process.workingSetSize || 0)}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${process.threadCount || '-'}</td>
+                    `;
+                    container.appendChild(row);
+                });
+            }
+
+            async updateRealTimeData() {
+                try {
+                    // 更新CPU使用率
+                    const cpuUsageData = await this.apiClient.get('/api/cpu/usage');
+                    const cpuUsage = cpuUsageData.usage.toFixed(1) || 0;
+                    document.getElementById('cpu-usage').textContent = `${cpuUsage}%`;
+                    
+                    // 更新CPU图表
+                    this.charts.cpu.setOption({
+                        series: [{
+                            data: [{
+                                value: cpuUsage,
+                                itemStyle: { 
+                                    color: cpuUsage > 90 ? '#dc2626' : 
+                                           cpuUsage > 75 ? '#d97706' : 
+                                           cpuUsage > 50 ? '#059669' : '#3b82f6' 
+                                }
+                            }]
+                        }]
+                    });
+                    
+                    // 更新CPU状态
+                    const cpuStatusElement = document.getElementById('cpu-status');
+                    if (cpuUsage > 90) {
+                        cpuStatusElement.textContent = '危险';
+                        cpuStatusElement.className = 'status-critical text-sm font-medium pulse-animation';
+                    } else if (cpuUsage > 75) {
+                        cpuStatusElement.textContent = '警告';
+                        cpuStatusElement.className = 'status-warning text-sm font-medium pulse-animation';
+                    } else {
+                        cpuStatusElement.textContent = '良好';
+                        cpuStatusElement.className = 'status-good text-sm font-medium';
+                    }
+
+                    // 更新系统信息（运行时间等）
+                    const systemInfo = await this.apiClient.get('/api/system/info');
+                    if (systemInfo.timestamp) {
+                        const uptimeSec = Math.floor((Date.now() - systemInfo.timestamp) / 1000);
+                        const days = Math.floor(uptimeSec / (24 * 3600));
+                        const hours = Math.floor((uptimeSec % (24 * 3600)) / 3600);
+                        const minutes = Math.floor((uptimeSec % 3600) / 60);
+                        document.getElementById('system-uptime').textContent = 
+                            `${days}天 ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    }
+
+                    // 更新磁盘信息和性能数据
+                    const diskInfo = await this.apiClient.get('/api/disk/info');
+                    const diskPerformance = await this.apiClient.get('/api/disk/performance');
+                    this.updateDiskInfo(diskInfo, diskPerformance);
+
+                    // 更新进程列表
+                    const processes = await this.apiClient.get('/api/processes');
+                    this.updateProcessList(processes);
+                } catch (error) {
+                    console.error('更新实时数据失败:', error);
+                }
+            }
+
+            startRealTimeUpdates() {
+                // 每2秒更新一次磁盘数据（因为磁盘IO变化相对较慢）
+                setInterval(() => {
+                    this.updateRealTimeData();
+                }, 2000);
+            }
+        }
+
+        // 进程筛选功能
+        function filterProcesses(type) {
+            // 当前后端API不支持筛选，所以此功能暂时保留占位
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            window.systemMonitor = new SystemMonitor();
+
+            // 响应式图表调整
+            window.addEventListener('resize', () => {
+                if (window.systemMonitor.charts.cpu) {
+                    window.systemMonitor.charts.cpu.resize();
+                }
+                if (window.systemMonitor.charts.memory) {
+                    window.systemMonitor.charts.memory.resize();
+                }
+            });
+        });
+    </script>
 </body>
-
 </html>
