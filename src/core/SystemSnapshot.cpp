@@ -161,7 +161,7 @@ std::shared_ptr<SystemSnapshot> SystemSnapshot::from_json(const std::string& jso
         if (j.contains("name") && j["name"].is_string()) snapshot->name_ = j["name"].get<std::string>();
         if (j.contains("hostname") && j["hostname"].is_string()) snapshot->hostname_ = j["hostname"].get<std::string>();
         if (j.contains("timestamp") && j["timestamp"].is_string()) {
-            // 灏濊瘯瑙ｆ瀽涓� to_json 浣跨敤鐩稿悓鐨勬牸寮�: YYYY-MM-DDTHH:MM:SS
+            // 尝试解析与 to_json 使用相同的格式: YYYY-MM-DDTHH:MM:SS
             std::string ts = j["timestamp"].get<std::string>();
             std::tm tm{};
             std::istringstream iss(ts);
