@@ -47,6 +47,7 @@ add_executable(SnapshotTool
     src/core/Disk/disk_monitor.cpp
     src/core/Register/registry_monitor.cpp
     src/server/WebServer.cpp
+    src/utils/encode.cpp
 )
 
 # åŒ…å«ç›?å½?
