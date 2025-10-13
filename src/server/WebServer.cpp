@@ -73,8 +73,8 @@ void HttpServer::Stop() {
 
 void HttpServer::SetupRoutes() {
     // 静态文件服务（用于前端页面）
-    // server_->set_mount_point("/", "../www");//测试页面
-    server_->set_mount_point("/", "webclient");
+    server_->set_mount_point("/", "www");//测试页面
+    // server_->set_mount_point("/", "webclient");
 
     // API路由 CPU相关
     server_->Get("/api/cpu/info", [this](const httplib::Request& req, httplib::Response& res) {
@@ -155,7 +155,17 @@ void HttpServer::SetupRoutes() {
     
     server_->Delete("/api/registry/snapshots/delete/([^/]+)", [this](const httplib::Request& req, httplib::Response& res) {
     HandleDeleteSnapshot(req, res);
-});
+    });
+
+
+    // 驱动信息
+    server_->Get("/api/drivers/snapshot", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetDriverSnapshot(req, res);
+    });
+    
+    server_->Get("/api/drivers/detail", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetDriverDetail(req, res);
+    });
 
     // 默认路由
     server_->Get("/", [](const httplib::Request& req, httplib::Response& res) {
@@ -1171,7 +1181,187 @@ void HttpServer::HandleDeleteSnapshot(const httplib::Request& req, httplib::Resp
     }
 }
 
+void HttpServer::HandleGetDriverSnapshot(const httplib::Request& req, httplib::Response& res) {
+    try {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        
+        auto snapshot = driverMonitor_.GetDriverSnapshot();
+        json response;
+        
+        response["timestamp"] = snapshot.timestamp;
+        
+        // 统计信息
+        json statsJson;
+        statsJson["totalDrivers"] = snapshot.stats.totalDrivers;
+        statsJson["runningCount"] = snapshot.stats.runningCount;
+        statsJson["stoppedCount"] = snapshot.stats.stoppedCount;
+        statsJson["kernelCount"] = snapshot.stats.kernelCount;
+        statsJson["fileSystemCount"] = snapshot.stats.fileSystemCount;
+        statsJson["autoStartCount"] = snapshot.stats.autoStartCount;
+        statsJson["thirdPartyCount"] = snapshot.stats.thirdPartyCount;
+        response["statistics"] = statsJson;
+        
+        // 内核驱动
+        json kernelDriversJson = json::array();
+        for (const auto& driver : snapshot.kernelDrivers) {
+            json driverJson;
+            driverJson["name"] = driver.name;
+            driverJson["displayName"] = driver.displayName;
+            driverJson["description"] = driver.description;
+            driverJson["state"] = driver.state;
+            driverJson["startType"] = driver.startType;
+            driverJson["binaryPath"] = driver.binaryPath;
+            driverJson["serviceType"] = driver.serviceType;
+            driverJson["errorControl"] = driver.errorControl;
+            driverJson["account"] = driver.account;
+            driverJson["driverType"] = driver.driverType;
+            driverJson["pid"] = driver.pid;
+            
+            kernelDriversJson.push_back(driverJson);
+        }
+        response["kernelDrivers"] = kernelDriversJson;
+        
+        // 文件系统驱动
+        json fileSystemDriversJson = json::array();
+        for (const auto& driver : snapshot.fileSystemDrivers) {
+            json driverJson;
+            driverJson["name"] = driver.name;
+            driverJson["displayName"] = driver.displayName;
+            driverJson["description"] = driver.description;
+            driverJson["state"] = driver.state;
+            driverJson["startType"] = driver.startType;
+            driverJson["binaryPath"] = driver.binaryPath;
+            driverJson["serviceType"] = driver.serviceType;
+            driverJson["errorControl"] = driver.errorControl;
+            driverJson["account"] = driver.account;
+            driverJson["driverType"] = driver.driverType;
+            driverJson["pid"] = driver.pid;
+            
+            fileSystemDriversJson.push_back(driverJson);
+        }
+        response["fileSystemDrivers"] = fileSystemDriversJson;
+        
+        // 运行中的驱动
+        json runningDriversJson = json::array();
+        for (const auto& driver : snapshot.runningDrivers) {
+            json driverJson;
+            driverJson["name"] = driver.name;
+            driverJson["displayName"] = driver.displayName;
+            driverJson["state"] = driver.state;
+            driverJson["startType"] = driver.startType;
+            driverJson["binaryPath"] = driver.binaryPath;
+            driverJson["pid"] = driver.pid;
+            
+            runningDriversJson.push_back(driverJson);
+        }
+        response["runningDrivers"] = runningDriversJson;
+        
+        // 已停止的驱动
+        json stoppedDriversJson = json::array();
+        for (const auto& driver : snapshot.stoppedDrivers) {
+            json driverJson;
+            driverJson["name"] = driver.name;
+            driverJson["displayName"] = driver.displayName;
+            driverJson["state"] = driver.state;
+            driverJson["startType"] = driver.startType;
+            driverJson["binaryPath"] = driver.binaryPath;
+            
+            stoppedDriversJson.push_back(driverJson);
+        }
+        response["stoppedDrivers"] = stoppedDriversJson;
+        
+        // 自动启动的驱动
+        json autoStartDriversJson = json::array();
+        for (const auto& driver : snapshot.autoStartDrivers) {
+            json driverJson;
+            driverJson["name"] = driver.name;
+            driverJson["displayName"] = driver.displayName;
+            driverJson["state"] = driver.state;
+            driverJson["startType"] = driver.startType;
+            driverJson["binaryPath"] = driver.binaryPath;
+            
+            autoStartDriversJson.push_back(driverJson);
+        }
+        response["autoStartDrivers"] = autoStartDriversJson;
+        
+        // 第三方驱动
+        json thirdPartyDriversJson = json::array();
+        for (const auto& driver : snapshot.thirdPartyDrivers) {
+            json driverJson;
+            driverJson["name"] = driver.name;
+            driverJson["displayName"] = driver.displayName;
+            driverJson["state"] = driver.state;
+            driverJson["startType"] = driver.startType;
+            driverJson["binaryPath"] = driver.binaryPath;
+            
+            thirdPartyDriversJson.push_back(driverJson);
+        }
+        response["thirdPartyDrivers"] = thirdPartyDriversJson;
+        
+        std::string responseStr = response.dump();
+        std::cout << "返回驱动快照 - "
+                  << "内核驱动: " << snapshot.kernelDrivers.size() << " 个, "
+                  << "文件系统驱动: " << snapshot.fileSystemDrivers.size() << " 个, "
+                  << "运行中: " << snapshot.runningDrivers.size() << " 个" << std::endl;
+        
+        res.set_content(responseStr, "application/json");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "HandleGetDriverSnapshot 异常: " << e.what() << std::endl;
+        json error;
+        error["error"] = "获取驱动快照失败: " + std::string(e.what());
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
 
+void HttpServer::HandleGetDriverDetail(const httplib::Request& req, httplib::Response& res) {
+    try {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        
+        std::string driverName = req.get_param_value("name");
+        if (driverName.empty()) {
+            res.status = 400;
+            json error;
+            error["error"] = "缺少驱动名称参数";
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        
+        auto driverDetail = driverMonitor_.GetDriverDetail(driverName);
+        json response;
+        
+        response["name"] = driverDetail.name;
+        response["displayName"] = driverDetail.displayName;
+        response["description"] = driverDetail.description;
+        response["state"] = driverDetail.state;
+        response["startType"] = driverDetail.startType;
+        response["binaryPath"] = driverDetail.binaryPath;
+        response["serviceType"] = driverDetail.serviceType;
+        response["errorControl"] = driverDetail.errorControl;
+        response["account"] = driverDetail.account;
+        response["group"] = driverDetail.group;
+        response["tagId"] = driverDetail.tagId;
+        response["driverType"] = driverDetail.driverType;
+        response["pid"] = driverDetail.pid;
+        response["exitCode"] = driverDetail.exitCode;
+        response["win32ExitCode"] = driverDetail.win32ExitCode;
+        response["serviceSpecificExitCode"] = driverDetail.serviceSpecificExitCode;
+        
+        res.set_content(response.dump(), "application/json");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "HandleGetDriverDetail 异常: " << e.what() << std::endl;
+        json error;
+        error["error"] = "获取驱动详情失败: " + std::string(e.what());
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
 
 
 

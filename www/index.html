@@ -431,6 +431,49 @@
             flex: 1;
             word-break: break-all;
         }
+
+        /* 驱动信息样式 */
+        .driver-state {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .state-running {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .state-stopped {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .state-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .state-unknown {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+
+        /* 驱动表格特定样式 */
+        #driverList .process-table {
+            font-size: 12px;
+        }
+
+        #driverList .process-table th {
+            padding: 8px 4px;
+            font-size: 11px;
+        }
+
+        #driverList .process-table td {
+            padding: 6px 4px;
+            font-size: 11px;
+        }
     </style>
 </head>
 <body>
@@ -674,6 +717,191 @@
                 </div>
             </div>
         </div>
+
+        <!-- 驱动信息窗口 -->
+<div class="card">
+    <div class="process-header" onclick="toggleDriverList()">
+        <h2 style="margin: 0;">驱动信息 
+            <span id="driverCount" style="font-size: 14px; color: #666; margin-left: 10px;"></span>
+        </h2>
+        <div class="process-controls" onclick="event.stopPropagation()">
+            <span>排序方式:</span>
+            <select class="sort-select" id="driverSortSelect" onchange="sortDrivers()">
+                <option value="name">驱动名称</option>
+                <option value="state">状态</option>
+                <option value="type">类型</option>
+                <option value="startType">启动类型</option>
+            </select>
+            <button class="refresh-btn" onclick="loadDriverInfo()">刷新</button>
+            <span class="toggle-icon">▼</span>
+        </div>
+    </div>
+    
+    <div id="driverList" class="process-list">
+        <!-- 统计信息 -->
+        <div class="stats-grid" id="driverStats" style="margin: 15px 0;">
+            <!-- 统计信息将在这里动态生成 -->
+        </div>
+        
+        <!-- 选项卡 -->
+        <div class="tabs">
+            <div class="tab active" onclick="switchDriverTab('all')">全部驱动</div>
+            <div class="tab" onclick="switchDriverTab('running')">运行中</div>
+            <div class="tab" onclick="switchDriverTab('kernel')">内核驱动</div>
+            <div class="tab" onclick="switchDriverTab('filesystem')">文件系统</div>
+            <div class="tab" onclick="switchDriverTab('autostart')">自动启动</div>
+            <div class="tab" onclick="switchDriverTab('thirdparty')">第三方驱动</div>
+        </div>
+        
+        <!-- 全部驱动标签页 -->
+        <div id="allTab" class="tab-content active">
+            <table class="process-table">
+                <thead>
+                    <tr>
+                        <th width="15%">驱动名称</th>
+                        <th width="20%">显示名称</th>
+                        <th width="10%">状态</th>
+                        <th width="10%">类型</th>
+                        <th width="10%">启动类型</th>
+                        <th width="15%">文件路径</th>
+                        <th width="10%">PID</th>
+                        <th width="10%">错误控制</th>
+                    </tr>
+                </thead>
+                <tbody id="allDriversTableBody">
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 20px;">
+                            加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 运行中驱动标签页 -->
+        <div id="runningTab" class="tab-content">
+            <table class="process-table">
+                <thead>
+                    <tr>
+                        <th width="15%">驱动名称</th>
+                        <th width="20%">显示名称</th>
+                        <th width="10%">PID</th>
+                        <th width="15%">文件路径</th>
+                        <th width="10%">启动类型</th>
+                        <th width="10%">类型</th>
+                        <th width="20%">描述</th>
+                    </tr>
+                </thead>
+                <tbody id="runningDriversTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 内核驱动标签页 -->
+        <div id="kernelTab" class="tab-content">
+            <table class="process-table">
+                <thead>
+                    <tr>
+                        <th width="15%">驱动名称</th>
+                        <th width="20%">显示名称</th>
+                        <th width="10%">状态</th>
+                        <th width="10%">启动类型</th>
+                        <th width="15%">文件路径</th>
+                        <th width="10%">错误控制</th>
+                        <th width="20%">描述</th>
+                    </tr>
+                </thead>
+                <tbody id="kernelDriversTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 文件系统驱动标签页 -->
+        <div id="filesystemTab" class="tab-content">
+            <table class="process-table">
+                <thead>
+                    <tr>
+                        <th width="15%">驱动名称</th>
+                        <th width="20%">显示名称</th>
+                        <th width="10%">状态</th>
+                        <th width="10%">启动类型</th>
+                        <th width="15%">文件路径</th>
+                        <th width="10%">错误控制</th>
+                        <th width="20%">描述</th>
+                    </tr>
+                </thead>
+                <tbody id="filesystemDriversTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 自动启动驱动标签页 -->
+        <div id="autostartTab" class="tab-content">
+            <table class="process-table">
+                <thead>
+                    <tr>
+                        <th width="15%">驱动名称</th>
+                        <th width="20%">显示名称</th>
+                        <th width="10%">状态</th>
+                        <th width="10%">启动类型</th>
+                        <th width="15%">文件路径</th>
+                        <th width="10%">类型</th>
+                        <th width="20%">描述</th>
+                    </tr>
+                </thead>
+                <tbody id="autostartDriversTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 第三方驱动标签页 -->
+        <div id="thirdpartyTab" class="tab-content">
+            <table class="process-table">
+                <thead>
+                    <tr>
+                        <th width="15%">驱动名称</th>
+                        <th width="20%">显示名称</th>
+                        <th width="10%">状态</th>
+                        <th width="10%">启动类型</th>
+                        <th width="25%">文件路径</th>
+                        <th width="10%">类型</th>
+                        <th width="10%">PID</th>
+                    </tr>
+                </thead>
+                <tbody id="thirdpartyDriversTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            加载中...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <button class="show-all-btn" onclick="toggleAllDrivers()">显示详细信息</button>
+    </div>
+</div>
+
     </div>
 
     <script>
@@ -1382,6 +1610,293 @@
             card.classList.toggle('collapsed');
         }
 
+
+        // 驱动信息相关变量
+        let currentDriversData = null;
+        let driverShowAll = false;
+
+        // 切换驱动列表显示/隐藏
+        function toggleDriverList() {
+            const driverList = document.getElementById('driverList');
+            const header = document.querySelector('.process-header');
+            driverList.classList.toggle('collapsed');
+            header.classList.toggle('collapsed');
+        }
+
+        // 切换驱动标签页
+        function switchDriverTab(tabName) {
+            // 隐藏所有标签页
+            document.querySelectorAll('#driverList .tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 移除所有标签的active类
+            document.querySelectorAll('#driverList .tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // 激活选中的标签页和标签
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // 加载驱动信息
+        async function loadDriverInfo() {
+            try {
+                const response = await fetch('/api/drivers/snapshot');
+                if (!response.ok) {
+                    throw new Error('获取驱动信息失败');
+                }
+                
+                const data = await response.json();
+                currentDriversData = data;
+                
+                // 更新统计信息
+                updateDriverStats(data);
+                
+                // 更新各标签页内容
+                updateDriverTables(data);
+                
+                // 更新计数显示
+                document.getElementById('driverCount').textContent = 
+                    `总计: ${data.statistics.totalDrivers} 个驱动`;
+                    
+                console.log('驱动信息加载成功');
+                
+            } catch (error) {
+                console.error('加载驱动信息失败:', error);
+                alert('加载驱动信息失败: ' + error.message);
+            }
+        }
+
+        // 更新驱动统计信息
+        function updateDriverStats(data) {
+            const stats = data.statistics;
+            const statsGrid = document.getElementById('driverStats');
+            
+            statsGrid.innerHTML = `
+                <div class="stat-item">
+                    <div class="stat-value">${stats.totalDrivers}</div>
+                    <div class="stat-label">总驱动数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.runningCount}</div>
+                    <div class="stat-label">运行中</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.stoppedCount}</div>
+                    <div class="stat-label">已停止</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.kernelCount}</div>
+                    <div class="stat-label">内核驱动</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.fileSystemCount}</div>
+                    <div class="stat-label">文件系统</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.autoStartCount}</div>
+                    <div class="stat-label">自动启动</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">${stats.thirdPartyCount}</div>
+                    <div class="stat-label">第三方</div>
+                </div>
+            `;
+        }
+
+        // 更新驱动表格
+        function updateDriverTables(data) {
+            updateAllDriversTable(data);
+            updateRunningDriversTable(data);
+            updateKernelDriversTable(data);
+            updateFilesystemDriversTable(data);
+            updateAutostartDriversTable(data);
+            updateThirdpartyDriversTable(data);
+        }
+
+        // 更新全部驱动表格
+        function updateAllDriversTable(data) {
+            const tbody = document.getElementById('allDriversTableBody');
+            const allDrivers = [
+                ...data.kernelDrivers,
+                ...data.fileSystemDrivers
+            ];
+            
+            tbody.innerHTML = allDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name}">${driver.name}</td>
+                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+                    <td>${driver.driverType || driver.serviceType}</td>
+                    <td>${driver.startType}</td>
+                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+                    <td class="process-pid">${driver.pid || '-'}</td>
+                    <td>${driver.errorControl || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新运行中驱动表格
+        function updateRunningDriversTable(data) {
+            const tbody = document.getElementById('runningDriversTableBody');
+            
+            tbody.innerHTML = data.runningDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name}">${driver.name}</td>
+                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+                    <td class="process-pid">${driver.pid}</td>
+                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+                    <td>${driver.startType}</td>
+                    <td>${driver.driverType || driver.serviceType}</td>
+                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新内核驱动表格
+        function updateKernelDriversTable(data) {
+            const tbody = document.getElementById('kernelDriversTableBody');
+            
+            tbody.innerHTML = data.kernelDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name}">${driver.name}</td>
+                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+                    <td>${driver.startType}</td>
+                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+                    <td>${driver.errorControl || '-'}</td>
+                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新文件系统驱动表格
+        function updateFilesystemDriversTable(data) {
+            const tbody = document.getElementById('filesystemDriversTableBody');
+            
+            tbody.innerHTML = data.fileSystemDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name}">${driver.name}</td>
+                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+                    <td>${driver.startType}</td>
+                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+                    <td>${driver.errorControl || '-'}</td>
+                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新自动启动驱动表格
+        function updateAutostartDriversTable(data) {
+            const tbody = document.getElementById('autostartDriversTableBody');
+            
+            tbody.innerHTML = data.autoStartDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name}">${driver.name}</td>
+                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+                    <td>${driver.startType}</td>
+                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+                    <td>${driver.driverType || driver.serviceType}</td>
+                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新第三方驱动表格
+        function updateThirdpartyDriversTable(data) {
+            const tbody = document.getElementById('thirdpartyDriversTableBody');
+            
+            tbody.innerHTML = data.thirdPartyDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name}">${driver.name}</td>
+                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+                    <td>${driver.startType}</td>
+                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 40)}</td>
+                    <td>${driver.driverType || driver.serviceType}</td>
+                    <td class="process-pid">${driver.pid || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 获取驱动状态对应的CSS类
+        function getDriverStateClass(state) {
+            switch (state.toLowerCase()) {
+                case 'running':
+                    return 'state-running';
+                case 'stopped':
+                    return 'state-stopped';
+                case 'start pending':
+                    return 'state-pending';
+                case 'stop pending':
+                    return 'state-pending';
+                default:
+                    return 'state-unknown';
+            }
+        }
+
+        // 排序驱动
+        function sortDrivers() {
+            if (!currentDriversData) return;
+            
+            const sortBy = document.getElementById('driverSortSelect').value;
+            
+            // 对每个分类的驱动进行排序
+            const sortFunctions = {
+                name: (a, b) => a.name.localeCompare(b.name),
+                state: (a, b) => a.state.localeCompare(b.state),
+                type: (a, b) => (a.driverType || a.serviceType).localeCompare(b.driverType || b.serviceType),
+                startType: (a, b) => a.startType.localeCompare(b.startType)
+            };
+            
+            const sortFunction = sortFunctions[sortBy] || sortFunctions.name;
+            
+            // 更新所有表格
+            updateDriverTables({
+                ...currentDriversData,
+                kernelDrivers: [...currentDriversData.kernelDrivers].sort(sortFunction),
+                fileSystemDrivers: [...currentDriversData.fileSystemDrivers].sort(sortFunction),
+                runningDrivers: [...currentDriversData.runningDrivers].sort(sortFunction),
+                stoppedDrivers: [...currentDriversData.stoppedDrivers].sort(sortFunction),
+                autoStartDrivers: [...currentDriversData.autoStartDrivers].sort(sortFunction),
+                thirdPartyDrivers: [...currentDriversData.thirdPartyDrivers].sort(sortFunction)
+            });
+        }
+
+        // 切换显示所有驱动详细信息
+        function toggleAllDrivers() {
+            driverShowAll = !driverShowAll;
+            const btn = event.target;
+            
+            if (driverShowAll) {
+                btn.textContent = '显示简洁信息';
+                // 可以在这里展开更多详细信息
+                document.querySelectorAll('#driverList .process-table td').forEach(td => {
+                    td.style.whiteSpace = 'normal';
+                });
+            } else {
+                btn.textContent = '显示详细信息';
+                document.querySelectorAll('#driverList .process-table td').forEach(td => {
+                    td.style.whiteSpace = 'nowrap';
+                });
+            }
+        }
+
+        // 工具函数：截断文本
+        function truncateText(text, maxLength) {
+            if (!text) return '-';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+        }
+
+        // 在页面加载时自动加载驱动信息
+        document.addEventListener('DOMContentLoaded', function() {
+            // 延迟加载驱动信息，避免同时请求过多数据
+            setTimeout(loadDriverInfo, 2000);
+        });
         // 初始化时加载注册表数据
         loadRegistrySnapshot();
         loadSavedSnapshots();
