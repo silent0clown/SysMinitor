@@ -1147,10 +1147,10 @@
         }
 
         // 截断文本
-        function truncateText(text, maxLength) {
-            if (text.length <= maxLength) return text;
-            return text.substring(0, maxLength) + '...';
-        }
+        // function truncateText(text, maxLength) {
+        //     if (text.length <= maxLength) return text;
+        //     return text.substring(0, maxLength) + '...';
+        // }
 
         // 进程相关函数
         async function loadProcesses() {
@@ -1651,6 +1651,45 @@
                 const data = await response.json();
                 currentDriversData = data;
                 
+                // 确保所有数组都存在
+                if (!data.kernelDrivers) data.kernelDrivers = [];
+                if (!data.fileSystemDrivers) data.fileSystemDrivers = [];
+                if (!data.hardwareDrivers) data.hardwareDrivers = [];
+                if (!data.runningDrivers) data.runningDrivers = [];
+                if (!data.stoppedDrivers) data.stoppedDrivers = [];
+                if (!data.autoStartDrivers) data.autoStartDrivers = [];
+                if (!data.thirdPartyDrivers) data.thirdPartyDrivers = [];
+                if (!data.displayDrivers) data.displayDrivers = [];
+                if (!data.audioDrivers) data.audioDrivers = [];
+                if (!data.networkDrivers) data.networkDrivers = [];
+                if (!data.inputDrivers) data.inputDrivers = [];
+                if (!data.storageDrivers) data.storageDrivers = [];
+                if (!data.printerDrivers) data.printerDrivers = [];
+                if (!data.usbDrivers) data.usbDrivers = [];
+                if (!data.bluetoothDrivers) data.bluetoothDrivers = [];
+                
+                // 确保统计信息存在
+                if (!data.statistics) {
+                    data.statistics = {
+                        totalDrivers: 0,
+                        runningCount: 0,
+                        stoppedCount: 0,
+                        kernelCount: 0,
+                        fileSystemCount: 0,
+                        hardwareCount: 0,
+                        autoStartCount: 0,
+                        thirdPartyCount: 0,
+                        displayCount: 0,
+                        audioCount: 0,
+                        networkCount: 0,
+                        inputCount: 0,
+                        storageCount: 0,
+                        printerCount: 0,
+                        usbCount: 0,
+                        bluetoothCount: 0
+                    };
+                }
+                
                 // 更新统计信息
                 updateDriverStats(data);
                 
@@ -1661,12 +1700,223 @@
                 document.getElementById('driverCount').textContent = 
                     `总计: ${data.statistics.totalDrivers} 个驱动`;
                     
-                console.log('驱动信息加载成功');
+                console.log('驱动信息加载成功', data);
                 
             } catch (error) {
                 console.error('加载驱动信息失败:', error);
                 alert('加载驱动信息失败: ' + error.message);
             }
+        }
+
+        // 更新全部驱动表格
+        function updateAllDriversTable(data) {
+            const tbody = document.getElementById('allDriversTableBody');
+            
+            // 合并所有驱动
+            const allDrivers = [
+                ...(data.kernelDrivers || []),
+                ...(data.fileSystemDrivers || []),
+                ...(data.hardwareDrivers || [])
+            ];
+            
+            if (allDrivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 20px;">
+                            未找到驱动信息
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = allDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name || ''}">${driver.name || 'Unknown'}</td>
+                    <td title="${driver.displayName || ''}">${truncateText(driver.displayName || '', 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state || 'Unknown')}">${driver.state || 'Unknown'}</span></td>
+                    <td>${driver.driverType || 'Unknown'}</td>
+                    <td>${driver.hardwareClass || '-'}</td>
+                    <td>${driver.startType || '-'}</td>
+                    <td title="${driver.binaryPath || ''}">${truncateText(driver.binaryPath || '', 30)}</td>
+                    <td title="${(driver.version && driver.version.fileVersion) || '无版本信息'}">
+                        ${truncateText((driver.version && driver.version.fileVersion) || '-', 15)}
+                    </td>
+                    <td>${(driver.version && driver.version.companyName) ? truncateText(driver.version.companyName, 15) : '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新运行中驱动表格
+        function updateRunningDriversTable(data) {
+            const tbody = document.getElementById('runningDriversTableBody');
+            const runningDrivers = data.runningDrivers || [];
+            
+            if (runningDrivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            没有正在运行的驱动
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = runningDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name || ''}">${driver.name || 'Unknown'}</td>
+                    <td title="${driver.displayName || ''}">${truncateText(driver.displayName || '', 25)}</td>
+                    <td class="process-pid">${driver.pid || '-'}</td>
+                    <td title="${driver.binaryPath || ''}">${truncateText(driver.binaryPath || '', 30)}</td>
+                    <td>${driver.startType || '-'}</td>
+                    <td>${driver.driverType || driver.serviceType || 'Unknown'}</td>
+                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新内核驱动表格
+        function updateKernelDriversTable(data) {
+            const tbody = document.getElementById('kernelDriversTableBody');
+            const kernelDrivers = data.kernelDrivers || [];
+            
+            if (kernelDrivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            没有内核驱动
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = kernelDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name || ''}">${driver.name || 'Unknown'}</td>
+                    <td title="${driver.displayName || ''}">${truncateText(driver.displayName || '', 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state || 'Unknown')}">${driver.state || 'Unknown'}</span></td>
+                    <td>${driver.startType || '-'}</td>
+                    <td title="${driver.binaryPath || ''}">${truncateText(driver.binaryPath || '', 30)}</td>
+                    <td>${driver.errorControl || '-'}</td>
+                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新文件系统驱动表格
+        function updateFilesystemDriversTable(data) {
+            const tbody = document.getElementById('filesystemDriversTableBody');
+            const filesystemDrivers = data.fileSystemDrivers || [];
+            
+            if (filesystemDrivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            没有文件系统驱动
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = filesystemDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name || ''}">${driver.name || 'Unknown'}</td>
+                    <td title="${driver.displayName || ''}">${truncateText(driver.displayName || '', 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state || 'Unknown')}">${driver.state || 'Unknown'}</span></td>
+                    <td>${driver.startType || '-'}</td>
+                    <td title="${driver.binaryPath || ''}">${truncateText(driver.binaryPath || '', 30)}</td>
+                    <td>${driver.errorControl || '-'}</td>
+                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新自动启动驱动表格
+        function updateAutostartDriversTable(data) {
+            const tbody = document.getElementById('autostartDriversTableBody');
+            const autostartDrivers = data.autoStartDrivers || [];
+            
+            if (autostartDrivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            没有自动启动的驱动
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = autostartDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name || ''}">${driver.name || 'Unknown'}</td>
+                    <td title="${driver.displayName || ''}">${truncateText(driver.displayName || '', 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state || 'Unknown')}">${driver.state || 'Unknown'}</span></td>
+                    <td>${driver.startType || '-'}</td>
+                    <td title="${driver.binaryPath || ''}">${truncateText(driver.binaryPath || '', 30)}</td>
+                    <td>${driver.driverType || driver.serviceType || 'Unknown'}</td>
+                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 更新第三方驱动表格
+        function updateThirdpartyDriversTable(data) {
+            const tbody = document.getElementById('thirdpartyDriversTableBody');
+            const thirdpartyDrivers = data.thirdPartyDrivers || [];
+            
+            if (thirdpartyDrivers.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 20px;">
+                            没有第三方驱动
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = thirdpartyDrivers.map(driver => `
+                <tr>
+                    <td class="process-name" title="${driver.name || ''}">${driver.name || 'Unknown'}</td>
+                    <td title="${driver.displayName || ''}">${truncateText(driver.displayName || '', 25)}</td>
+                    <td><span class="process-state ${getDriverStateClass(driver.state || 'Unknown')}">${driver.state || 'Unknown'}</span></td>
+                    <td>${driver.startType || '-'}</td>
+                    <td title="${driver.binaryPath || ''}">${truncateText(driver.binaryPath || '', 40)}</td>
+                    <td>${driver.driverType || driver.serviceType || 'Unknown'}</td>
+                    <td class="process-pid">${driver.pid || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // 获取驱动状态对应的CSS类
+        function getDriverStateClass(state) {
+            if (!state) return 'state-unknown';
+            
+            switch (state.toLowerCase()) {
+                case 'running':
+                    return 'state-running';
+                case 'stopped':
+                    return 'state-stopped';
+                case 'start pending':
+                case 'stop pending':
+                case 'pause pending':
+                case 'continue pending':
+                    return 'state-pending';
+                case 'paused':
+                    return 'state-paused';
+                default:
+                    return 'state-unknown';
+            }
+        }
+
+        // 工具函数：截断文本
+        function truncateText(text, maxLength) {
+            if (!text) return '-';
+            return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
         }
 
         // 更新驱动统计信息
@@ -1716,128 +1966,132 @@
             updateThirdpartyDriversTable(data);
         }
 
-        // 更新全部驱动表格
-        function updateAllDriversTable(data) {
-            const tbody = document.getElementById('allDriversTableBody');
-            const allDrivers = [
-                ...data.kernelDrivers,
-                ...data.fileSystemDrivers
-            ];
+        // // 更新全部驱动表格
+        // function updateAllDriversTable(data) {
+        //     const tbody = document.getElementById('allDriversTableBody');
+        //     const allDrivers = [
+        //         ...data.kernelDrivers,
+        //         ...data.fileSystemDrivers,
+        //         ...data.hardwareDrivers
+        //     ];
             
-            tbody.innerHTML = allDrivers.map(driver => `
-                <tr>
-                    <td class="process-name" title="${driver.name}">${driver.name}</td>
-                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-                    <td>${driver.driverType || driver.serviceType}</td>
-                    <td>${driver.startType}</td>
-                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-                    <td class="process-pid">${driver.pid || '-'}</td>
-                    <td>${driver.errorControl || '-'}</td>
-                </tr>
-            `).join('');
-        }
+        //     tbody.innerHTML = allDrivers.map(driver => `
+        //         <tr>
+        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
+        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+        //             <td>${driver.driverType}</td>
+        //             <td>${driver.hardwareClass || '-'}</td>
+        //             <td>${driver.startType}</td>
+        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+        //             <td title="${driver.version.fileVersion || '无版本信息'}">
+        //                 ${truncateText(driver.version.fileVersion || '-', 15)}
+        //             </td>
+        //             <td>${driver.version.companyName ? truncateText(driver.version.companyName, 15) : '-'}</td>
+        //         </tr>
+        //     `).join('');
+        // }
 
-        // 更新运行中驱动表格
-        function updateRunningDriversTable(data) {
-            const tbody = document.getElementById('runningDriversTableBody');
+        // // 更新运行中驱动表格
+        // function updateRunningDriversTable(data) {
+        //     const tbody = document.getElementById('runningDriversTableBody');
             
-            tbody.innerHTML = data.runningDrivers.map(driver => `
-                <tr>
-                    <td class="process-name" title="${driver.name}">${driver.name}</td>
-                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-                    <td class="process-pid">${driver.pid}</td>
-                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-                    <td>${driver.startType}</td>
-                    <td>${driver.driverType || driver.serviceType}</td>
-                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
-                </tr>
-            `).join('');
-        }
+        //     tbody.innerHTML = data.runningDrivers.map(driver => `
+        //         <tr>
+        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
+        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+        //             <td class="process-pid">${driver.pid}</td>
+        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+        //             <td>${driver.startType}</td>
+        //             <td>${driver.driverType || driver.serviceType}</td>
+        //             <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+        //         </tr>
+        //     `).join('');
+        // }
 
-        // 更新内核驱动表格
-        function updateKernelDriversTable(data) {
-            const tbody = document.getElementById('kernelDriversTableBody');
+        // // 更新内核驱动表格
+        // function updateKernelDriversTable(data) {
+        //     const tbody = document.getElementById('kernelDriversTableBody');
             
-            tbody.innerHTML = data.kernelDrivers.map(driver => `
-                <tr>
-                    <td class="process-name" title="${driver.name}">${driver.name}</td>
-                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-                    <td>${driver.startType}</td>
-                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-                    <td>${driver.errorControl || '-'}</td>
-                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
-                </tr>
-            `).join('');
-        }
+        //     tbody.innerHTML = data.kernelDrivers.map(driver => `
+        //         <tr>
+        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
+        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+        //             <td>${driver.startType}</td>
+        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+        //             <td>${driver.errorControl || '-'}</td>
+        //             <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+        //         </tr>
+        //     `).join('');
+        // }
 
-        // 更新文件系统驱动表格
-        function updateFilesystemDriversTable(data) {
-            const tbody = document.getElementById('filesystemDriversTableBody');
+        // // 更新文件系统驱动表格
+        // function updateFilesystemDriversTable(data) {
+        //     const tbody = document.getElementById('filesystemDriversTableBody');
             
-            tbody.innerHTML = data.fileSystemDrivers.map(driver => `
-                <tr>
-                    <td class="process-name" title="${driver.name}">${driver.name}</td>
-                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-                    <td>${driver.startType}</td>
-                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-                    <td>${driver.errorControl || '-'}</td>
-                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
-                </tr>
-            `).join('');
-        }
+        //     tbody.innerHTML = data.fileSystemDrivers.map(driver => `
+        //         <tr>
+        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
+        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+        //             <td>${driver.startType}</td>
+        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+        //             <td>${driver.errorControl || '-'}</td>
+        //             <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+        //         </tr>
+        //     `).join('');
+        // }
 
-        // 更新自动启动驱动表格
-        function updateAutostartDriversTable(data) {
-            const tbody = document.getElementById('autostartDriversTableBody');
+        // // 更新自动启动驱动表格
+        // function updateAutostartDriversTable(data) {
+        //     const tbody = document.getElementById('autostartDriversTableBody');
             
-            tbody.innerHTML = data.autoStartDrivers.map(driver => `
-                <tr>
-                    <td class="process-name" title="${driver.name}">${driver.name}</td>
-                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-                    <td>${driver.startType}</td>
-                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-                    <td>${driver.driverType || driver.serviceType}</td>
-                    <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
-                </tr>
-            `).join('');
-        }
+        //     tbody.innerHTML = data.autoStartDrivers.map(driver => `
+        //         <tr>
+        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
+        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+        //             <td>${driver.startType}</td>
+        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
+        //             <td>${driver.driverType || driver.serviceType}</td>
+        //             <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
+        //         </tr>
+        //     `).join('');
+        // }
 
-        // 更新第三方驱动表格
-        function updateThirdpartyDriversTable(data) {
-            const tbody = document.getElementById('thirdpartyDriversTableBody');
+        // // 更新第三方驱动表格
+        // function updateThirdpartyDriversTable(data) {
+        //     const tbody = document.getElementById('thirdpartyDriversTableBody');
             
-            tbody.innerHTML = data.thirdPartyDrivers.map(driver => `
-                <tr>
-                    <td class="process-name" title="${driver.name}">${driver.name}</td>
-                    <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-                    <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-                    <td>${driver.startType}</td>
-                    <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 40)}</td>
-                    <td>${driver.driverType || driver.serviceType}</td>
-                    <td class="process-pid">${driver.pid || '-'}</td>
-                </tr>
-            `).join('');
-        }
+        //     tbody.innerHTML = data.thirdPartyDrivers.map(driver => `
+        //         <tr>
+        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
+        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
+        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
+        //             <td>${driver.startType}</td>
+        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 40)}</td>
+        //             <td>${driver.driverType || driver.serviceType}</td>
+        //             <td class="process-pid">${driver.pid || '-'}</td>
+        //         </tr>
+        //     `).join('');
+        // }
 
-        // 获取驱动状态对应的CSS类
-        function getDriverStateClass(state) {
-            switch (state.toLowerCase()) {
-                case 'running':
-                    return 'state-running';
-                case 'stopped':
-                    return 'state-stopped';
-                case 'start pending':
-                    return 'state-pending';
-                case 'stop pending':
-                    return 'state-pending';
-                default:
-                    return 'state-unknown';
-            }
-        }
+        // // 获取驱动状态对应的CSS类
+        // function getDriverStateClass(state) {
+        //     switch (state.toLowerCase()) {
+        //         case 'running':
+        //             return 'state-running';
+        //         case 'stopped':
+        //             return 'state-stopped';
+        //         case 'start pending':
+        //             return 'state-pending';
+        //         case 'stop pending':
+        //             return 'state-pending';
+        //         default:
+        //             return 'state-unknown';
+        //     }
+        // }
 
         // 排序驱动
         function sortDrivers() {

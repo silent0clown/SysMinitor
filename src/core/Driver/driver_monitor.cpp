@@ -1,29 +1,48 @@
 #include "driver_monitor.h"
 #include <windows.h>
 #include <winsvc.h>
+#include <setupapi.h>
+#include <cfgmgr32.h>
 #include <iostream>
 #include <algorithm>
+#include <stdexcept>
+#include <sstream>
+#include <cctype>  // 添加 cctype 头文件
 
 #pragma comment(lib, "advapi32.lib")
+#pragma comment(lib, "setupapi.lib")
+#pragma comment(lib, "cfgmgr32.lib")
+#pragma comment(lib, "version.lib")  // 添加版本信息库
 
-DriverMonitor::DriverMonitor() {
-    // 初始化代码
+// 修复转换函数
+namespace {
+    char toLowerChar(char c) {
+        return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+    }
 }
 
-DriverMonitor::~DriverMonitor() {
-    // 清理代码
-}
+DriverMonitor::DriverMonitor() {}
+
+DriverMonitor::~DriverMonitor() {}
 
 DriverSnapshot DriverMonitor::GetDriverSnapshot() {
     DriverSnapshot snapshot;
     snapshot.timestamp = GetTickCount64();
     
     try {
-        // 获取所有驱动
-        auto allDrivers = GetAllDriversViaSCM();
+        // 获取服务驱动
+        auto scmDrivers = GetAllDriversViaSCM();
+        
+        // 获取硬件驱动
+        auto hardwareDrivers = GetHardwareDriversViaSetupAPI();
+        
+        // 合并所有驱动
+        std::vector<DriverDetail> allDrivers = scmDrivers;
+        allDrivers.insert(allDrivers.end(), hardwareDrivers.begin(), hardwareDrivers.end());
         
         // 分类驱动
         CategorizeDrivers(snapshot, allDrivers);
+        CategorizeHardwareDrivers(snapshot, hardwareDrivers);
         
         // 计算统计信息
         CalculateStatistics(snapshot);
@@ -34,7 +53,7 @@ DriverSnapshot DriverMonitor::GetDriverSnapshot() {
         std::cout << "获取驱动快照成功 - "
                   << "内核驱动: " << snapshot.kernelDrivers.size() << " 个, "
                   << "文件系统驱动: " << snapshot.fileSystemDrivers.size() << " 个, "
-                  << "运行中: " << snapshot.runningDrivers.size() << " 个" << std::endl;
+                  << "硬件驱动: " << snapshot.hardwareDrivers.size() << " 个" << std::endl;
                   
     } catch (const std::exception& e) {
         std::cerr << "获取驱动快照时发生异常: " << e.what() << std::endl;
@@ -57,16 +76,8 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
     
     // 获取所需缓冲区大小
     EnumServicesStatusEx(
-        scm, 
-        SC_ENUM_PROCESS_INFO, 
-        SERVICE_DRIVER, 
-        SERVICE_STATE_ALL,
-        nullptr, 
-        0, 
-        &bufferSize, 
-        &serviceCount, 
-        &resumeHandle, 
-        nullptr);
+        scm, SC_ENUM_PROCESS_INFO, SERVICE_DRIVER, SERVICE_STATE_ALL,
+        nullptr, 0, &bufferSize, &serviceCount, &resumeHandle, nullptr);
     
     if (GetLastError() != ERROR_MORE_DATA) {
         CloseServiceHandle(scm);
@@ -79,21 +90,14 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
         reinterpret_cast<ENUM_SERVICE_STATUS_PROCESS*>(buffer.data());
     
     if (EnumServicesStatusEx(
-        scm, 
-        SC_ENUM_PROCESS_INFO, 
-        SERVICE_DRIVER, 
-        SERVICE_STATE_ALL,
-        buffer.data(), 
-        bufferSize, 
-        &bufferSize, 
-        &serviceCount, 
-        &resumeHandle, 
-        nullptr)) {
+        scm, SC_ENUM_PROCESS_INFO, SERVICE_DRIVER, SERVICE_STATE_ALL,
+        buffer.data(), bufferSize, &bufferSize, &serviceCount, &resumeHandle, nullptr)) {
         
         for (DWORD i = 0; i < serviceCount; ++i) {
             DriverDetail driver;
             driver.name = services[i].lpServiceName ? services[i].lpServiceName : "";
             driver.displayName = services[i].lpDisplayName ? services[i].lpDisplayName : "";
+            driver.driverType = "Service"; // 标记为服务驱动
             
             // 获取详细服务信息
             SC_HANDLE service = OpenService(scm, services[i].lpServiceName, 
@@ -113,24 +117,12 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
                         
                         // 启动类型
                         switch (config->dwStartType) {
-                            case SERVICE_BOOT_START: 
-                                driver.startType = "Boot";
-                                break;
-                            case SERVICE_SYSTEM_START: 
-                                driver.startType = "System";
-                                break;
-                            case SERVICE_AUTO_START: 
-                                driver.startType = "Auto";
-                                break;
-                            case SERVICE_DEMAND_START: 
-                                driver.startType = "Manual";
-                                break;
-                            case SERVICE_DISABLED: 
-                                driver.startType = "Disabled";
-                                break;
-                            default: 
-                                driver.startType = "Unknown";
-                                break;
+                            case SERVICE_BOOT_START: driver.startType = "Boot"; break;
+                            case SERVICE_SYSTEM_START: driver.startType = "System"; break;
+                            case SERVICE_AUTO_START: driver.startType = "Auto"; break;
+                            case SERVICE_DEMAND_START: driver.startType = "Manual"; break;
+                            case SERVICE_DISABLED: driver.startType = "Disabled"; break;
+                            default: driver.startType = "Unknown"; break;
                         }
                         
                         // 服务类型
@@ -140,32 +132,21 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
                                 driver.driverType = "Kernel";
                                 break;
                             case SERVICE_FILE_SYSTEM_DRIVER:
-                                driver.serviceType = "File System Driver";
+                                driver.serviceType = "File System Driver"; 
                                 driver.driverType = "FileSystem";
                                 break;
                             default:
                                 driver.serviceType = "Unknown";
-                                driver.driverType = "Unknown";
                                 break;
                         }
                         
                         // 错误控制
                         switch (config->dwErrorControl) {
-                            case SERVICE_ERROR_IGNORE: 
-                                driver.errorControl = "Ignore";
-                                break;
-                            case SERVICE_ERROR_NORMAL: 
-                                driver.errorControl = "Normal";
-                                break;
-                            case SERVICE_ERROR_SEVERE: 
-                                driver.errorControl = "Severe";
-                                break;
-                            case SERVICE_ERROR_CRITICAL: 
-                                driver.errorControl = "Critical";
-                                break;
-                            default: 
-                                driver.errorControl = "Unknown";
-                                break;
+                            case SERVICE_ERROR_IGNORE: driver.errorControl = "Ignore"; break;
+                            case SERVICE_ERROR_NORMAL: driver.errorControl = "Normal"; break;
+                            case SERVICE_ERROR_SEVERE: driver.errorControl = "Severe"; break;
+                            case SERVICE_ERROR_CRITICAL: driver.errorControl = "Critical"; break;
+                            default: driver.errorControl = "Unknown"; break;
                         }
                     }
                 }
@@ -179,38 +160,36 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
                     driver.pid = status.dwProcessId;
                     
                     switch (status.dwCurrentState) {
-                        case SERVICE_RUNNING: 
-                            driver.state = "Running";
-                            break;
-                        case SERVICE_STOPPED: 
-                            driver.state = "Stopped";
-                            break;
-                        case SERVICE_START_PENDING: 
-                            driver.state = "Start Pending";
-                            break;
-                        case SERVICE_STOP_PENDING: 
-                            driver.state = "Stop Pending";
-                            break;
-                        case SERVICE_PAUSE_PENDING: 
-                            driver.state = "Pause Pending";
-                            break;
-                        case SERVICE_PAUSED: 
-                            driver.state = "Paused";
-                            break;
-                        case SERVICE_CONTINUE_PENDING: 
-                            driver.state = "Continue Pending";
-                            break;
-                        default: 
-                            driver.state = "Unknown";
-                            break;
+                        case SERVICE_RUNNING: driver.state = "Running"; break;
+                        case SERVICE_STOPPED: driver.state = "Stopped"; break;
+                        case SERVICE_START_PENDING: driver.state = "Start Pending"; break;
+                        case SERVICE_STOP_PENDING: driver.state = "Stop Pending"; break;
+                        case SERVICE_PAUSE_PENDING: driver.state = "Pause Pending"; break;
+                        case SERVICE_PAUSED: driver.state = "Paused"; break;
+                        case SERVICE_CONTINUE_PENDING: driver.state = "Continue Pending"; break;
+                        default: driver.state = "Unknown"; break;
                     }
                     
                     driver.win32ExitCode = std::to_string(status.dwWin32ExitCode);
                     driver.serviceSpecificExitCode = std::to_string(status.dwServiceSpecificExitCode);
-                    driver.exitCode = std::to_string(status.dwWaitHint);
                 }
                 
                 CloseServiceHandle(service);
+            }
+            
+            // 获取版本信息
+            if (!driver.binaryPath.empty()) {
+                // 清理路径中的系统目录引用
+                std::string cleanPath = driver.binaryPath;
+                if (cleanPath.find("System32\\") != std::string::npos) {
+                    char systemDir[MAX_PATH];
+                    GetSystemDirectoryA(systemDir, MAX_PATH);
+                    size_t pos = cleanPath.find("System32\\");
+                    if (pos != std::string::npos) {
+                        cleanPath = std::string(systemDir) + "\\" + cleanPath.substr(pos + 10);
+                    }
+                }
+                driver.version = GetDriverVersionInfo(cleanPath);
             }
             
             drivers.push_back(driver);
@@ -221,6 +200,244 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
     return drivers;
 }
 
+std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
+    std::vector<DriverDetail> drivers;
+    
+    // 获取设备信息集
+    HDEVINFO deviceInfoSet = SetupDiGetClassDevs(nullptr, nullptr, nullptr, 
+                                                DIGCF_ALLCLASSES | DIGCF_PRESENT);
+    if (deviceInfoSet == INVALID_HANDLE_VALUE) {
+        return drivers;
+    }
+    
+    SP_DEVINFO_DATA deviceInfoData;
+    deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+    
+    for (DWORD i = 0; SetupDiEnumDeviceInfo(deviceInfoSet, i, &deviceInfoData); i++) {
+        DriverDetail driver;
+        driver.driverType = "Hardware";
+        driver.state = "Running"; // 硬件驱动通常都在运行
+        
+        // 获取设备描述
+        char deviceDesc[256] = {0};
+        if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData, 
+                                           SPDRP_DEVICEDESC, nullptr, 
+                                           (PBYTE)deviceDesc, sizeof(deviceDesc), nullptr)) {
+            driver.displayName = deviceDesc;
+        }
+        
+        // 获取设备名称
+        char deviceName[256] = {0};
+        if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
+                                           SPDRP_FRIENDLYNAME, nullptr,
+                                           (PBYTE)deviceName, sizeof(deviceName), nullptr)) {
+            driver.name = deviceName;
+        } else {
+            driver.name = driver.displayName;
+        }
+        
+        // 获取硬件类别
+        char hardwareClass[256] = {0};
+        if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
+                                           SPDRP_CLASS, nullptr,
+                                           (PBYTE)hardwareClass, sizeof(hardwareClass), nullptr)) {
+            driver.hardwareClass = hardwareClass;
+        }
+        
+        // 获取驱动信息
+        SP_DRVINFO_DATA driverInfoData;
+        driverInfoData.cbSize = sizeof(SP_DRVINFO_DATA);
+        
+        if (SetupDiEnumDriverInfo(deviceInfoSet, &deviceInfoData, 
+                                SPDIT_COMPATDRIVER, 0, &driverInfoData)) {
+            driver.description = driverInfoData.Description;
+            
+            // 获取驱动文件路径 - 使用硬件ID
+            char hardwareID[1024] = {0};
+            if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
+                                               SPDRP_HARDWAREID, nullptr,
+                                               (PBYTE)hardwareID, sizeof(hardwareID), nullptr)) {
+                driver.binaryPath = hardwareID;
+            }
+            
+            // 获取INF文件路径
+            char infPath[MAX_PATH] = {0};
+            if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
+                                               SPDRP_DRIVER, nullptr,
+                                               (PBYTE)infPath, sizeof(infPath), nullptr)) {
+                if (strlen(infPath) > 0) {
+                    // 尝试从INF文件获取版本信息
+                    std::string infFilePath = infPath;
+                    driver.version = GetDriverVersionInfo(infFilePath);
+                }
+            }
+        }
+        
+        // 检测硬件类别
+        driver.hardwareClass = DetectHardwareClass(driver);
+        
+        drivers.push_back(driver);
+    }
+    
+    SetupDiDestroyDeviceInfoList(deviceInfoSet);
+    return drivers;
+}
+
+DriverVersion DriverMonitor::GetDriverVersionInfo(const std::string& filePath) {
+    DriverVersion version;
+    
+    // 如果文件路径为空，直接返回
+    if (filePath.empty()) {
+        return version;
+    }
+    
+    DWORD versionSize = GetFileVersionInfoSizeA(filePath.c_str(), nullptr);
+    if (versionSize == 0) {
+        return version;
+    }
+    
+    std::vector<BYTE> versionData(versionSize);
+    if (!GetFileVersionInfoA(filePath.c_str(), 0, versionSize, versionData.data())) {
+        return version;
+    }
+    
+    // 获取版本信息
+    VS_FIXEDFILEINFO* fileInfo;
+    UINT fileInfoLen;
+    if (VerQueryValueA(versionData.data(), "\\", (LPVOID*)&fileInfo, &fileInfoLen)) {
+        version.fileVersion = std::to_string(HIWORD(fileInfo->dwFileVersionMS)) + "." +
+                            std::to_string(LOWORD(fileInfo->dwFileVersionMS)) + "." +
+                            std::to_string(HIWORD(fileInfo->dwFileVersionLS)) + "." +
+                            std::to_string(LOWORD(fileInfo->dwFileVersionLS));
+        
+        version.productVersion = std::to_string(HIWORD(fileInfo->dwProductVersionMS)) + "." +
+                               std::to_string(LOWORD(fileInfo->dwProductVersionMS)) + "." +
+                               std::to_string(HIWORD(fileInfo->dwProductVersionLS)) + "." +
+                               std::to_string(LOWORD(fileInfo->dwProductVersionLS));
+    }
+    
+    // 获取其他版本信息
+    struct LANGANDCODEPAGE {
+        WORD language;
+        WORD codePage;
+    } *langCodePage;
+    
+    UINT langCodePageLen;
+    if (VerQueryValueA(versionData.data(), "\\VarFileInfo\\Translation", 
+                     (LPVOID*)&langCodePage, &langCodePageLen)) {
+        for (UINT i = 0; i < (langCodePageLen / sizeof(LANGANDCODEPAGE)); i++) {
+            char subBlock[256];
+            sprintf_s(subBlock, sizeof(subBlock), "\\StringFileInfo\\%04x%04x\\", 
+                     langCodePage[i].language, langCodePage[i].codePage);
+            
+            char* value;
+            UINT valueLen;
+            
+            // 公司名称
+            if (VerQueryValueA(versionData.data(), (std::string(subBlock) + "CompanyName").c_str(), 
+                             (LPVOID*)&value, &valueLen)) {
+                version.companyName = value;
+            }
+            
+            // 文件描述
+            if (VerQueryValueA(versionData.data(), (std::string(subBlock) + "FileDescription").c_str(), 
+                             (LPVOID*)&value, &valueLen)) {
+                version.fileDescription = value;
+            }
+            
+            // 版权信息
+            if (VerQueryValueA(versionData.data(), (std::string(subBlock) + "LegalCopyright").c_str(), 
+                             (LPVOID*)&value, &valueLen)) {
+                version.legalCopyright = value;
+            }
+            
+            // 原始文件名
+            if (VerQueryValueA(versionData.data(), (std::string(subBlock) + "OriginalFilename").c_str(), 
+                             (LPVOID*)&value, &valueLen)) {
+                version.originalFilename = value;
+            }
+        }
+    }
+    
+    return version;
+}
+
+void DriverMonitor::CategorizeHardwareDrivers(DriverSnapshot& snapshot, const std::vector<DriverDetail>& hardwareDrivers) {
+    for (const auto& driver : hardwareDrivers) {
+        snapshot.hardwareDrivers.push_back(driver);
+        
+        // 按硬件类别分类
+        std::string hardwareClass = driver.hardwareClass;
+        std::string name = driver.name;
+        std::string displayName = driver.displayName;
+        
+        // 使用安全的转换函数
+        std::transform(hardwareClass.begin(), hardwareClass.end(), hardwareClass.begin(), toLowerChar);
+        std::transform(name.begin(), name.end(), name.begin(), toLowerChar);
+        std::transform(displayName.begin(), displayName.end(), displayName.begin(), toLowerChar);
+        
+        if (hardwareClass.find("display") != std::string::npos ||
+            hardwareClass.find("graphics") != std::string::npos ||
+            name.find("nvidia") != std::string::npos ||
+            name.find("amd") != std::string::npos ||
+            name.find("intel") != std::string::npos ||
+            name.find("radeon") != std::string::npos ||
+            name.find("geforce") != std::string::npos ||
+            displayName.find("nvidia") != std::string::npos ||
+            displayName.find("amd") != std::string::npos ||
+            displayName.find("intel") != std::string::npos) {
+            snapshot.displayDrivers.push_back(driver);
+        } else if (hardwareClass.find("audio") != std::string::npos ||
+                   hardwareClass.find("sound") != std::string::npos ||
+                   name.find("realtek") != std::string::npos ||
+                   name.find("audio") != std::string::npos ||
+                   name.find("sound") != std::string::npos ||
+                   displayName.find("realtek") != std::string::npos ||
+                   displayName.find("audio") != std::string::npos) {
+            snapshot.audioDrivers.push_back(driver);
+        } else if (hardwareClass.find("network") != std::string::npos ||
+                   hardwareClass.find("net") != std::string::npos ||
+                   name.find("ethernet") != std::string::npos ||
+                   name.find("wifi") != std::string::npos ||
+                   name.find("wireless") != std::string::npos ||
+                   name.find("network") != std::string::npos ||
+                   displayName.find("ethernet") != std::string::npos ||
+                   displayName.find("wifi") != std::string::npos) {
+            snapshot.networkDrivers.push_back(driver);
+        } else if (hardwareClass.find("keyboard") != std::string::npos ||
+                   hardwareClass.find("mouse") != std::string::npos ||
+                   hardwareClass.find("input") != std::string::npos ||
+                   name.find("keyboard") != std::string::npos ||
+                   name.find("mouse") != std::string::npos ||
+                   name.find("hid") != std::string::npos ||
+                   displayName.find("keyboard") != std::string::npos ||
+                   displayName.find("mouse") != std::string::npos) {
+            snapshot.inputDrivers.push_back(driver);
+        } else if (hardwareClass.find("storage") != std::string::npos ||
+                   hardwareClass.find("disk") != std::string::npos ||
+                   name.find("storage") != std::string::npos ||
+                   name.find("disk") != std::string::npos ||
+                   name.find("raid") != std::string::npos ||
+                   name.find("sata") != std::string::npos ||
+                   displayName.find("storage") != std::string::npos ||
+                   displayName.find("disk") != std::string::npos) {
+            snapshot.storageDrivers.push_back(driver);
+        } else if (hardwareClass.find("print") != std::string::npos ||
+                   name.find("print") != std::string::npos ||
+                   displayName.find("print") != std::string::npos) {
+            snapshot.printerDrivers.push_back(driver);
+        } else if (hardwareClass.find("usb") != std::string::npos ||
+                   name.find("usb") != std::string::npos ||
+                   displayName.find("usb") != std::string::npos) {
+            snapshot.usbDrivers.push_back(driver);
+        } else if (hardwareClass.find("bluetooth") != std::string::npos ||
+                   name.find("bluetooth") != std::string::npos ||
+                   displayName.find("bluetooth") != std::string::npos) {
+            snapshot.bluetoothDrivers.push_back(driver);
+        }
+    }
+}
+
 void DriverMonitor::CategorizeDrivers(DriverSnapshot& snapshot, const std::vector<DriverDetail>& allDrivers) {
     for (const auto& driver : allDrivers) {
         // 按类型分类
@@ -228,6 +445,8 @@ void DriverMonitor::CategorizeDrivers(DriverSnapshot& snapshot, const std::vecto
             snapshot.kernelDrivers.push_back(driver);
         } else if (driver.driverType == "FileSystem") {
             snapshot.fileSystemDrivers.push_back(driver);
+        } else if (driver.driverType == "Hardware") {
+            snapshot.hardwareDrivers.push_back(driver);
         }
         
         // 按状态分类
@@ -242,24 +461,35 @@ void DriverMonitor::CategorizeDrivers(DriverSnapshot& snapshot, const std::vecto
             snapshot.autoStartDrivers.push_back(driver);
         }
         
-        // 简单判断第三方驱动（非Microsoft驱动）
+        // 判断第三方驱动
         if (driver.binaryPath.find("Microsoft") == std::string::npos && 
-            driver.binaryPath.find("Windows") == std::string::npos) {
+            driver.binaryPath.find("Windows") == std::string::npos &&
+            !driver.binaryPath.empty()) {
             snapshot.thirdPartyDrivers.push_back(driver);
         }
     }
 }
 
 void DriverMonitor::CalculateStatistics(DriverSnapshot& snapshot) {
-    size_t total = snapshot.kernelDrivers.size() + snapshot.fileSystemDrivers.size();
+    size_t total = snapshot.kernelDrivers.size() + snapshot.fileSystemDrivers.size() + snapshot.hardwareDrivers.size();
     
     snapshot.stats.totalDrivers = total;
     snapshot.stats.runningCount = snapshot.runningDrivers.size();
     snapshot.stats.stoppedCount = snapshot.stoppedDrivers.size();
     snapshot.stats.kernelCount = snapshot.kernelDrivers.size();
     snapshot.stats.fileSystemCount = snapshot.fileSystemDrivers.size();
+    snapshot.stats.hardwareCount = snapshot.hardwareDrivers.size();
     snapshot.stats.autoStartCount = snapshot.autoStartDrivers.size();
     snapshot.stats.thirdPartyCount = snapshot.thirdPartyDrivers.size();
+    
+    snapshot.stats.displayCount = snapshot.displayDrivers.size();
+    snapshot.stats.audioCount = snapshot.audioDrivers.size();
+    snapshot.stats.networkCount = snapshot.networkDrivers.size();
+    snapshot.stats.inputCount = snapshot.inputDrivers.size();
+    snapshot.stats.storageCount = snapshot.storageDrivers.size();
+    snapshot.stats.printerCount = snapshot.printerDrivers.size();
+    snapshot.stats.usbCount = snapshot.usbDrivers.size();
+    snapshot.stats.bluetoothCount = snapshot.bluetoothDrivers.size();
 }
 
 void DriverMonitor::SanitizeAllDrivers(DriverSnapshot& snapshot) {
@@ -271,13 +501,95 @@ void DriverMonitor::SanitizeAllDrivers(DriverSnapshot& snapshot) {
     
     sanitizeVector(snapshot.kernelDrivers);
     sanitizeVector(snapshot.fileSystemDrivers);
+    sanitizeVector(snapshot.hardwareDrivers);
     sanitizeVector(snapshot.runningDrivers);
     sanitizeVector(snapshot.stoppedDrivers);
     sanitizeVector(snapshot.autoStartDrivers);
     sanitizeVector(snapshot.thirdPartyDrivers);
+    
+    sanitizeVector(snapshot.displayDrivers);
+    sanitizeVector(snapshot.audioDrivers);
+    sanitizeVector(snapshot.networkDrivers);
+    sanitizeVector(snapshot.inputDrivers);
+    sanitizeVector(snapshot.storageDrivers);
+    sanitizeVector(snapshot.printerDrivers);
+    sanitizeVector(snapshot.usbDrivers);
+    sanitizeVector(snapshot.bluetoothDrivers);
 }
 
-// 其他方法的实现...
+std::string DriverMonitor::DetectHardwareClass(const DriverDetail& driver) {
+    std::string name = driver.name;
+    std::string displayName = driver.displayName;
+    std::string hardwareClass = driver.hardwareClass;
+    
+    // 使用安全的转换函数
+    std::transform(name.begin(), name.end(), name.begin(), toLowerChar);
+    std::transform(displayName.begin(), displayName.end(), displayName.begin(), toLowerChar);
+    std::transform(hardwareClass.begin(), hardwareClass.end(), hardwareClass.begin(), toLowerChar);
+    
+    if (hardwareClass.find("display") != std::string::npos || 
+        hardwareClass.find("graphics") != std::string::npos ||
+        name.find("nvidia") != std::string::npos ||
+        name.find("amd") != std::string::npos ||
+        name.find("intel") != std::string::npos ||
+        name.find("radeon") != std::string::npos ||
+        name.find("geforce") != std::string::npos ||
+        displayName.find("nvidia") != std::string::npos ||
+        displayName.find("amd") != std::string::npos ||
+        displayName.find("intel") != std::string::npos) {
+        return "Display";
+    } else if (hardwareClass.find("audio") != std::string::npos ||
+               hardwareClass.find("sound") != std::string::npos ||
+               name.find("realtek") != std::string::npos ||
+               name.find("audio") != std::string::npos ||
+               name.find("sound") != std::string::npos ||
+               displayName.find("realtek") != std::string::npos ||
+               displayName.find("audio") != std::string::npos) {
+        return "Audio";
+    } else if (hardwareClass.find("network") != std::string::npos ||
+               hardwareClass.find("net") != std::string::npos ||
+               name.find("ethernet") != std::string::npos ||
+               name.find("wifi") != std::string::npos ||
+               name.find("wireless") != std::string::npos ||
+               name.find("network") != std::string::npos ||
+               displayName.find("ethernet") != std::string::npos ||
+               displayName.find("wifi") != std::string::npos) {
+        return "Network";
+    } else if (hardwareClass.find("keyboard") != std::string::npos ||
+               hardwareClass.find("mouse") != std::string::npos ||
+               hardwareClass.find("input") != std::string::npos ||
+               name.find("keyboard") != std::string::npos ||
+               name.find("mouse") != std::string::npos ||
+               name.find("hid") != std::string::npos ||
+               displayName.find("keyboard") != std::string::npos ||
+               displayName.find("mouse") != std::string::npos) {
+        return "Input";
+    } else if (hardwareClass.find("storage") != std::string::npos ||
+               hardwareClass.find("disk") != std::string::npos ||
+               name.find("storage") != std::string::npos ||
+               name.find("disk") != std::string::npos ||
+               name.find("raid") != std::string::npos ||
+               name.find("sata") != std::string::npos ||
+               displayName.find("storage") != std::string::npos ||
+               displayName.find("disk") != std::string::npos) {
+        return "Storage";
+    } else if (hardwareClass.find("print") != std::string::npos ||
+               name.find("print") != std::string::npos ||
+               displayName.find("print") != std::string::npos) {
+        return "Printer";
+    } else if (hardwareClass.find("usb") != std::string::npos ||
+               name.find("usb") != std::string::npos ||
+               displayName.find("usb") != std::string::npos) {
+        return "USB";
+    } else if (hardwareClass.find("bluetooth") != std::string::npos ||
+               name.find("bluetooth") != std::string::npos ||
+               displayName.find("bluetooth") != std::string::npos) {
+        return "Bluetooth";
+    }
+    
+    return hardwareClass.empty() ? "Other" : hardwareClass;
+}
+
 DriverDetail DriverMonitor::GetDriverDetail(const std::string& driverName) {
     auto snapshot = GetDriverSnapshot();
     std::string safeName = util::EncodingUtil::SafeString(driverName);
@@ -286,6 +598,7 @@ DriverDetail DriverMonitor::GetDriverDetail(const std::string& driverName) {
     std::vector<std::vector<DriverDetail>> allCategories = {
         snapshot.kernelDrivers,
         snapshot.fileSystemDrivers,
+        snapshot.hardwareDrivers,
         snapshot.runningDrivers,
         snapshot.stoppedDrivers,
         snapshot.autoStartDrivers,
