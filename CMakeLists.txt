@@ -46,6 +46,7 @@ add_executable(SnapshotTool
     src/core/Process/process_monitor.cpp
     src/core/Disk/disk_monitor.cpp
     src/core/Register/registry_monitor.cpp
+    src/core/Memory/memory_monitor.cpp
     src/server/WebServer.cpp
 )
 
