@@ -11,6 +11,7 @@
 #include <sstream>
 #include <iomanip>
 
+#include "../../utils/encode.h"
 #pragma comment(lib, "pdh.lib")
 #pragma comment(lib, "setupapi.lib")
 #pragma comment(lib, "wbemuuid.lib")
@@ -215,6 +216,10 @@ DiskSnapshot DiskMonitor::GetDiskSnapshot() {
     // 尝试获取SMART数据
     try {
         snapshot.smartData = GetSMARTData();
+        for (auto& smart : snapshot.smartData) {
+            smart.deviceId = util::EncodingUtil::SafeString(smart.deviceId, "Unknown");
+            smart.overallHealth = util::EncodingUtil::SafeString(smart.overallHealth, "Unknown");
+        }
     } catch (const std::exception& e) {
         std::cerr << "获取SMART数据失败: " << e.what() << std::endl;
     }
@@ -266,7 +271,15 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDiskDrives() {
     } catch (const std::exception& e) {
         std::cerr << "WMI获取磁盘信息失败: " << e.what() << std::endl;
     }
-    
+
+    for (auto& drive : drives) {
+        drive.model = util::EncodingUtil::SafeString(drive.model, "Unknown");
+        drive.serialNumber = util::EncodingUtil::SafeString(drive.serialNumber, "");
+        drive.interfaceType = util::EncodingUtil::SafeString(drive.interfaceType, "Unknown");
+        drive.mediaType = util::EncodingUtil::SafeString(drive.mediaType, "Unknown");
+        drive.status = util::EncodingUtil::SafeString(drive.status, "Unknown");
+        drive.deviceId = util::EncodingUtil::SafeString(drive.deviceId, "Unknown");
+    }
     std::cout << "获取到 " << drives.size() << " 个磁盘驱动器" << std::endl;
     
     return drives;
@@ -329,6 +342,13 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitions() {
     auto partitionsAPI = GetPartitionsViaAPI();
     partitions.insert(partitions.end(), partitionsAPI.begin(), partitionsAPI.end());
     
+    for (auto& partition : partitions) {
+        partition.driveLetter = util::EncodingUtil::SafeString(partition.driveLetter, "Unknown");
+        partition.label = util::EncodingUtil::SafeString(partition.label, "Local Disk");
+        partition.fileSystem = util::EncodingUtil::SafeString(partition.fileSystem, "Unknown");
+        // partition.serialNumber = util::EncodingUtil::SafeString(partition.serialNumber, "");
+    }
+
     std::cout << "获取到 " << partitions.size() << " 个分区" << std::endl;
     
     return partitions;
@@ -404,6 +424,9 @@ std::vector<DiskPerformance> DiskMonitor::GetDiskPerformance() {
     
     try {
         performance = GetPerformanceViaPDH();
+        for (auto &value : performance) {
+            value.driveLetter = util::EncodingUtil::SafeString(value.driveLetter, "Unknown");
+        }
         std::cout << "获取到 " << performance.size() << " 个性能计数器" << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "PDH获取磁盘性能失败: " << e.what() << std::endl;

@@ -88,6 +88,15 @@ RegistrySnapshot RegistryMonitor::GetRegistrySnapshot() {
         snapshot.softwareKeys = GetInstalledSoftware();
         snapshot.networkKeys = GetNetworkConfig();
         
+        for (auto& systenInfoKey : snapshot.systemInfoKeys) {
+            systenInfoKey.convertToUTF8();
+        }
+        for (auto& softwareKey : snapshot.softwareKeys) {
+            softwareKey.convertToUTF8();
+        }
+        for (auto& networkKey : snapshot.networkKeys) {
+            networkKey.convertToUTF8();
+        }
         std::cout << "获取注册表快照成功 - "
                   << "系统信息: " << snapshot.systemInfoKeys.size() << " 项, "
                   << "软件信息: " << snapshot.softwareKeys.size() << " 项, "
@@ -111,6 +120,7 @@ std::vector<RegistryKey> RegistryMonitor::GetSystemInfoKeys() {
             if (!key.values.empty() || !key.subkeys.empty()) {
                 keys.push_back(key);
             }
+            key.convertToUTF8();
         } catch (const std::exception& e) {
             std::cerr << "获取系统信息注册表失败: " << path << " - " << e.what() << std::endl;
         }
@@ -126,6 +136,7 @@ std::vector<RegistryKey> RegistryMonitor::GetInstalledSoftware() {
         try {
             // 直接使用HKEY_LOCAL_MACHINE
             RegistryKey key = GetRegistryKey(HKEY_LOCAL_MACHINE, path);
+            key.convertToUTF8();
             if (!key.values.empty() || !key.subkeys.empty()) {
                 keys.push_back(key);
             }
@@ -138,7 +149,9 @@ std::vector<RegistryKey> RegistryMonitor::GetInstalledSoftware() {
     try {
         RegistryKey userKey = GetRegistryKey(HKEY_CURRENT_USER, 
                                            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
+        userKey.convertToUTF8();
         if (!userKey.values.empty() || !userKey.subkeys.empty()) {
+
             keys.push_back(userKey);
         }
     } catch (const std::exception& e) {
@@ -155,6 +168,7 @@ std::vector<RegistryKey> RegistryMonitor::GetNetworkConfig() {
         try {
             // 直接使用HKEY_LOCAL_MACHINE
             RegistryKey key = GetRegistryKey(HKEY_LOCAL_MACHINE, path);
+            key.convertToUTF8();
             if (!key.values.empty() || !key.subkeys.empty()) {
                 keys.push_back(key);
             }
@@ -238,18 +252,6 @@ RegistryKey RegistryMonitor::GetRegistryKey(HKEY root, const std::string& subKey
     SafeCloseKey(hKey);
     return key;
 }
-
-// 删除ConvertRootToHKEY函数
-// HKEY RegistryMonitor::ConvertRootToHKEY(RegistryRoot root) {
-//     switch (root) {
-//         case RegistryRoot::HKEY_CLASSES_ROOT:    return HKEY_CLASSES_ROOT;
-//         case RegistryRoot::HKEY_CURRENT_USER:    return HKEY_CURRENT_USER;
-//         case RegistryRoot::HKEY_LOCAL_MACHINE:   return HKEY_LOCAL_MACHINE;
-//         case RegistryRoot::HKEY_USERS:           return HKEY_USERS;
-//         case RegistryRoot::HKEY_CURRENT_CONFIG:  return HKEY_CURRENT_CONFIG;
-//         default:                                return HKEY_LOCAL_MACHINE;
-//     }
-// }
 
 std::string RegistryMonitor::HKEYToString(HKEY hkey) {
     if (hkey == HKEY_CLASSES_ROOT)    return "HKEY_CLASSES_ROOT";

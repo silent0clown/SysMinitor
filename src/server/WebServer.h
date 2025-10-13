@@ -8,6 +8,7 @@
 #include "../core/Disk/disk_monitor.h"
 // #include "../core/Register/register_minitor.h"
 #include "../core/Register/registry_monitor.h"
+#include "../core/Driver/driver_monitor.h"
 #include "../third_party/httplib.h"
 #include "../third_party/nlohmann/json.hpp"
 #include <memory>
@@ -57,6 +58,9 @@ private:
     void HandleCompareSnapshots(const httplib::Request& req, httplib::Response& res);
     void HandleDeleteSnapshot(const httplib::Request& req, httplib::Response& res);
 
+    void HandleGetDriverSnapshot(const httplib::Request& req, httplib::Response& res);
+    void HandleGetDriverDetail(const httplib::Request& req, httplib::Response& res);
+
     // ÐÞ¸Äº¯ÊýÃû³Æ£¬±ÜÃâ³åÍ»
     json CompareRegistrySnapshots(const std::vector<RegistryKey>& keys1, const std::vector<RegistryKey>& keys2);
     std::string GetCurrentTimeString();
@@ -80,7 +84,9 @@ private:
 
     RegistryMonitor registryMonitor_;  // Ìí¼Ó×¢²á±í¼à¿ØÆ÷
     std::map<std::string, RegistrySnapshot> registrySnapshots_;  // ´æ´¢¶à¸ö¿ìÕÕ
-
+    // Ìí¼ÓÇý¶¯¼à¿ØÆ÷
+    DriverMonitor driverMonitor_;
+    
     int port_;
 };
 

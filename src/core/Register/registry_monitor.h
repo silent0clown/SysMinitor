@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <map>
 #include <windows.h>  // 确保包含windows.h以使用原有的HKEY定义
+#include "../../utils/encode.h"
 
 namespace sysmonitor {
 
@@ -34,6 +35,13 @@ struct RegistryValue {
     bool operator!=(const RegistryValue& other) const {
         return !(*this == other);
     }
+
+    RegistryValue& convertToUTF8() {
+        name = util::EncodingUtil::ToUTF8(name);
+        type = util::EncodingUtil::ToUTF8(type);
+        data = util::EncodingUtil::ToUTF8(data);
+        return *this;
+    }
 };
 
 struct RegistryKey {
@@ -52,6 +60,22 @@ struct RegistryKey {
     // 添加不相等比较运算符（可选，但推荐）
     bool operator!=(const RegistryKey& other) const {
         return !(*this == other);
+    }
+
+    RegistryKey& convertToUTF8() {
+        path = util::EncodingUtil::SafeString(path);
+        
+        // 转换所有值
+        for (auto& value : values) {
+            value.convertToUTF8();
+        }
+        
+        // 转换所有子键名称
+        for (auto& subkey : subkeys) {
+            subkey = util::EncodingUtil::SafeString(subkey);
+        }
+        
+        return *this;
     }
 };
 
