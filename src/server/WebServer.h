@@ -4,6 +4,7 @@
 // #include "../core/SnapshotComparator.h"
 #include "../core/CPUInfo/system_info.h"
 #include "../core/CPUInfo/cpu_monitor.h"
+#include "../core/Memory/memory_monitor.h"
 #include "../core/Process/process_monitor.h"
 #include "../core/Disk/disk_monitor.h"
 // #include "../core/Register/register_minitor.h"
@@ -38,7 +39,11 @@ private:
     void HandleGetCPUUsage(const httplib::Request& req, httplib::Response& res);
     void HandleGetSystemInfo(const httplib::Request& req, httplib::Response& res);
     void HandleStreamCPUUsage(const httplib::Request& req, httplib::Response& res);
-
+    // HTTP路由处理函数 内存相关
+    void HandleGetMemoryUsage(const httplib::Request& req, httplib::Response& res);
+    // 历史数据路由
+    void HandleGetCPUHistory(const httplib::Request& req, httplib::Response& res);
+    void HandleGetMemoryHistory(const httplib::Request& req, httplib::Response& res);
     // 添加新的HTTP路由处理函数 进程相关
     void HandleGetProcesses(const httplib::Request& req, httplib::Response& res);
     void HandleGetProcessInfo(const httplib::Request& req, httplib::Response& res);
@@ -77,6 +82,18 @@ private:
     CPUInfo cpuInfo_;
     std::atomic<double> currentUsage_{0.0};
     
+    // 添加内存监控器
+    MemoryMonitor memoryMonitor_;
+    // 内存使用快照（由后台线程更新）
+    MemoryUsage memoryUsage_{}; // value-initialize to zeros
+    std::mutex memoryUsageMutex_; // protect memoryUsage_
+    // 历史记录（环状/有界缓冲）
+    struct Sample { uint64_t timestamp; double value; };
+    std::vector<Sample> cpuHistory_;
+    std::vector<Sample> memoryHistory_;
+    std::mutex cpuHistoryMutex_;
+    std::mutex memoryHistoryMutex_;
+    size_t maxHistorySamples_ = 3600; // 默认保存最后3600个样本（例如1小时每秒）
     // 添加进程监控器
     ProcessMonitor processMonitor_;
     

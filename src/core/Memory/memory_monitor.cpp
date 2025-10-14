@@ -25,6 +25,7 @@ void MemoryMonitor::StartMonitoring(int intervalMs) {
     if (isRunning_) return;
 
     intervalMs_ = intervalMs;
+    isRunning_ = true;
     monitorThread_ = std::make_unique<std::thread>(&MemoryMonitor::MonitoringLoop, this);
 }
 

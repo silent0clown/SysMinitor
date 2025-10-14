@@ -93,6 +93,20 @@ void HttpServer::SetupRoutes() {
         HandleStreamCPUUsage(req, res);
     });
     
+    // API路由 内存相关
+    server_->Get("/api/memory/usage", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetMemoryUsage(req, res);
+    });
+
+    // 历史数据路由
+    server_->Get("/api/cpu/history", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetCPUHistory(req, res);
+    });
+
+    server_->Get("/api/memory/history", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetMemoryHistory(req, res);
+    });
+
     // 添加新的API路由 进程相关
     server_->Get("/api/processes", [this](const httplib::Request& req, httplib::Response& res) {
         HandleGetProcesses(req, res);
@@ -174,13 +188,42 @@ void HttpServer::SetupRoutes() {
 }
 
 void HttpServer::StartBackgroundMonitoring() {
-    // 设置CPU使用率回调
+    // 设置CPU使用率回调并记录历史样本
     cpuMonitor_.SetUsageCallback([this](const CPUUsage& usage) {
         currentUsage_.store(usage.totalUsage);
+
+        Sample s{GetTickCount64(), usage.totalUsage};
+        {
+            std::lock_guard<std::mutex> lk(cpuHistoryMutex_);
+            cpuHistory_.push_back(s);
+            if (cpuHistory_.size() > maxHistorySamples_) {
+                cpuHistory_.erase(cpuHistory_.begin(), cpuHistory_.begin() + (cpuHistory_.size() - maxHistorySamples_));
+            }
+        }
     });
-    
-    // 启动监控
+
+    // 启动CPU监控
     cpuMonitor_.StartMonitoring(1000);
+
+    // 设置内存使用率回调并记录历史样本
+    memoryMonitor_.SetUsageCallback([this](const MemoryUsage& usage) {
+        {
+            std::lock_guard<std::mutex> lk(memoryUsageMutex_);
+            memoryUsage_ = usage;
+        }
+
+        Sample s{usage.timestamp ? usage.timestamp : GetTickCount64(), usage.usedPercent};
+        {
+            std::lock_guard<std::mutex> lk(memoryHistoryMutex_);
+            memoryHistory_.push_back(s);
+            if (memoryHistory_.size() > maxHistorySamples_) {
+                memoryHistory_.erase(memoryHistory_.begin(), memoryHistory_.begin() + (memoryHistory_.size() - maxHistorySamples_));
+            }
+        }
+    });
+
+    // 启动内存监控
+    memoryMonitor_.StartMonitoring(1000);
 }
 
 void HttpServer::HandleGetCPUInfo(const httplib::Request& req, httplib::Response& res) {
@@ -206,6 +249,52 @@ void HttpServer::HandleGetCPUUsage(const httplib::Request& req, httplib::Respons
     response["timestamp"] = GetTickCount64();
     response["unit"] = "percent";
     
+    res.set_content(response.dump(), "application/json");
+}
+
+void HttpServer::HandleGetCPUHistory(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json arr = json::array();
+        std::lock_guard<std::mutex> lk(cpuHistoryMutex_);
+        for (const auto &s : cpuHistory_) {
+            arr.push_back({{"timestamp", s.timestamp}, {"value", s.value}});
+        }
+        res.set_content(arr.dump(), "application/json");
+    } catch (const std::exception& e) {
+        json error;
+        error["error"] = e.what();
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
+void HttpServer::HandleGetMemoryHistory(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json arr = json::array();
+        std::lock_guard<std::mutex> lk(memoryHistoryMutex_);
+        for (const auto &s : memoryHistory_) {
+            arr.push_back({{"timestamp", s.timestamp}, {"value", s.value}});
+        }
+        res.set_content(arr.dump(), "application/json");
+    } catch (const std::exception& e) {
+        json error;
+        error["error"] = e.what();
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
+void HttpServer::HandleGetMemoryUsage(const httplib::Request& req, httplib::Response& res) {
+    json response;
+
+    MemoryUsage snapshot = memoryMonitor_.GetCurrentUsage();
+    response["totalPhysical"] = snapshot.totalPhysical;
+    response["availablePhysical"] = snapshot.availablePhysical;
+    response["usedPhysical"] = snapshot.usedPhysical;
+    response["usedPercent"] = snapshot.usedPercent;
+    response["timestamp"] = snapshot.timestamp;
+    response["unit"] = "bytes";
+
     res.set_content(response.dump(), "application/json");
 }
 
