@@ -50,6 +50,7 @@ add_executable(SnapshotTool
     src/core/Driver/driver_monitor.cpp
     src/server/WebServer.cpp
     src/utils/encode.cpp
+    src/utils/registry_encode.cpp
 )
 
 # åŒ…å«ç›?å½?

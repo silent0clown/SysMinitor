@@ -474,6 +474,59 @@
             padding: 6px 4px;
             font-size: 11px;
         }
+
+        /* 自启动项类型样式 */
+        .auto-start-type {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .type-user {
+            background: #e8f5e8 !important;
+            color: #2e7d32 !important;
+        }
+
+        .type-machine {
+            background: #e3f2fd !important;
+            color: #1565c0 !important;
+        }
+
+        .type-service {
+            background: #fff3e0 !important;
+            color: #ef6c00 !important;
+        }
+
+        .type-task {
+            background: #f3e5f5 !important;
+            color: #7b1fa2 !important;
+        }
+
+        .type-browser {
+            background: #e8eaf6 !important;
+            color: #303f9f !important;
+        }
+
+        .type-winlogon {
+            background: #e0f2f1 !important;
+            color: #00695c !important;
+        }
+
+        .type-policy {
+            background: #fce4ec !important;
+            color: #c2185b !important;
+        }
+
+        .type-compat {
+            background: #fff8e1 !important;
+            color: #ff8f00 !important;
+        }
+
+        .type-other {
+            background: #f5f5f5 !important;
+            color: #616161 !important;
+        }
     </style>
 </head>
 <body>
@@ -695,6 +748,7 @@
                         <div class="tab active" onclick="switchRegistryTab('systemInfo')">系统信息</div>
                         <div class="tab" onclick="switchRegistryTab('software')">软件信息</div>
                         <div class="tab" onclick="switchRegistryTab('network')">网络配置</div>
+                        <div class="tab" onclick="switchRegistryTab('autoStart')">自启动项</div>
                     </div>
                     
                     <div id="systemInfoTab" class="tab-content active">
@@ -712,6 +766,11 @@
                     <div id="networkTab" class="tab-content">
                         <div id="networkContent" class="registry-content">
                             <!-- 网络配置内容 -->
+                        </div>
+                    </div>
+                    <div id="autoStartTab" class="tab-content">
+                        <div id="autoStartContent" class="registry-content">
+                            <!-- 自启动项内容 -->
                         </div>
                     </div>
                 </div>
@@ -1288,9 +1347,11 @@
                 currentRegistrySnapshot = data;
                 displayRegistrySnapshot(data);
                 
+                // document.getElementById('registrySnapshotCount').textContent = 
+                //      `(系统: ${data.systemInfo.length}, 软件: ${data.software.length}, 网络: ${data.network.length}, 自启动: ${data.autoStart.length})`;
+                // 更新计数显示，包含自启动项
                 document.getElementById('registrySnapshotCount').textContent = 
-                    `(系统: ${data.systemInfo.length}, 软件: ${data.software.length}, 网络: ${data.network.length})`;
-                    
+                    `(系统: ${data.systemInfo?.length || 0}, 软件: ${data.software?.length || 0}, 网络: ${data.network?.length || 0}, 自启动: ${data.autoStart?.length || 0})`;    
             } catch (error) {
                 console.error('加载注册表快照失败:', error);
                 alert('加载注册表快照失败: ' + error.message);
@@ -1494,6 +1555,93 @@
             }
         }
 
+        // 显示自启动项信息
+        function displayAutoStartInfo(autoStartInfo) {
+            const container = document.getElementById('autoStartContent');
+            
+            if (!autoStartInfo || autoStartInfo.length === 0) {
+                container.innerHTML = '<p style="text-align: center; padding: 20px; color: #666;">没有找到自启动项信息</p>';
+                return;
+            }
+            
+            container.innerHTML = autoStartInfo.map(key => {
+                // 根据自启动类型设置不同的样式
+                const typeClass = getAutoStartTypeClass(key.autoStartType);
+                const typeLabel = getAutoStartTypeLabel(key.autoStartType);
+                
+                return `
+                    <div class="registry-key">
+                        <div class="registry-key-header">
+                            <span style="font-weight: bold;">${key.path}</span>
+                            ${key.autoStartType ? `<span class="auto-start-type ${typeClass}" style="margin-left: 10px; padding: 2px 8px; border-radius: 12px; font-size: 12px; background: #e3f2fd; color: #1976d2;">${typeLabel}</span>` : ''}
+                        </div>
+                        <div class="registry-key-content">
+                            ${key.values.length > 0 ? `
+                                <div style="margin-bottom: 10px;">
+                                    <strong>启动项:</strong>
+                                    ${key.values.map(value => `
+                                        <div class="registry-value">
+                                            <div class="registry-value-name">${value.name}</div>
+                                            <div class="registry-value-type">${value.type}</div>
+                                            <div class="registry-value-data">${value.data}</div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                            
+                            ${key.subkeys.length > 0 ? `
+                                <div style="margin-top: 10px;">
+                                    <strong>相关子键 (${key.subkeys.length} 个):</strong>
+                                    <div style="max-height: 150px; overflow-y: auto; margin-top: 5px; padding: 5px; background: #f8f9fa; border-radius: 3px;">
+                                        ${key.subkeys.map(subkey => `
+                                            <div style="padding: 2px 0; font-family: monospace; font-size: 12px;">${subkey}</div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${key.category ? `<div style="margin-top: 5px; font-size: 12px; color: #666;"><strong>分类:</strong> ${key.category}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 获取自启动项类型对应的CSS类
+        function getAutoStartTypeClass(type) {
+            const typeMap = {
+                'UserRun': 'type-user',
+                'MachineRun': 'type-machine',
+                'UserRunOnce': 'type-user-once',
+                'MachineRunOnce': 'type-machine-once',
+                'AutoStartServices': 'type-service',
+                'ScheduledTasks': 'type-task',
+                'BrowserHelpers': 'type-browser',
+                'Winlogon': 'type-winlogon',
+                'UserPolicies': 'type-policy',
+                'MachinePolicies': 'type-policy',
+                'Wow64Compat': 'type-compat'
+            };
+            return typeMap[type] || 'type-other';
+        }
+
+        // 获取自启动项类型的中文标签
+        function getAutoStartTypeLabel(type) {
+            const labelMap = {
+                'UserRun': '用户自启动',
+                'MachineRun': '系统自启动',
+                'UserRunOnce': '用户单次运行',
+                'MachineRunOnce': '系统单次运行',
+                'AutoStartServices': '自启动服务',
+                'ScheduledTasks': '计划任务',
+                'BrowserHelpers': '浏览器插件',
+                'Winlogon': '登录初始化',
+                'UserPolicies': '用户策略',
+                'MachinePolicies': '系统策略',
+                'Wow64Compat': '32位兼容'
+            };
+            return labelMap[type] || type || '其他';
+        }
         // 显示比较结果
         function displayComparisonResult(result) {
             const container = document.getElementById('comparisonResult');
@@ -1531,6 +1679,7 @@
             displaySystemInfo(snapshot.systemInfo);
             displaySoftwareInfo(snapshot.software);
             displayNetworkInfo(snapshot.network);
+            displayAutoStartInfo(snapshot.autoStart);
         }
 
         function displaySystemInfo(systemInfo) {
@@ -1965,133 +2114,6 @@
             updateAutostartDriversTable(data);
             updateThirdpartyDriversTable(data);
         }
-
-        // // 更新全部驱动表格
-        // function updateAllDriversTable(data) {
-        //     const tbody = document.getElementById('allDriversTableBody');
-        //     const allDrivers = [
-        //         ...data.kernelDrivers,
-        //         ...data.fileSystemDrivers,
-        //         ...data.hardwareDrivers
-        //     ];
-            
-        //     tbody.innerHTML = allDrivers.map(driver => `
-        //         <tr>
-        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
-        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-        //             <td>${driver.driverType}</td>
-        //             <td>${driver.hardwareClass || '-'}</td>
-        //             <td>${driver.startType}</td>
-        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-        //             <td title="${driver.version.fileVersion || '无版本信息'}">
-        //                 ${truncateText(driver.version.fileVersion || '-', 15)}
-        //             </td>
-        //             <td>${driver.version.companyName ? truncateText(driver.version.companyName, 15) : '-'}</td>
-        //         </tr>
-        //     `).join('');
-        // }
-
-        // // 更新运行中驱动表格
-        // function updateRunningDriversTable(data) {
-        //     const tbody = document.getElementById('runningDriversTableBody');
-            
-        //     tbody.innerHTML = data.runningDrivers.map(driver => `
-        //         <tr>
-        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
-        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-        //             <td class="process-pid">${driver.pid}</td>
-        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-        //             <td>${driver.startType}</td>
-        //             <td>${driver.driverType || driver.serviceType}</td>
-        //             <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
-        //         </tr>
-        //     `).join('');
-        // }
-
-        // // 更新内核驱动表格
-        // function updateKernelDriversTable(data) {
-        //     const tbody = document.getElementById('kernelDriversTableBody');
-            
-        //     tbody.innerHTML = data.kernelDrivers.map(driver => `
-        //         <tr>
-        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
-        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-        //             <td>${driver.startType}</td>
-        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-        //             <td>${driver.errorControl || '-'}</td>
-        //             <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
-        //         </tr>
-        //     `).join('');
-        // }
-
-        // // 更新文件系统驱动表格
-        // function updateFilesystemDriversTable(data) {
-        //     const tbody = document.getElementById('filesystemDriversTableBody');
-            
-        //     tbody.innerHTML = data.fileSystemDrivers.map(driver => `
-        //         <tr>
-        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
-        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-        //             <td>${driver.startType}</td>
-        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-        //             <td>${driver.errorControl || '-'}</td>
-        //             <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
-        //         </tr>
-        //     `).join('');
-        // }
-
-        // // 更新自动启动驱动表格
-        // function updateAutostartDriversTable(data) {
-        //     const tbody = document.getElementById('autostartDriversTableBody');
-            
-        //     tbody.innerHTML = data.autoStartDrivers.map(driver => `
-        //         <tr>
-        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
-        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-        //             <td>${driver.startType}</td>
-        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 30)}</td>
-        //             <td>${driver.driverType || driver.serviceType}</td>
-        //             <td title="${driver.description || ''}">${truncateText(driver.description || '', 30)}</td>
-        //         </tr>
-        //     `).join('');
-        // }
-
-        // // 更新第三方驱动表格
-        // function updateThirdpartyDriversTable(data) {
-        //     const tbody = document.getElementById('thirdpartyDriversTableBody');
-            
-        //     tbody.innerHTML = data.thirdPartyDrivers.map(driver => `
-        //         <tr>
-        //             <td class="process-name" title="${driver.name}">${driver.name}</td>
-        //             <td title="${driver.displayName}">${truncateText(driver.displayName, 25)}</td>
-        //             <td><span class="process-state ${getDriverStateClass(driver.state)}">${driver.state}</span></td>
-        //             <td>${driver.startType}</td>
-        //             <td title="${driver.binaryPath}">${truncateText(driver.binaryPath, 40)}</td>
-        //             <td>${driver.driverType || driver.serviceType}</td>
-        //             <td class="process-pid">${driver.pid || '-'}</td>
-        //         </tr>
-        //     `).join('');
-        // }
-
-        // // 获取驱动状态对应的CSS类
-        // function getDriverStateClass(state) {
-        //     switch (state.toLowerCase()) {
-        //         case 'running':
-        //             return 'state-running';
-        //         case 'stopped':
-        //             return 'state-stopped';
-        //         case 'start pending':
-        //             return 'state-pending';
-        //         case 'stop pending':
-        //             return 'state-pending';
-        //         default:
-        //             return 'state-unknown';
-        //     }
-        // }
 
         // 排序驱动
         function sortDrivers() {

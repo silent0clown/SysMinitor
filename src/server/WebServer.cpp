@@ -686,10 +686,41 @@ void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib:
         }
         response["network"] = networkJson;
         
+        // 新增：自启动项
+        json autoStartJson = json::array();
+        for (const auto& key : snapshot.autoStartKeys) {
+            json keyJson;
+            keyJson["path"] = key.path;
+            
+            json valuesJson = json::array();
+            for (const auto& value : key.values) {
+                json valueJson;
+                valueJson["name"] = value.name;
+                valueJson["type"] = value.type;
+                valueJson["data"] = value.data;
+                valueJson["size"] = value.size;
+                valuesJson.push_back(valueJson);
+            }
+            keyJson["values"] = valuesJson;
+            keyJson["subkeys"] = key.subkeys;
+            
+            // 添加自启动项特有字段
+            if (!key.autoStartType.empty()) {
+                keyJson["autoStartType"] = key.autoStartType;
+            }
+            if (!key.category.empty()) {
+                keyJson["category"] = key.category;
+            }
+            
+            autoStartJson.push_back(keyJson);
+        }
+        response["autoStart"] = autoStartJson;
+        
         std::string responseStr = response.dump();
         std::cout << "返回注册表快照，系统信息键: " << snapshot.systemInfoKeys.size()
                   << ", 软件键: " << snapshot.softwareKeys.size()
-                  << ", 网络键: " << snapshot.networkKeys.size() << std::endl;
+                  << ", 网络键: " << snapshot.networkKeys.size()
+                  << ", 自启动项: " << snapshot.autoStartKeys.size() << std::endl;
         
         res.set_content(responseStr, "application/json");
         
