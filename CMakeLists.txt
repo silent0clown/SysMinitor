@@ -22,6 +22,7 @@ if(MSVC)
     add_link_options(/DEBUG)      # 生成PDB文件
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/source-charset:GB2312>")
     add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:GB2312>")
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     
     # 设置执�?�字符集（可选）
     add_compile_options("$<$<C_COMPILER_ID:MSVC>:/execution-charset:GB2312>")
