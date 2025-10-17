@@ -18,7 +18,7 @@
 
 namespace sysmonitor {
 
-// 编码转换工具函数
+// Encoding conversion utility functions
 std::string Gb2312ToUtf8(const std::string& gb2312Str) {
     if (gb2312Str.empty()) return "";
     
@@ -48,7 +48,7 @@ std::string SafeString(const char* str) {
     return Gb2312ToUtf8(str);
 }
 
-// 在编码转换工具函数部分添加
+// Add to encoding conversion utility functions section
 std::string WmiStringToUtf8(const _bstr_t& bstr) {
     if (bstr.length() == 0) return "";
     
@@ -68,7 +68,7 @@ std::string WmiStringToUtf8(const _bstr_t& bstr) {
     return utf8Str;
 }
 
-// 安全的WMI字符串转换
+// Safe WMI string conversion
 std::string SafeWmiString(const _bstr_t& bstr) {
     try {
         return WmiStringToUtf8(bstr);
@@ -77,36 +77,36 @@ std::string SafeWmiString(const _bstr_t& bstr) {
     }
 }
 
-// 过滤非UTF8字符的辅助函数
+// Helper function to filter non-UTF8 characters
 std::string FilterToValidUtf8(const std::string& str) {
     std::string result;
     for (size_t i = 0; i < str.length();) {
         unsigned char c = str[i];
         
         if (c <= 0x7F) {
-            // ASCII字符
+            // ASCII character
             result += c;
             i++;
         } else if ((c & 0xE0) == 0xC0) {
-            // 2字节UTF-8
+            // 2-byte UTF-8
             if (i + 1 < str.length() && (str[i+1] & 0xC0) == 0x80) {
                 result += str.substr(i, 2);
                 i += 2;
             } else {
-                i++; // 跳过无效字符
+                i++; // Skip invalid character
             }
         } else if ((c & 0xF0) == 0xE0) {
-            // 3字节UTF-8
+            // 3-byte UTF-8
             if (i + 2 < str.length() && 
                 (str[i+1] & 0xC0) == 0x80 && 
                 (str[i+2] & 0xC0) == 0x80) {
                 result += str.substr(i, 3);
                 i += 3;
             } else {
-                i++; // 跳过无效字符
+                i++; // Skip invalid character
             }
         } else if ((c & 0xF8) == 0xF0) {
-            // 4字节UTF-8
+            // 4-byte UTF-8
             if (i + 3 < str.length() && 
                 (str[i+1] & 0xC0) == 0x80 && 
                 (str[i+2] & 0xC0) == 0x80 && 
@@ -114,27 +114,27 @@ std::string FilterToValidUtf8(const std::string& str) {
                 result += str.substr(i, 4);
                 i += 4;
             } else {
-                i++; // 跳过无效字符
+                i++; // Skip invalid character
             }
         } else {
-            // 无效的UTF-8序列，跳过
+            // Invalid UTF-8 sequence, skip
             i++;
         }
     }
     return result;
 }
 
-// WMI辅助函数
+// WMI helper functions
 bool InitializeWMI(IWbemLocator** ppLoc, IWbemServices** ppSvc) {
     HRESULT hres;
 
-    // 初始化COM
+    // Initialize COM
     hres = CoInitializeEx(0, COINIT_MULTITHREADED);
     if (FAILED(hres)) {
         return false;
     }
 
-    // 设置COM安全级别
+    // Set COM security levels
     hres = CoInitializeSecurity(
         NULL, -1, NULL, NULL,
         RPC_C_AUTHN_LEVEL_NONE,
@@ -142,7 +142,7 @@ bool InitializeWMI(IWbemLocator** ppLoc, IWbemServices** ppSvc) {
         NULL, EOAC_NONE, NULL
     );
 
-    // 创建WMI连接
+    // Create WMI connection
     hres = CoCreateInstance(
         CLSID_WbemLocator, 0, CLSCTX_INPROC_SERVER,
         IID_IWbemLocator, (LPVOID*)ppLoc
@@ -153,7 +153,7 @@ bool InitializeWMI(IWbemLocator** ppLoc, IWbemServices** ppSvc) {
         return false;
     }
 
-    // 连接到WMI
+    // Connect to WMI
     hres = (*ppLoc)->ConnectServer(
         _bstr_t(L"ROOT\\CIMV2"), NULL, NULL, 0, NULL, 0, 0, ppSvc
     );
@@ -164,7 +164,7 @@ bool InitializeWMI(IWbemLocator** ppLoc, IWbemServices** ppSvc) {
         return false;
     }
 
-    // 设置代理安全级别
+    // Set proxy security level
     hres = CoSetProxyBlanket(
         *ppSvc, RPC_C_AUTHN_WINNT, RPC_C_AUTHZ_NONE,
         NULL, RPC_C_AUTHN_LEVEL_CALL,
@@ -213,7 +213,7 @@ DiskSnapshot DiskMonitor::GetDiskSnapshot() {
     snapshot.partitions = GetPartitions();
     snapshot.performance = GetDiskPerformance();
     
-    // 尝试获取SMART数据
+    // Try to get SMART data
     try {
         snapshot.smartData = GetSMARTData();
         for (auto& smart : snapshot.smartData) {
@@ -221,7 +221,7 @@ DiskSnapshot DiskMonitor::GetDiskSnapshot() {
             smart.overallHealth = util::EncodingUtil::SafeString(smart.overallHealth, "Unknown");
         }
     } catch (const std::exception& e) {
-        std::cerr << "获取SMART数据失败: " << e.what() << std::endl;
+        std::cerr << "Failed to get SMART data: " << e.what() << std::endl;
     }
     
     return snapshot;
@@ -230,21 +230,21 @@ DiskSnapshot DiskMonitor::GetDiskSnapshot() {
 std::vector<DiskDriveInfo> DiskMonitor::GetDiskDrives() {
     std::vector<DiskDriveInfo> drives;
     
-    // 使用Windows API获取基本磁盘信息
+    // Use Windows API to get basic disk information
     auto drivesAPI = GetDrivesViaAPI();
     drives.insert(drives.end(), drivesAPI.begin(), drivesAPI.end());
     
-    // 使用WMI获取更详细的磁盘信息
+    // Use WMI to get more detailed disk information
     try {
         auto drivesWMI = GetDrivesViaWMI();
-        // 合并信息
+        // Merge information
         for (const auto& wmiDrive : drivesWMI) {
             bool found = false;
             for (auto& apiDrive : drives) {
-                // 根据设备ID或大小匹配
+                // Match by device ID or size
                 if (apiDrive.deviceId == wmiDrive.deviceId || 
                     apiDrive.totalSize == wmiDrive.totalSize) {
-                    // 用WMI的详细信息补充API信息
+                    // Supplement API information with WMI details
                     if (!wmiDrive.model.empty() && wmiDrive.model != "Unknown") {
                         apiDrive.model = wmiDrive.model;
                     }
@@ -269,7 +269,7 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDiskDrives() {
             }
         }
     } catch (const std::exception& e) {
-        std::cerr << "WMI获取磁盘信息失败: " << e.what() << std::endl;
+        std::cerr << "Failed to get disk information via WMI: " << e.what() << std::endl;
     }
 
     for (auto& drive : drives) {
@@ -280,7 +280,7 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDiskDrives() {
         drive.status = util::EncodingUtil::SafeString(drive.status, "Unknown");
         drive.deviceId = util::EncodingUtil::SafeString(drive.deviceId, "Unknown");
     }
-    std::cout << "获取到 " << drives.size() << " 个磁盘驱动器" << std::endl;
+    std::cout << "Retrieved " << drives.size() << " disk drives" << std::endl;
     
     return drives;
 }
@@ -290,7 +290,7 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDrivesViaAPI() {
     
     DWORD driveMask = GetLogicalDrives();
     if (driveMask == 0) {
-        std::cerr << "GetLogicalDrives 失败" << std::endl;
+        std::cerr << "GetLogicalDrives failed" << std::endl;
         return drives;
     }
     
@@ -303,13 +303,13 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDrivesViaAPI() {
                 DiskDriveInfo info;
                 info.deviceId = rootPath;
                 
-                // 获取磁盘空间信息
+                // Get disk space information
                 ULARGE_INTEGER totalBytes, freeBytes, totalFreeBytes;
                 if (GetDiskFreeSpaceExA(rootPath.c_str(), &freeBytes, &totalBytes, &totalFreeBytes)) {
                     info.totalSize = totalBytes.QuadPart;
                 }
                 
-                // 获取卷信息
+                // Get volume information
                 char volumeName[MAX_PATH] = {0};
                 char fileSystem[32] = {0};
                 DWORD serialNumber = 0, maxComponentLength = 0, fileSystemFlags = 0;
@@ -338,7 +338,7 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDrivesViaAPI() {
 std::vector<PartitionInfo> DiskMonitor::GetPartitions() {
     std::vector<PartitionInfo> partitions;
     
-    // 使用Windows API获取分区信息
+    // Use Windows API to get partition information
     auto partitionsAPI = GetPartitionsViaAPI();
     partitions.insert(partitions.end(), partitionsAPI.begin(), partitionsAPI.end());
     
@@ -349,7 +349,7 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitions() {
         // partition.serialNumber = util::EncodingUtil::SafeString(partition.serialNumber, "");
     }
 
-    std::cout << "获取到 " << partitions.size() << " 个分区" << std::endl;
+    std::cout << "Retrieved " << partitions.size() << " partitions" << std::endl;
     
     return partitions;
 }
@@ -370,7 +370,7 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitionsViaAPI() {
                 PartitionInfo partition;
                 partition.driveLetter = driveLetter.substr(0, 2);
                 
-                // 获取磁盘空间
+                // Get disk space
                 ULARGE_INTEGER totalBytes, freeBytes, totalFreeBytes;
                 if (GetDiskFreeSpaceExA(driveLetter.c_str(), &freeBytes, &totalBytes, &totalFreeBytes)) {
                     partition.totalSize = totalBytes.QuadPart;
@@ -389,7 +389,7 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitionsViaAPI() {
                     partition.usagePercentage = 0.0;
                 }
                 
-                // 获取卷信息
+                // Get volume information
                 char volumeName[MAX_PATH] = {0};
                 char fileSystem[32] = {0};
                 DWORD serialNumber = 0, maxComponentLength = 0, fileSystemFlags = 0;
@@ -399,12 +399,12 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitionsViaAPI() {
                                         &fileSystemFlags, fileSystem, sizeof(fileSystem))) {
                     partition.label = SafeString(volumeName);
                     if (partition.label.empty()) {
-                        partition.label = "本地磁盘";
+                        partition.label = "Local Disk";
                     }
                     partition.fileSystem = SafeString(fileSystem);
                     partition.serialNumber = serialNumber;
                 } else {
-                    partition.label = "本地磁盘";
+                    partition.label = "Local Disk";
                     partition.fileSystem = "Unknown";
                     partition.serialNumber = 0;
                 }
@@ -427,9 +427,9 @@ std::vector<DiskPerformance> DiskMonitor::GetDiskPerformance() {
         for (auto &value : performance) {
             value.driveLetter = util::EncodingUtil::SafeString(value.driveLetter, "Unknown");
         }
-        std::cout << "获取到 " << performance.size() << " 个性能计数器" << std::endl;
+        std::cout << "Retrieved " << performance.size() << " performance counters" << std::endl;
     } catch (const std::exception& e) {
-        std::cerr << "PDH获取磁盘性能失败: " << e.what() << std::endl;
+        std::cerr << "Failed to get disk performance via PDH: " << e.what() << std::endl;
     }
     
     return performance;
@@ -443,14 +443,14 @@ std::vector<DiskPerformance> DiskMonitor::GetPerformanceViaPDH() {
     
     status = PdhOpenQuery(NULL, 0, &query);
     if (status != ERROR_SUCCESS) {
-        std::cerr << "PdhOpenQuery 失败: " << status << std::endl;
+        std::cerr << "PdhOpenQuery failed: " << status << std::endl;
         return performance;
     }
     
     char driveBuffer[256] = {0};
     DWORD result = GetLogicalDriveStringsA(sizeof(driveBuffer), driveBuffer);
     
-    std::cout << "可用的逻辑驱动器: " << driveBuffer << std::endl;
+    std::cout << "Available logical drives: " << driveBuffer << std::endl;
     
     if (result > 0 && result <= sizeof(driveBuffer)) {
         char* drivePtr = driveBuffer;
@@ -458,38 +458,38 @@ std::vector<DiskPerformance> DiskMonitor::GetPerformanceViaPDH() {
             std::string driveLetter = drivePtr;
             UINT driveType = GetDriveTypeA(driveLetter.c_str());
             
-            std::cout << "检查驱动器: " << driveLetter << " 类型: " << driveType << std::endl;
+            std::cout << "Checking drive: " << driveLetter << " type: " << driveType << std::endl;
             
             if (driveType == DRIVE_FIXED || driveType == DRIVE_REMOVABLE) {
-                std::string driveName = driveLetter.substr(0, 2); // "C:", "D:" 等
+                std::string driveName = driveLetter.substr(0, 2); // "C:", "D:", etc.
                 
-                // 构建计数器路径
+                // Build counter paths
                 std::string readCounterPath = "\\LogicalDisk(" + driveName + ")\\Disk Read Bytes/sec";
                 std::string writeCounterPath = "\\LogicalDisk(" + driveName + ")\\Disk Write Bytes/sec";
                 std::string queueCounterPath = "\\LogicalDisk(" + driveName + ")\\Current Disk Queue Length";
                 std::string timeCounterPath = "\\LogicalDisk(" + driveName + ")\\% Disk Time";
                 
-                std::cout << "尝试添加计数器: " << readCounterPath << std::endl;
+                std::cout << "Attempting to add counter: " << readCounterPath << std::endl;
                 
                 PDH_HCOUNTER readBytesCounter, writeBytesCounter, queueLengthCounter, diskTimeCounter;
                 
-                // 检查每个计数器是否可用
+                // Check if each counter is available
                 PDH_STATUS readStatus = PdhAddEnglishCounterA(query, readCounterPath.c_str(), 0, &readBytesCounter);
                 PDH_STATUS writeStatus = PdhAddEnglishCounterA(query, writeCounterPath.c_str(), 0, &writeBytesCounter);
                 PDH_STATUS queueStatus = PdhAddEnglishCounterA(query, queueCounterPath.c_str(), 0, &queueLengthCounter);
                 PDH_STATUS timeStatus = PdhAddEnglishCounterA(query, timeCounterPath.c_str(), 0, &diskTimeCounter);
                 
-                std::cout << "计数器状态 - 读: " << readStatus << ", 写: " << writeStatus 
-                          << ", 队列: " << queueStatus << ", 时间: " << timeStatus << std::endl;
+                std::cout << "Counter status - Read: " << readStatus << ", Write: " << writeStatus 
+                          << ", Queue: " << queueStatus << ", Time: " << timeStatus << std::endl;
                 
                 if (readStatus == ERROR_SUCCESS && writeStatus == ERROR_SUCCESS && 
                     queueStatus == ERROR_SUCCESS && timeStatus == ERROR_SUCCESS) {
                     
-                    // 第一次收集数据（建立基线）
+                    // First data collection (establish baseline)
                     PdhCollectQueryData(query);
-                    Sleep(100); // 等待100ms收集一些数据
+                    Sleep(100); // Wait 100ms to collect some data
                     
-                    // 第二次收集数据（获取实际值）
+                    // Second data collection (get actual values)
                     PdhCollectQueryData(query);
                     
                     PDH_FMT_COUNTERVALUE readBytesValue, writeBytesValue, queueLengthValue, diskTimeValue;
@@ -499,8 +499,8 @@ std::vector<DiskPerformance> DiskMonitor::GetPerformanceViaPDH() {
                     PDH_STATUS queueGetStatus = PdhGetFormattedCounterValue(queueLengthCounter, PDH_FMT_DOUBLE, NULL, &queueLengthValue);
                     PDH_STATUS timeGetStatus = PdhGetFormattedCounterValue(diskTimeCounter, PDH_FMT_DOUBLE, NULL, &diskTimeValue);
                     
-                    std::cout << "获取计数器值状态 - 读: " << readGetStatus << ", 写: " << writeGetStatus 
-                              << ", 队列: " << queueGetStatus << ", 时间: " << timeGetStatus << std::endl;
+                    std::cout << "Get counter value status - Read: " << readGetStatus << ", Write: " << writeGetStatus 
+                              << ", Queue: " << queueGetStatus << ", Time: " << timeGetStatus << std::endl;
                     
                     if (readGetStatus == ERROR_SUCCESS && writeGetStatus == ERROR_SUCCESS && 
                         queueGetStatus == ERROR_SUCCESS && timeGetStatus == ERROR_SUCCESS) {
@@ -517,24 +517,24 @@ std::vector<DiskPerformance> DiskMonitor::GetPerformanceViaPDH() {
                         perf.writeCountPerSec = 0;
                         perf.responseTime = 0;
                         
-                        std::cout << "性能数据 - " << driveName << ": " 
-                                  << "读 " << perf.readSpeed << " MB/s, "
-                                  << "写 " << perf.writeSpeed << " MB/s, "
-                                  << "使用率 " << perf.usagePercentage << "%, "
-                                  << "队列 " << perf.queueLength << std::endl;
+                        std::cout << "Performance data - " << driveName << ": " 
+                                  << "Read " << perf.readSpeed << " MB/s, "
+                                  << "Write " << perf.writeSpeed << " MB/s, "
+                                  << "Usage " << perf.usagePercentage << "%, "
+                                  << "Queue " << perf.queueLength << std::endl;
                         
                         performance.push_back(perf);
                     }
                     
-                    // 清理计数器
+                    // Clean up counters
                     PdhRemoveCounter(readBytesCounter);
                     PdhRemoveCounter(writeBytesCounter);
                     PdhRemoveCounter(queueLengthCounter);
                     PdhRemoveCounter(diskTimeCounter);
                 } else {
-                    std::cerr << "无法为驱动器 " << driveName << " 添加性能计数器" << std::endl;
+                    std::cerr << "Unable to add performance counters for drive " << driveName << std::endl;
                     
-                    // 清理可能已添加的计数器
+                    // Clean up any counters that were added
                     if (readStatus == ERROR_SUCCESS) PdhRemoveCounter(readBytesCounter);
                     if (writeStatus == ERROR_SUCCESS) PdhRemoveCounter(writeBytesCounter);
                     if (queueStatus == ERROR_SUCCESS) PdhRemoveCounter(queueLengthCounter);
@@ -549,16 +549,16 @@ std::vector<DiskPerformance> DiskMonitor::GetPerformanceViaPDH() {
     PdhCloseQuery(query);
     
     if (performance.empty()) {
-        std::cout << "警告: 没有获取到任何磁盘性能数据" << std::endl;
+        std::cout << "Warning: No disk performance data retrieved" << std::endl;
         
-        // 尝试使用物理磁盘计数器作为备选方案
+        // Try using physical disk counters as alternative
         performance = GetPhysicalDiskPerformance();
     }
     
     return performance;
 }
 
-// 备选方案：使用物理磁盘性能计数器
+// Alternative: Use physical disk performance counters
 std::vector<DiskPerformance> DiskMonitor::GetPhysicalDiskPerformance() {
     std::vector<DiskPerformance> performance;
     
@@ -569,9 +569,9 @@ std::vector<DiskPerformance> DiskMonitor::GetPhysicalDiskPerformance() {
         return performance;
     }
     
-    std::cout << "尝试使用物理磁盘性能计数器..." << std::endl;
+    std::cout << "Attempting to use physical disk performance counters..." << std::endl;
     
-    // 使用物理磁盘的总计数器
+    // Use total physical disk counters
     PDH_HCOUNTER readBytesCounter, writeBytesCounter, queueLengthCounter, diskTimeCounter;
     
     if (PdhAddEnglishCounterA(query, "\\PhysicalDisk(_Total)\\Disk Read Bytes/sec", 0, &readBytesCounter) == ERROR_SUCCESS &&
@@ -602,10 +602,10 @@ std::vector<DiskPerformance> DiskMonitor::GetPhysicalDiskPerformance() {
             perf.writeCountPerSec = 0;
             perf.responseTime = 0;
             
-            std::cout << "物理磁盘总性能: " 
-                      << "读 " << perf.readSpeed << " MB/s, "
-                      << "写 " << perf.writeSpeed << " MB/s, "
-                      << "使用率 " << perf.usagePercentage << "%" << std::endl;
+            std::cout << "Physical disk total performance: " 
+                      << "Read " << perf.readSpeed << " MB/s, "
+                      << "Write " << perf.writeSpeed << " MB/s, "
+                      << "Usage " << perf.usagePercentage << "%" << std::endl;
             
             performance.push_back(perf);
         }
@@ -648,20 +648,20 @@ std::vector<DiskSMARTData> DiskMonitor::GetSMARTData() {
                 
                 VARIANT vtProp;
                 
-                // 获取实例名称（设备ID）
+                // Get instance name (device ID)
                 if (pclsObj->Get(L"__RELPATH", 0, &vtProp, 0, 0) == S_OK) {
                     data.deviceId = _bstr_t(vtProp.bstrVal);
                     VariantClear(&vtProp);
                 }
                 
-                // 获取预测失败状态
+                // Get predictive failure status
                 if (pclsObj->Get(L"PredictFailure", 0, &vtProp, 0, 0) == S_OK) {
-                    data.healthStatus = vtProp.boolVal ? 0 : 100; // 如果预测失败则为0，否则为100
+                    data.healthStatus = vtProp.boolVal ? 0 : 100; // 0 if predictive failure, otherwise 100
                     VariantClear(&vtProp);
                 }
                 
-                // 获取其他SMART属性
-                data.temperature = 0; // 需要额外的查询
+                // Get other SMART attributes
+                data.temperature = 0; // Requires additional queries
                 data.powerOnHours = 0;
                 data.powerOnCount = 0;
                 data.badSectors = 0;
@@ -678,7 +678,7 @@ std::vector<DiskSMARTData> DiskMonitor::GetSMARTData() {
             pEnumerator->Release();
         }
     } catch (...) {
-        // 忽略异常，SMART数据不是必需的
+        // Ignore exceptions, SMART data is not essential
     }
     
     CleanupWMI(pLoc, pSvc);
@@ -713,43 +713,43 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDrivesViaWMI() {
                 
                 VARIANT vtProp;
                 
-                // 获取磁盘型号 - 使用安全的字符串转换
+                // Get disk model - use safe string conversion
                 if (pclsObj->Get(L"Model", 0, &vtProp, 0, 0) == S_OK) {
                     drive.model = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
-                // 获取序列号
+                // Get serial number
                 if (pclsObj->Get(L"SerialNumber", 0, &vtProp, 0, 0) == S_OK) {
                     drive.serialNumber = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
-                // 获取接口类型
+                // Get interface type
                 if (pclsObj->Get(L"InterfaceType", 0, &vtProp, 0, 0) == S_OK) {
                     drive.interfaceType = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
-                // 获取介质类型
+                // Get media type
                 if (pclsObj->Get(L"MediaType", 0, &vtProp, 0, 0) == S_OK) {
                     drive.mediaType = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
-                // 获取总大小
+                // Get total size
                 if (pclsObj->Get(L"Size", 0, &vtProp, 0, 0) == S_OK) {
                     drive.totalSize = vtProp.ullVal;
                     VariantClear(&vtProp);
                 }
                 
-                // 获取扇区大小
+                // Get sector size
                 if (pclsObj->Get(L"BytesPerSector", 0, &vtProp, 0, 0) == S_OK) {
                     drive.bytesPerSector = vtProp.uintVal;
                     VariantClear(&vtProp);
                 }
                 
-                // 获取设备ID
+                // Get device ID
                 if (pclsObj->Get(L"DeviceID", 0, &vtProp, 0, 0) == S_OK) {
                     drive.deviceId = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
                     VariantClear(&vtProp);
@@ -764,7 +764,7 @@ std::vector<DiskDriveInfo> DiskMonitor::GetDrivesViaWMI() {
             pEnumerator->Release();
         }
     } catch (const std::exception& e) {
-        std::cerr << "WMI查询磁盘驱动器失败: " << e.what() << std::endl;
+        std::cerr << "WMI query for disk drives failed: " << e.what() << std::endl;
     }
     
     CleanupWMI(pLoc, pSvc);
@@ -799,31 +799,31 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitionsViaWMI() {
                 
                 VARIANT vtProp;
                 
-                // 获取盘符
+                // Get drive letter
                 if (pclsObj->Get(L"DeviceID", 0, &vtProp, 0, 0) == S_OK) {
                     partition.driveLetter = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
-                // 获取卷标
+                // Get volume label
                 if (pclsObj->Get(L"VolumeName", 0, &vtProp, 0, 0) == S_OK) {
                     partition.label = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
-                // 获取文件系统
+                // Get file system
                 if (pclsObj->Get(L"FileSystem", 0, &vtProp, 0, 0) == S_OK) {
                     partition.fileSystem = FilterToValidUtf8(SafeWmiString(vtProp.bstrVal));
                     VariantClear(&vtProp);
                 }
                 
-                // 获取总大小
+                // Get total size
                 if (pclsObj->Get(L"Size", 0, &vtProp, 0, 0) == S_OK) {
                     partition.totalSize = vtProp.ullVal;
                     VariantClear(&vtProp);
                 }
                 
-                // 获取可用空间
+                // Get free space
                 if (pclsObj->Get(L"FreeSpace", 0, &vtProp, 0, 0) == S_OK) {
                     partition.freeSpace = vtProp.ullVal;
                     partition.usedSpace = partition.totalSize - partition.freeSpace;
@@ -833,14 +833,14 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitionsViaWMI() {
                     partition.usedSpace = partition.totalSize;
                 }
                 
-                // 计算使用率
+                // Calculate usage percentage
                 if (partition.totalSize > 0) {
                     partition.usagePercentage = (100.0 * partition.usedSpace) / partition.totalSize;
                 } else {
                     partition.usagePercentage = 0.0;
                 }
                 
-                // 获取卷序列号
+                // Get volume serial number
                 if (pclsObj->Get(L"VolumeSerialNumber", 0, &vtProp, 0, 0) == S_OK) {
                     std::wstring serial = vtProp.bstrVal;
                     try {
@@ -858,7 +858,7 @@ std::vector<PartitionInfo> DiskMonitor::GetPartitionsViaWMI() {
             pEnumerator->Release();
         }
     } catch (const std::exception& e) {
-        std::cerr << "WMI查询分区失败: " << e.what() << std::endl;
+        std::cerr << "WMI query for partitions failed: " << e.what() << std::endl;
     }
     
     CleanupWMI(pLoc, pSvc);

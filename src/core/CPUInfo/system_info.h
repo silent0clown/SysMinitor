@@ -28,7 +28,7 @@ public:
     static std::string GetCPUName();
     static uint32_t GetPhysicalCoreCount();
     static uint32_t GetLogicalCoreCount();
-    static double GetCPUTemperature(); // 注意：Windows默认不支持，可能需要第三方驱动
+    static double GetCPUTemperature(); // 娉ㄦ剰锛歐indows榛樿涓嶆敮鎸侊紝鍙兘闇�瑕佺涓夋柟椹卞姩
 };
 
 } // namespace sysmonitor

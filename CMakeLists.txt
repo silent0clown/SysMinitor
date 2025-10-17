@@ -4,7 +4,7 @@ project(SystemSnapshotTool LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# add_compile_options(/utf-8)
+add_compile_options(/utf-8)
 
 # 设置输出�?�? - 这是关键�?改！
 if(CMAKE_CONFIGURATION_TYPES)
@@ -20,8 +20,8 @@ endif()
 if(MSVC)
     add_compile_options(/W4 /Zi)  # 添加调试信息
     add_link_options(/DEBUG)      # 生成PDB文件
-    add_compile_options("$<$<C_COMPILER_ID:MSVC>:/source-charset:GB2312>")
-    add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:GB2312>")
+    # add_compile_options("$<$<C_COMPILER_ID:MSVC>:/source-charset:GB2312>")
+    # add_compile_options("$<$<CXX_COMPILER_ID:MSVC>:/source-charset:GB2312>")
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     
     # 设置执�?�字符集（可选）

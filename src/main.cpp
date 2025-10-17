@@ -10,69 +10,69 @@
 
 using namespace sysmonitor;
 
-// 全局变量用于信号处理
+// Global variable for signal handling
 std::atomic<bool> g_running{true};
 
 void SignalHandler(int signal) {
-    std::cout << "\n接收到中断信号，正在关闭服务器..." << std::endl;
+    std::cout << "\nReceived interrupt signal, shutting down server..." << std::endl;
     g_running = false;
 }
 
 void PrintCPUInfo(const CPUInfo& info) {
-    std::cout << "=== CPU详细信息 ===" << std::endl;
-    std::cout << "名称: " << info.name << std::endl;
-    std::cout << "架构: " << info.architecture << std::endl;
-    std::cout << "物理核心: " << info.physicalCores << std::endl;
-    std::cout << "逻辑核心: " << info.logicalCores << std::endl;
-    std::cout << "处理器封装: " << info.packages << std::endl;
-    std::cout << "基础频率: " << info.baseFrequency << " MHz" << std::endl;
+    std::cout << "=== CPU Detailed Information ===" << std::endl;
+    std::cout << "Name: " << info.name << std::endl;
+    std::cout << "Architecture: " << info.architecture << std::endl;
+    std::cout << "Physical Cores: " << info.physicalCores << std::endl;
+    std::cout << "Logical Cores: " << info.logicalCores << std::endl;
+    std::cout << "Processor Packages: " << info.packages << std::endl;
+    std::cout << "Base Frequency: " << info.baseFrequency << " MHz" << std::endl;
     if (info.maxFrequency > 0) {
-        std::cout << "最大频率: " << info.maxFrequency << " MHz" << std::endl;
+        std::cout << "Max Frequency: " << info.maxFrequency << " MHz" << std::endl;
     }
     std::cout << std::endl;
 }
 
 int main() {
-    // 设置控制台输出编码
+    // Set console output encoding
     system("chcp 936 > nul");
     
-    // 注册信号处理
+    // Register signal handlers
     std::signal(SIGINT, SignalHandler);
     std::signal(SIGTERM, SignalHandler);
 
-    std::cout << "系统监控工具 - HTTP服务器版本" << std::endl;
+    std::cout << "System Monitoring Tool - HTTP Server Version" << std::endl;
     
-    // 显示CPU信息
+    // Display CPU information
     CPUInfo info = SystemInfo::GetCPUInfo();
     PrintCPUInfo(info);
     
-    // 使用WMI获取更详细信息（可选）
+    // Use WMI to get more detailed information (optional)
     CPUInfo detailedInfo = WMIHelper::GetDetailedCPUInfo();
     if (!detailedInfo.name.empty()) {
-        std::cout << "=== WMI详细信息 ===" << std::endl;
-        std::cout << "WMI处理器名称: " << detailedInfo.name << std::endl;
-        std::cout << "WMI物理核心: " << detailedInfo.physicalCores << std::endl;
-        std::cout << "WMI逻辑核心: " << detailedInfo.logicalCores << std::endl;
-        std::cout << "WMI最大频率: " << detailedInfo.maxFrequency << " MHz" << std::endl;
+        std::cout << "=== WMI Detailed Information ===" << std::endl;
+        std::cout << "WMI Processor Name: " << detailedInfo.name << std::endl;
+        std::cout << "WMI Physical Cores: " << detailedInfo.physicalCores << std::endl;
+        std::cout << "WMI Logical Cores: " << detailedInfo.logicalCores << std::endl;
+        std::cout << "WMI Max Frequency: " << detailedInfo.maxFrequency << " MHz" << std::endl;
         std::cout << std::endl;
     }
     
-    // 启动HTTP服务器
+    // Start HTTP server
     HttpServer server;
     if (server.Start(8080)) {
-        std::cout << "服务器启动成功！" << std::endl;
-        std::cout << "打开浏览器访问: http://localhost:8080" << std::endl;
-        std::cout << "按 Ctrl+C 停止服务器" << std::endl;
+        std::cout << "Server started successfully!" << std::endl;
+        std::cout << "Open browser and visit: http://localhost:8080" << std::endl;
+        std::cout << "Press Ctrl+C to stop the server" << std::endl;
         
-        // 等待退出信号
+        // Wait for exit signal
         while (g_running) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         
         server.Stop();
-        std::cout << "服务器已停止" << std::endl;
+        std::cout << "Server stopped" << std::endl;
     } else {
-        std::cerr << "服务器启动失败" << std::endl;
+        std::cerr << "Failed to start server" << std::endl;
         return -1;
     }
     

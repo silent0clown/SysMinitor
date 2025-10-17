@@ -14,14 +14,14 @@ struct ProcessInfo {
     std::string fullPath;
     std::string state;
     std::string username;
-    double cpuUsage;           // CPU使用率百分比
-    uint64_t memoryUsage;      // 内存使用量(bytes)
-    uint64_t workingSetSize;   // 工作集大小(bytes)
-    uint64_t pagefileUsage;    // 页面文件使用量(bytes)
-    int64_t createTime;        // 创建时间戳
-    int32_t priority;          // 进程优先级
-    int32_t threadCount;       // 线程数
-    std::string commandLine;   // 命令行参数
+    double cpuUsage;           // CPU usage percentage
+    uint64_t memoryUsage;      // Memory usage (bytes)
+    uint64_t workingSetSize;   // Working set size (bytes)
+    uint64_t pagefileUsage;    // Pagefile usage (bytes)
+    int64_t createTime;        // Creation timestamp
+    int32_t priority;          // Process priority
+    int32_t threadCount;       // Thread count
+    std::string commandLine;   // Command line parameters
 };
 
 struct ProcessSnapshot {
@@ -36,41 +36,41 @@ public:
     ProcessMonitor();
     ~ProcessMonitor();
 
-    // 获取当前所有进程快照
+    // Get current process snapshot
     ProcessSnapshot GetProcessSnapshot();
     
-    // 获取特定进程的详细信息
+    // Get detailed information for specific process
     ProcessInfo GetProcessInfo(uint32_t pid);
     
-    // 根据进程名查找进程
+    // Find processes by name
     std::vector<ProcessInfo> FindProcessesByName(const std::string& name);
     
-    // 终止进程
+    // Terminate process
     bool TerminateProcess(uint32_t pid, uint32_t exitCode = 0);
     
-    // 获取进程CPU使用率历史（需要持续监控）
+    // Get process CPU usage history (requires continuous monitoring)
     double GetProcessCpuUsage(uint32_t pid);
 
 private:
     bool Initialize();
     void Cleanup();
     
-    // 使用WMI获取进程信息
+    // Use WMI to get process information
     std::vector<ProcessInfo> GetProcessesViaWMI();
     
-    // 使用ToolHelp API获取进程信息
+    // Use ToolHelp API to get process information
     std::vector<ProcessInfo> GetProcessesViaToolHelp();
     
-    // 使用NTQuerySystemInformation获取进程信息
+    // Use NTQuerySystemInformation to get process information
     std::vector<ProcessInfo> GetProcessesViaNTQuery();
     
-    // 获取进程用户名
+    // Get process username
     std::string GetProcessUsername(uint32_t pid);
     
-    // 获取进程命令行
+    // Get process command line
     std::string GetProcessCommandLine(uint32_t pid);
     
-    // CPU使用率计算相关
+    // CPU usage calculation related
     struct ProcessCpuData {
         uint64_t kernelTime;
         uint64_t userTime;

@@ -37,12 +37,12 @@ ProcessSnapshot ProcessMonitor::GetProcessSnapshot() {
     ProcessSnapshot snapshot;
     snapshot.timestamp = GetTickCount64();
     
-    // 使用ToolHelp API获取进程列表（最可靠的方法）
+    // Use ToolHelp API to get process list (most reliable method)
     auto processes = GetProcessesViaToolHelp();
     snapshot.processes = std::move(processes);
     snapshot.totalProcesses = static_cast<uint32_t>(snapshot.processes.size());
     
-    // 计算总线程数
+    // Calculate total thread count
     snapshot.totalThreads = 0;
     for (const auto& process : snapshot.processes) {
         snapshot.totalThreads += process.threadCount;
@@ -54,17 +54,17 @@ ProcessSnapshot ProcessMonitor::GetProcessSnapshot() {
 std::vector<ProcessInfo> ProcessMonitor::GetProcessesViaToolHelp() {
     std::vector<ProcessInfo> processes;
     
-    // 创建进程快照
+    // Create process snapshot
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS | TH32CS_SNAPMODULE, 0);
     if (snapshot == INVALID_HANDLE_VALUE) {
-        std::cerr << "创建进程快照失败: " << GetLastError() << std::endl;
+        std::cerr << "Failed to create process snapshot: " << GetLastError() << std::endl;
         return processes;
     }
     
     PROCESSENTRY32 processEntry;
     processEntry.dwSize = sizeof(PROCESSENTRY32);
     
-    // 遍历所有进程
+    // Iterate through all processes
     if (Process32First(snapshot, &processEntry)) {
         do {
             ProcessInfo info;
@@ -74,18 +74,18 @@ std::vector<ProcessInfo> ProcessMonitor::GetProcessesViaToolHelp() {
             info.threadCount = processEntry.cntThreads;
             info.priority = processEntry.pcPriClassBase;
             
-            // 获取更详细的信息
+            // Get more detailed information
             HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, 
                                          FALSE, processEntry.th32ProcessID);
             
             if (hProcess) {
-                // 获取进程路径
+                // Get process path
                 char path[MAX_PATH];
                 if (GetModuleFileNameExA(hProcess, NULL, path, MAX_PATH)) {
                     info.fullPath = path;
                 }
                 
-                // 获取内存信息
+                // Get memory information
                 PROCESS_MEMORY_COUNTERS pmc;
                 if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
                     info.memoryUsage = pmc.WorkingSetSize;
@@ -93,13 +93,13 @@ std::vector<ProcessInfo> ProcessMonitor::GetProcessesViaToolHelp() {
                     info.pagefileUsage = pmc.PagefileUsage;
                 }
                 
-                // 获取用户名
+                // Get username
                 info.username = GetProcessUsername(processEntry.th32ProcessID);
                 
-                // 获取命令行
+                // Get command line
                 info.commandLine = GetProcessCommandLine(processEntry.th32ProcessID);
                 
-                // 获取创建时间
+                // Get creation time
                 FILETIME createTime, exitTime, kernelTime, userTime;
                 if (GetProcessTimes(hProcess, &createTime, &exitTime, &kernelTime, &userTime)) {
                     ULARGE_INTEGER createTimeValue;
@@ -108,13 +108,13 @@ std::vector<ProcessInfo> ProcessMonitor::GetProcessesViaToolHelp() {
                     info.createTime = createTimeValue.QuadPart;
                 }
                 
-                // 计算CPU使用率
+                // Calculate CPU usage
                 info.cpuUsage = GetProcessCpuUsage(processEntry.th32ProcessID);
                 
                 CloseHandle(hProcess);
             }
             
-            // 设置进程状态
+            // Set process state
             info.state = "Running";
             
             processes.push_back(info);
@@ -144,7 +144,7 @@ std::string ProcessMonitor::GetProcessUsername(uint32_t pid) {
             if (GetTokenInformation(hToken, TokenUser, tokenInfo.get(), tokenInfoSize, &tokenInfoSize)) {
                 PTOKEN_USER pTokenUser = (PTOKEN_USER)tokenInfo.get();
                 
-                // 将SID转换为用户名
+                // Convert SID to username
                 char name[256];
                 char domain[256];
                 DWORD nameSize = sizeof(name);
@@ -173,14 +173,14 @@ std::string ProcessMonitor::GetProcessUsername(uint32_t pid) {
 std::string ProcessMonitor::GetProcessCommandLine(uint32_t pid) {
     std::string commandLine;
     
-    // 需要更高的权限来获取命令行
+    // Higher privileges required to get command line
     HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
     if (!hProcess) {
         return "";
     }
     
-    // 使用WMI获取命令行（更可靠的方法）
-    // 这里简化实现，实际可以使用WMI查询
+    // Use WMI to get command line (more reliable method)
+    // Simplified implementation here, actual implementation can use WMI queries
     HMODULE hNtDll = GetModuleHandleA("ntdll.dll");
     if (hNtDll) {
         typedef NTSTATUS(NTAPI* _NtQueryInformationProcess)(
@@ -190,7 +190,7 @@ std::string ProcessMonitor::GetProcessCommandLine(uint32_t pid) {
             GetProcAddress(hNtDll, "NtQueryInformationProcess");
         
         if (NtQueryInformationProcess) {
-            // 简化实现，返回进程路径作为命令行
+            // Simplified implementation, return process path as command line
             char path[MAX_PATH];
             if (GetModuleFileNameExA(hProcess, NULL, path, MAX_PATH)) {
                 commandLine = path;
@@ -235,7 +235,7 @@ double ProcessMonitor::GetProcessCpuUsage(uint32_t pid) {
     
     double cpuUsage = 0.0;
     
-    // 检查是否有历史数据
+    // Check if historical data exists
     auto it = processCpuData_.find(pid);
     if (it != processCpuData_.end() && lastSystemTime_ > 0) {
         const auto& prevData = it->second;
@@ -250,7 +250,7 @@ double ProcessMonitor::GetProcessCpuUsage(uint32_t pid) {
         }
     }
     
-    // 更新数据
+    // Update data
     processCpuData_[pid] = {
         currentKernelTime.QuadPart,
         currentUserTime.QuadPart,
@@ -271,7 +271,7 @@ ProcessInfo ProcessMonitor::GetProcessInfo(uint32_t pid) {
         }
     }
     
-    // 返回空的ProcessInfo表示未找到
+    // Return empty ProcessInfo indicating not found
     return ProcessInfo();
 }
 

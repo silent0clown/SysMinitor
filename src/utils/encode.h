@@ -9,76 +9,76 @@ namespace util {
 class EncodingUtil {
 public:
     /**
-     * @brief ¼ì²â×Ö·û´®±àÂëÀàĞÍ
-     * @param str ÊäÈë×Ö·û´®
-     * @return ±àÂëÀàĞÍ: "UTF-8", "GB2312", "UNKNOWN"
+     * @brief æ£€æµ‹å­—ç¬¦ä¸²ç¼–ç ç±»å‹
+     * @param str è¾“å…¥å­—ç¬¦ä¸²
+     * @return ç¼–ç ç±»å‹: "UTF-8", "GB2312", "UNKNOWN"
      */
     static std::string DetectEncoding(const std::string& str);
     
     /**
-     * @brief ÅĞ¶ÏÊÇ·ñÎªÓĞĞ§µÄUTF-8±àÂë
-     * @param str ÊäÈë×Ö·û´®
-     * @return true-ÓĞĞ§UTF-8, false-·ÇUTF-8
+     * @brief åˆ¤æ–­æ˜¯å¦ä¸ºæœ‰æ•ˆçš„UTF-8ç¼–ç 
+     * @param str è¾“å…¥å­—ç¬¦ä¸²
+     * @return true-æœ‰æ•ˆUTF-8, false-éUTF-8
      */
     static bool IsValidUTF8(const std::string& str);
     
     /**
-     * @brief ÅĞ¶ÏÊÇ·ñÎªGB2312±àÂë
-     * @param str ÊäÈë×Ö·û´®
-     * @return true-¿ÉÄÜÊÇGB2312, false-·ÇGB2312
+     * @brief åˆ¤æ–­æ˜¯å¦ä¸ºGB2312ç¼–ç 
+     * @param str è¾“å…¥å­—ç¬¦ä¸²
+     * @return true-å¯èƒ½æ˜¯GB2312, false-éGB2312
      */
     static bool IsGB2312(const std::string& str);
     
     /**
-     * @brief GB2312×ªUTF-8
-     * @param gb2312_str GB2312±àÂë×Ö·û´®
-     * @return UTF-8±àÂë×Ö·û´®
+     * @brief GB2312è½¬UTF-8
+     * @param gb2312_str GB2312ç¼–ç å­—ç¬¦ä¸²
+     * @return UTF-8ç¼–ç å­—ç¬¦ä¸²
      */
     static std::string GB2312ToUTF8(const std::string& gb2312_str);
     
     /**
-     * @brief UTF-8×ªGB2312
-     * @param utf8_str UTF-8±àÂë×Ö·û´®
-     * @return GB2312±àÂë×Ö·û´®
+     * @brief UTF-8è½¬GB2312
+     * @param utf8_str UTF-8ç¼–ç å­—ç¬¦ä¸²
+     * @return GB2312ç¼–ç å­—ç¬¦ä¸²
      */
     static std::string UTF8ToGB2312(const std::string& utf8_str);
     
     /**
-     * @brief ÖÇÄÜ×ª»»ÎªUTF-8£¬×Ô¶¯¼ì²â±àÂë²¢×ª»»
-     * @param str ÊäÈë×Ö·û´®
-     * @return ±£Ö¤ÎªUTF-8±àÂëµÄ×Ö·û´®
+     * @brief æ™ºèƒ½è½¬æ¢ä¸ºUTF-8ï¼Œè‡ªåŠ¨æ£€æµ‹ç¼–ç å¹¶è½¬æ¢
+     * @param str è¾“å…¥å­—ç¬¦ä¸²
+     * @return ä¿è¯ä¸ºUTF-8ç¼–ç çš„å­—ç¬¦ä¸²
      */
     static std::string ToUTF8(const std::string& str);
     
     /**
-     * @brief ÇåÀí×Ö·û´®£¬ÒÆ³ı²»¿É´òÓ¡×Ö·û
-     * @param str ÊäÈë×Ö·û´®
-     * @return ÇåÀíºóµÄ×Ö·û´®
+     * @brief æ¸…ç†å­—ç¬¦ä¸²ï¼Œç§»é™¤ä¸å¯æ‰“å°å­—ç¬¦
+     * @param str è¾“å…¥å­—ç¬¦ä¸²
+     * @return æ¸…ç†åçš„å­—ç¬¦ä¸²
      */
     static std::string SanitizeString(const std::string& str);
     
     /**
-     * @brief °²È«»ñÈ¡×Ö·û´®£¬Èç¹û×ª»»Ê§°Ü·µ»ØÄ¬ÈÏÖµ
-     * @param str ÊäÈë×Ö·û´®
-     * @param default_val Ä¬ÈÏÖµ
-     * @return °²È«µÄUTF-8×Ö·û´®
+     * @brief å®‰å…¨è·å–å­—ç¬¦ä¸²ï¼Œå¦‚æœè½¬æ¢å¤±è´¥è¿”å›é»˜è®¤å€¼
+     * @param str è¾“å…¥å­—ç¬¦ä¸²
+     * @param default_val é»˜è®¤å€¼
+     * @return å®‰å…¨çš„UTF-8å­—ç¬¦ä¸²
      */
     static std::string SafeString(const std::string& str, const std::string& default_val = "Unknown");
 
 private:
     /**
-     * @brief ÑéÖ¤UTF-8×Ö½ÚĞòÁĞ
-     * @param bytes ×Ö½ÚĞòÁĞ
-     * @param length ĞòÁĞ³¤¶È
-     * @return true-ÓĞĞ§, false-ÎŞĞ§
+     * @brief éªŒè¯UTF-8å­—èŠ‚åºåˆ—
+     * @param bytes å­—èŠ‚åºåˆ—
+     * @param length åºåˆ—é•¿åº¦
+     * @return true-æœ‰æ•ˆ, false-æ— æ•ˆ
      */
     static bool IsValidUTF8Sequence(const unsigned char* bytes, size_t length);
     
     /**
-     * @brief ¼ì²éÊÇ·ñÎªGB2312×Ö·û
-     * @param byte1 µÚÒ»¸ö×Ö½Ú
-     * @param byte2 µÚ¶ş¸ö×Ö½Ú
-     * @return true-ÊÇGB2312×Ö·û, false-²»ÊÇ
+     * @brief æ£€æŸ¥æ˜¯å¦ä¸ºGB2312å­—ç¬¦
+     * @param byte1 ç¬¬ä¸€ä¸ªå­—èŠ‚
+     * @param byte2 ç¬¬äºŒä¸ªå­—èŠ‚
+     * @return true-æ˜¯GB2312å­—ç¬¦, false-ä¸æ˜¯
      */
     static bool IsGB2312Char(unsigned char byte1, unsigned char byte2);
 };

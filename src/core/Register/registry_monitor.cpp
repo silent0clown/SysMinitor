@@ -33,14 +33,14 @@ RegistrySnapshot RegistryMonitor::GetRegistrySnapshot() {
             key.convertToUTF8();
         }
         
-        std::cout << "获取注册表快照成功 - "
-                  << "系统信息: " << snapshot.systemInfoKeys.size() << " 项, "
-                  << "软件信息: " << snapshot.softwareKeys.size() << " 项, "
-                  << "网络配置: " << snapshot.networkKeys.size() << " 项, "
-                  << "自启动项: " << snapshot.autoStartKeys.size() << " 项" << std::endl;
+        std::cout << "Registry snapshot retrieved successfully - "
+                  << "System info: " << snapshot.systemInfoKeys.size() << " items, "
+                  << "Software info: " << snapshot.softwareKeys.size() << " items, "
+                  << "Network config: " << snapshot.networkKeys.size() << " items, "
+                  << "Auto-start items: " << snapshot.autoStartKeys.size() << " items" << std::endl;
                   
     } catch (const std::exception& e) {
-        std::cerr << "获取注册表快照时发生异常: " << e.what() << std::endl;
+        std::cerr << "Exception occurred while getting registry snapshot: " << e.what() << std::endl;
     }
     
     return snapshot;
@@ -49,46 +49,46 @@ RegistrySnapshot RegistryMonitor::GetRegistrySnapshot() {
 std::vector<RegistryKey> RegistryMonitor::GetAutoStartItems() {
     std::vector<RegistryKey> keys;
     
-    // 使用成员变量 autoStartPaths，避免变量名冲突
+    // Use member variable autoStartPaths to avoid variable name conflicts
     for (const auto& [root, path] : autoStartPaths) {
         try {
             RegistryKey key = GetRegistryKey(root, path);
             
-            // 特殊处理服务项，只获取启动类型为自动的服务
+            // Special handling for service items, only get services with auto-start type
             if (path.find("Services") != std::string::npos) {
                 key = FilterAutoStartServices(key);
             }
             
             if (!key.values.empty() || !key.subkeys.empty()) {
-                // 添加自启动项类型标识
+                // Add auto-start item type identifier
                 key.autoStartType = GetAutoStartType(root, path);
                 keys.push_back(key);
             }
         } catch (const std::exception& e) {
-            std::cerr << "获取自启动项注册表失败: " << path << " - " << e.what() << std::endl;
+            std::cerr << "Failed to get auto-start registry: " << path << " - " << e.what() << std::endl;
         }
     }
     
     return keys;
 }
 
-// 实现 FilterAutoStartServices 方法
+// Implement FilterAutoStartServices method
 RegistryKey RegistryMonitor::FilterAutoStartServices(const RegistryKey& servicesKey) {
     RegistryKey filteredKey;
     filteredKey.path = servicesKey.path;
     filteredKey.autoStartType = "AutoStartServices";
     
-    // 遍历所有服务子键
+    // Iterate through all service subkeys
     for (const auto& subkeyName : servicesKey.subkeys) {
         try {
             std::string servicePath = servicesKey.path.substr(servicesKey.path.find("\\") + 1) + "\\" + subkeyName;
             RegistryKey serviceKey = GetRegistryKey(HKEY_LOCAL_MACHINE, servicePath);
             
-            // 检查服务的启动类型
+            // Check service start type
             bool isAutoStart = false;
             for (const auto& value : serviceKey.values) {
                 if (value.name == "Start") {
-                    // Start值: 2=自动, 3=手动, 4=禁用
+                    // Start value: 2=Auto, 3=Manual, 4=Disabled
                     if (value.data == "2" || value.data.find("Auto") != std::string::npos) {
                         isAutoStart = true;
                     }
@@ -97,15 +97,15 @@ RegistryKey RegistryMonitor::FilterAutoStartServices(const RegistryKey& services
             }
             
             if (isAutoStart) {
-                // 只添加自启动服务的子键名称
+                // Only add auto-start service subkey names
                 filteredKey.subkeys.push_back(subkeyName);
                 
-                // 添加服务的关键信息到值中
+                // Add service key information to values
                 RegistryValue serviceInfo;
                 serviceInfo.name = subkeyName;
                 serviceInfo.type = "ServiceInfo";
                 
-                // 构建服务信息字符串
+                // Build service information string
                 std::string info;
                 for (const auto& value : serviceKey.values) {
                     if (value.name == "DisplayName" || value.name == "Description" || 
@@ -117,7 +117,7 @@ RegistryKey RegistryMonitor::FilterAutoStartServices(const RegistryKey& services
                 filteredKey.values.push_back(serviceInfo);
             }
         } catch (const std::exception& e) {
-            // 跳过无法访问的服务
+            // Skip inaccessible services
             continue;
         }
     }
@@ -125,7 +125,7 @@ RegistryKey RegistryMonitor::FilterAutoStartServices(const RegistryKey& services
     return filteredKey;
 }
 
-// 实现 GetAutoStartType 方法
+// Implement GetAutoStartType method
 std::string RegistryMonitor::GetAutoStartType(HKEY root, const std::string& path) {
     std::string type;
     
@@ -163,7 +163,7 @@ std::vector<RegistryKey> RegistryMonitor::GetSystemInfoKeys() {
                 keys.push_back(key);
             }
         } catch (const std::exception& e) {
-            std::cerr << "获取系统信息注册表失败: " << path << " - " << e.what() << std::endl;
+            std::cerr << "Failed to get system info registry: " << path << " - " << e.what() << std::endl;
         }
     }
     
@@ -181,11 +181,11 @@ std::vector<RegistryKey> RegistryMonitor::GetInstalledSoftware() {
                 keys.push_back(key);
             }
         } catch (const std::exception& e) {
-            std::cerr << "获取软件信息注册表失败: " << path << " - " << e.what() << std::endl;
+            std::cerr << "Failed to get software info registry: " << path << " - " << e.what() << std::endl;
         }
     }
     
-    // 获取当前用户的软件信息
+    // Get current user software information
     try {
         RegistryKey userKey = GetRegistryKey(HKEY_CURRENT_USER, 
                                            "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall");
@@ -194,7 +194,7 @@ std::vector<RegistryKey> RegistryMonitor::GetInstalledSoftware() {
             keys.push_back(userKey);
         }
     } catch (const std::exception& e) {
-        std::cerr << "获取用户软件信息注册表失败: " << e.what() << std::endl;
+        std::cerr << "Failed to get user software info registry: " << e.what() << std::endl;
     }
     
     return keys;
@@ -211,7 +211,7 @@ std::vector<RegistryKey> RegistryMonitor::GetNetworkConfig() {
                 keys.push_back(key);
             }
         } catch (const std::exception& e) {
-            std::cerr << "获取网络配置注册表失败: " << path << " - " << e.what() << std::endl;
+            std::cerr << "Failed to get network config registry: " << path << " - " << e.what() << std::endl;
         }
     }
     
@@ -227,7 +227,7 @@ RegistryKey RegistryMonitor::GetRegistryKey(HKEY root, const std::string& subKey
         return key;
     }
     
-    // 枚举值
+    // Enumerate values
     DWORD valueCount, maxValueNameLen, maxValueDataLen;
     LONG result = RegQueryInfoKeyA(hKey, NULL, NULL, NULL, NULL, NULL, NULL,
                                  &valueCount, &maxValueNameLen, &maxValueDataLen,
@@ -261,13 +261,13 @@ RegistryKey RegistryMonitor::GetRegistryKey(HKEY root, const std::string& subKey
                         key.values.push_back(value);
                     }
                 } catch (const std::exception& e) {
-                    std::cerr << "处理注册表值时发生异常: " << e.what() << std::endl;
+                    std::cerr << "Exception occurred while processing registry value: " << e.what() << std::endl;
                 }
             }
         }
     }
     
-    // 枚举子键
+    // Enumerate subkeys
     DWORD subkeyCount, maxSubkeyLen;
     result = RegQueryInfoKeyA(hKey, NULL, NULL, NULL, &subkeyCount, &maxSubkeyLen,
                             NULL, NULL, NULL, NULL, NULL, NULL);
@@ -294,8 +294,8 @@ bool RegistryMonitor::SafeOpenKey(HKEY root, const std::string& subKey, HKEY& hK
     LONG result = RegOpenKeyExA(root, subKey.c_str(), 0, KEY_READ, &hKey);
     
     if (result != ERROR_SUCCESS) {
-        std::cerr << "无法打开注册表键: " << RegistryEncodingUtils::HKEYToString(root) << "\\" << subKey 
-                  << " - 错误: " << result << std::endl;
+        std::cerr << "Unable to open registry key: " << RegistryEncodingUtils::HKEYToString(root) << "\\" << subKey 
+                  << " - Error: " << result << std::endl;
         return false;
     }
     

@@ -100,7 +100,7 @@ CPUInfo WMIHelper::GetDetailedCPUInfo() {
                         }
                         
                         pclsObj->Release();
-                        break; // 只取第一个处理器
+                        break; // 鍙彇绗竴涓鐞嗗櫒
                     }
                     
                     pEnumerator->Release();

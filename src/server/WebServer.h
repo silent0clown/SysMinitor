@@ -34,29 +34,26 @@ private:
     void SetupRoutes();
     void StartBackgroundMonitoring();
     
-    // HTTP路由处理函数 CPU相关
+
     void HandleGetCPUInfo(const httplib::Request& req, httplib::Response& res);
     void HandleGetCPUUsage(const httplib::Request& req, httplib::Response& res);
     void HandleGetSystemInfo(const httplib::Request& req, httplib::Response& res);
     void HandleStreamCPUUsage(const httplib::Request& req, httplib::Response& res);
-    // HTTP路由处理函数 内存相关
+
     void HandleGetMemoryUsage(const httplib::Request& req, httplib::Response& res);
-    // 历史数据路由
+
     void HandleGetCPUHistory(const httplib::Request& req, httplib::Response& res);
     void HandleGetMemoryHistory(const httplib::Request& req, httplib::Response& res);
-    // 添加新的HTTP路由处理函数 进程相关
+
     void HandleGetProcesses(const httplib::Request& req, httplib::Response& res);
     void HandleGetProcessInfo(const httplib::Request& req, httplib::Response& res);
     void HandleFindProcesses(const httplib::Request& req, httplib::Response& res);
     void HandleTerminateProcess(const httplib::Request& req, httplib::Response& res);
 
-    // 磁盘相关路由
-    
-    // 添加磁盘相关的HTTP路由处理函数
+
     void HandleGetDiskInfo(const httplib::Request& req, httplib::Response& res);
     void HandleGetDiskPerformance(const httplib::Request& req, httplib::Response& res);
 
-    // 添加注册表相关的HTTP路由处理函数
     void HandleGetRegistrySnapshot(const httplib::Request& req, httplib::Response& res);
     void HandleSaveRegistrySnapshot(const httplib::Request& req, httplib::Response& res);
     void HandleGetSavedSnapshots(const httplib::Request& req, httplib::Response& res);
@@ -66,7 +63,6 @@ private:
     void HandleGetDriverSnapshot(const httplib::Request& req, httplib::Response& res);
     void HandleGetDriverDetail(const httplib::Request& req, httplib::Response& res);
 
-    // 修改函数名称，避免冲突
     json CompareRegistrySnapshots(const std::vector<RegistryKey>& keys1, const std::vector<RegistryKey>& keys2);
     std::string GetCurrentTimeString();
     std::vector<RegistryKey> ParseRegistryKeysFromJson(const json& json_array);
@@ -82,26 +78,25 @@ private:
     CPUInfo cpuInfo_;
     std::atomic<double> currentUsage_{0.0};
     
-    // 添加内存监控器
+
     MemoryMonitor memoryMonitor_;
-    // 内存使用快照（由后台线程更新）
+
     MemoryUsage memoryUsage_{}; // value-initialize to zeros
     std::mutex memoryUsageMutex_; // protect memoryUsage_
-    // 历史记录（环状/有界缓冲）
+
     struct Sample { uint64_t timestamp; double value; };
     std::vector<Sample> cpuHistory_;
     std::vector<Sample> memoryHistory_;
     std::mutex cpuHistoryMutex_;
     std::mutex memoryHistoryMutex_;
-    size_t maxHistorySamples_ = 3600; // 默认保存最后3600个样本（例如1小时每秒）
-    // 添加进程监控器
+    size_t maxHistorySamples_ = 3600; 
+
     ProcessMonitor processMonitor_;
     
-    DiskMonitor diskMonitor_;  // 添加磁盘监控器
+    DiskMonitor diskMonitor_;  
 
-    RegistryMonitor registryMonitor_;  // 添加注册表监控器
-    std::map<std::string, RegistrySnapshot> registrySnapshots_;  // 存储多个快照
-    // 添加驱动监控器
+    RegistryMonitor registryMonitor_;  
+    std::map<std::string, RegistrySnapshot> registrySnapshots_; 
     DriverMonitor driverMonitor_;
     
     int port_;

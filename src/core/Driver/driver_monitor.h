@@ -7,34 +7,35 @@
 #include <chrono>
 #include <windows.h>
 #include "../../utils/encode.h"
+
 struct DriverVersion {
-    std::string fileVersion;        // 文件版本
-    std::string productVersion;     // 产品版本
-    std::string companyName;        // 公司名称
-    std::string fileDescription;    // 文件描述
-    std::string legalCopyright;     // 版权信息
-    std::string originalFilename;   // 原始文件名
+    std::string fileVersion;        // File version
+    std::string productVersion;     // Product version
+    std::string companyName;        // Company name
+    std::string fileDescription;    // File description
+    std::string legalCopyright;     // Copyright information
+    std::string originalFilename;   // Original filename
 };
 
 struct DriverDetail {
-    std::string name;                   // 驱动名称
-    std::string displayName;            // 显示名称
-    std::string description;            // 描述
-    std::string state;                  // 状态
-    std::string startType;              // 启动类型
-    std::string binaryPath;             // 驱动文件路径
-    std::string serviceType;            // 服务类型
-    std::string errorControl;           // 错误控制
-    std::string account;                // 运行账户
-    std::string group;                  // 加载组
-    std::string tagId;                  // 标签ID
-    std::string driverType;             // 驱动类型
-    std::string hardwareClass;          // 硬件类别
-    DWORD pid;                          // 进程ID
-    std::string exitCode;               // 退出代码
-    std::string win32ExitCode;          // Win32退出代码
-    std::string serviceSpecificExitCode;// 服务特定退出代码
-    DriverVersion version;              // 版本信息
+    std::string name;                   // Driver name
+    std::string displayName;            // Display name
+    std::string description;            // Description
+    std::string state;                  // State
+    std::string startType;              // Start type
+    std::string binaryPath;             // Driver file path
+    std::string serviceType;            // Service type
+    std::string errorControl;           // Error control
+    std::string account;                // Run account
+    std::string group;                  // Load group
+    std::string tagId;                  // Tag ID
+    std::string driverType;             // Driver type
+    std::string hardwareClass;          // Hardware class
+    DWORD pid;                          // Process ID
+    std::string exitCode;               // Exit code
+    std::string win32ExitCode;          // Win32 exit code
+    std::string serviceSpecificExitCode;// Service specific exit code
+    DriverVersion version;              // Version information
     std::chrono::system_clock::time_point installTime;
     
     DriverDetail() : pid(0) {}
@@ -57,7 +58,7 @@ struct DriverDetail {
         win32ExitCode = util::EncodingUtil::SafeString(win32ExitCode);
         serviceSpecificExitCode = util::EncodingUtil::SafeString(serviceSpecificExitCode);
         
-        // 清理版本信息
+        // Clean version information
         version.fileVersion = util::EncodingUtil::SafeString(version.fileVersion);
         version.productVersion = util::EncodingUtil::SafeString(version.productVersion);
         version.companyName = util::EncodingUtil::SafeString(version.companyName);
@@ -75,23 +76,23 @@ struct DriverDetail {
 
 struct DriverSnapshot {
     uint64_t timestamp;
-    std::vector<DriverDetail> kernelDrivers;        // 内核驱动
-    std::vector<DriverDetail> fileSystemDrivers;    // 文件系统驱动
-    std::vector<DriverDetail> hardwareDrivers;      // 硬件驱动
-    std::vector<DriverDetail> runningDrivers;       // 运行中驱动
-    std::vector<DriverDetail> stoppedDrivers;       // 已停止驱动
-    std::vector<DriverDetail> autoStartDrivers;     // 自动启动驱动
-    std::vector<DriverDetail> thirdPartyDrivers;    // 第三方驱动
+    std::vector<DriverDetail> kernelDrivers;        // Kernel drivers
+    std::vector<DriverDetail> fileSystemDrivers;    // File system drivers
+    std::vector<DriverDetail> hardwareDrivers;      // Hardware drivers
+    std::vector<DriverDetail> runningDrivers;       // Running drivers
+    std::vector<DriverDetail> stoppedDrivers;       // Stopped drivers
+    std::vector<DriverDetail> autoStartDrivers;     // Auto-start drivers
+    std::vector<DriverDetail> thirdPartyDrivers;    // Third-party drivers
     
-    // 按硬件类别分类
-    std::vector<DriverDetail> displayDrivers;       // 显示适配器驱动
-    std::vector<DriverDetail> audioDrivers;         // 音频驱动
-    std::vector<DriverDetail> networkDrivers;       // 网络适配器驱动
-    std::vector<DriverDetail> inputDrivers;         // 输入设备驱动
-    std::vector<DriverDetail> storageDrivers;       // 存储控制器驱动
-    std::vector<DriverDetail> printerDrivers;       // 打印机驱动
-    std::vector<DriverDetail> usbDrivers;           // USB驱动
-    std::vector<DriverDetail> bluetoothDrivers;     // 蓝牙驱动
+    // Classified by hardware category
+    std::vector<DriverDetail> displayDrivers;       // Display adapter drivers
+    std::vector<DriverDetail> audioDrivers;         // Audio drivers
+    std::vector<DriverDetail> networkDrivers;       // Network adapter drivers
+    std::vector<DriverDetail> inputDrivers;         // Input device drivers
+    std::vector<DriverDetail> storageDrivers;       // Storage controller drivers
+    std::vector<DriverDetail> printerDrivers;       // Printer drivers
+    std::vector<DriverDetail> usbDrivers;           // USB drivers
+    std::vector<DriverDetail> bluetoothDrivers;     // Bluetooth drivers
     
     struct {
         size_t totalDrivers;
@@ -102,7 +103,7 @@ struct DriverSnapshot {
         size_t hardwareCount;
         size_t autoStartCount;
         size_t thirdPartyCount;
-        // 硬件驱动统计
+        // Hardware driver statistics
         size_t displayCount;
         size_t audioCount;
         size_t networkCount;
@@ -147,17 +148,17 @@ private:
     std::vector<DriverDetail> GetHardwareDriversViaSetupAPI();
     std::vector<DriverDetail> GetDriversViaWMI();
     
-    // 版本信息获取
+    // Version information retrieval
     DriverVersion GetDriverVersionInfo(const std::string& filePath);
     std::string GetFileVersion(const std::string& filePath);
     
-    // 硬件驱动分类
+    // Hardware driver classification
     void CategorizeHardwareDrivers(DriverSnapshot& snapshot, const std::vector<DriverDetail>& hardwareDrivers);
     void CategorizeDrivers(DriverSnapshot& snapshot, const std::vector<DriverDetail>& allDrivers);
     void CalculateStatistics(DriverSnapshot& snapshot);
     void SanitizeAllDrivers(DriverSnapshot& snapshot);
     
-    // 工具函数
+    // Utility functions
     bool IsHardwareDriver(const DriverDetail& driver);
     std::string DetectHardwareClass(const DriverDetail& driver);
 };

@@ -14,7 +14,7 @@ public:
     CPUMonitor();
     ~CPUMonitor();
 
-    // ½ûÓÃ¿½±´
+    // ç¦ç”¨æ‹·è´
     CPUMonitor(const CPUMonitor&) = delete;
     CPUMonitor& operator=(const CPUMonitor&) = delete;
 
@@ -43,7 +43,7 @@ private:
     int intervalMs_;
     CPUInfo cpuInfo_;
     
-    // CPUÊ¹ÓÃÂÊ¼ÆËãÏà¹Ø
+    // CPUä½¿ç”¨ç‡è®¡ç®—ç›¸å…³
     std::atomic<double> currentUsage{0.0};
     uint64_t lastTotalTime_{0};
     uint64_t lastIdleTime_{0};

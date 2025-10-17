@@ -12,32 +12,32 @@ namespace encoding {
 
 class RegistryEncodingUtils {
 public:
-    // Ê¹ÓÃÏÖÓÐµÄ EncodingUtil
+    // Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½Ðµï¿½ EncodingUtil
     using StringUtil = util::EncodingUtil;
 
-    // HKEY×ª×Ö·û´®
+    // HKEY×ªï¿½Ö·ï¿½ï¿½ï¿½
     static std::string HKEYToString(HKEY hkey);
     
-    // ×¢²á±íÊý¾ÝÀàÐÍ×ª×Ö·û´®
+    // ×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½Ö·ï¿½ï¿½ï¿½
     static std::string RegistryTypeToString(DWORD type);
     
-    // ×¢²á±íÊý¾Ý×ª×Ö·û´®£¨Ê¹ÓÃ°²È«µÄUTF-8×ª»»£©
+    // ×¢ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½Ã°ï¿½È«ï¿½ï¿½UTF-8×ªï¿½ï¿½ï¿½ï¿½
     static std::string RegistryDataToString(const BYTE* data, DWORD size, DWORD type);
     
-    // ¿í×Ö·û´®×ªUTF-8£¨Ê¹ÓÃÏÖÓÐµÄ¹¤¾ß£©
+    // ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½×ªUTF-8ï¿½ï¿½Ê¹ï¿½ï¿½ï¿½ï¿½ï¿½ÐµÄ¹ï¿½ï¿½ß£ï¿½
     static std::string WideToUTF8(const std::wstring& wideStr);
     
-    // °²È«µÄ×Ö·û´®´¦Àí
+    // ï¿½ï¿½È«ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     static std::string SafeString(const std::string& str);
     
-    // ÇåÀíºÍÑéÖ¤UTF-8×Ö·û´®
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¤UTF-8ï¿½Ö·ï¿½ï¿½ï¿½
     static std::string SanitizeUTF8(const std::string& str);
 
 private:
-    // ´¦Àí¶à×Ö·û´®ÀàÐÍ
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     static std::string ProcessMultiSZ(const BYTE* data, DWORD size);
     
-    // ´¦Àí¶þ½øÖÆÊý¾Ý
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
     static std::string ProcessBinaryData(const BYTE* data, DWORD size);
 };
 

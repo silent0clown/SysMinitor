@@ -11,7 +11,7 @@ namespace util {
 
 std::string EncodingUtil::DetectEncoding(const std::string& str) {
     if (str.empty()) {
-        return "UTF-8"; // 空字符串默认为UTF-8
+        return "UTF-8"; // Empty string defaults to UTF-8
     }
     
     if (IsValidUTF8(str)) {
@@ -33,30 +33,30 @@ bool EncodingUtil::IsValidUTF8(const std::string& str) {
     while (i < len) {
         unsigned char current = bytes[i];
         
-        // ASCII字符 (0x00-0x7F)
+        // ASCII character (0x00-0x7F)
         if (current <= 0x7F) {
             i++;
             continue;
         }
         
-        // 多字节UTF-8序列
-        if ((current & 0xE0) == 0xC0) { // 2字节序列
+        // Multi-byte UTF-8 character
+        if ((current & 0xE0) == 0xC0) { // 2-byte sequence
             if (i + 1 >= len || !IsValidUTF8Sequence(bytes + i, 2)) {
                 return false;
             }
             i += 2;
-        } else if ((current & 0xF0) == 0xE0) { // 3字节序列
+        } else if ((current & 0xF0) == 0xE0) { // 3-byte sequence
             if (i + 2 >= len || !IsValidUTF8Sequence(bytes + i, 3)) {
                 return false;
             }
             i += 3;
-        } else if ((current & 0xF8) == 0xF0) { // 4字节序列
+        } else if ((current & 0xF8) == 0xF0) { // 4-byte sequence
             if (i + 3 >= len || !IsValidUTF8Sequence(bytes + i, 4)) {
                 return false;
             }
             i += 4;
         } else {
-            return false; // 无效的UTF-8起始字节
+            return false; // Invalid UTF-8 start byte
         }
     }
     
@@ -65,7 +65,7 @@ bool EncodingUtil::IsValidUTF8(const std::string& str) {
 
 bool EncodingUtil::IsValidUTF8Sequence(const unsigned char* bytes, size_t length) {
     for (size_t i = 1; i < length; i++) {
-        if ((bytes[i] & 0xC0) != 0x80) { // 后续字节必须是10xxxxxx
+        if ((bytes[i] & 0xC0) != 0x80) { // Continuation bytes must be 10xxxxxx
             return false;
         }
     }
@@ -84,14 +84,14 @@ bool EncodingUtil::IsGB2312(const std::string& str) {
     int totalChars = 0;
     
     while (i < len) {
-        // ASCII字符
+        // ASCII character
         if (bytes[i] <= 0x7F) {
             i++;
             totalChars++;
             continue;
         }
         
-        // 可能是GB2312双字节字符
+        // Check for GB2312 double-byte character
         if (i + 1 < len) {
             if (IsGB2312Char(bytes[i], bytes[i + 1])) {
                 gb2312Count++;
@@ -99,25 +99,25 @@ bool EncodingUtil::IsGB2312(const std::string& str) {
             totalChars++;
             i += 2;
         } else {
-            break; // 不完整的双字节字符
+            break; // Incomplete double-byte character
         }
     }
     
-    // 如果有足够多的GB2312字符，认为是GB2312编码
+    // If enough GB2312 characters are detected, consider it GB2312 encoding
     return totalChars > 0 && (gb2312Count * 2 >= totalChars);
 }
 
 bool EncodingUtil::IsGB2312Char(unsigned char byte1, unsigned char byte2) {
-    // GB2312编码范围: 第一个字节0xA1-0xF7, 第二个字节0xA1-0xFE
+    // GB2312 encoding range: first byte 0xA1-0xF7, second byte 0xA1-0xFE
     return (byte1 >= 0xA1 && byte1 <= 0xF7) && (byte2 >= 0xA1 && byte2 <= 0xFE);
 }
 
 std::string EncodingUtil::GB2312ToUTF8(const std::string& gb2312_str) {
 #ifdef _WIN32
-    // Windows平台使用系统API进行转换
+    // Use system API for conversion on Windows platform
     int len = MultiByteToWideChar(936, 0, gb2312_str.c_str(), -1, nullptr, 0);
     if (len == 0) {
-        return gb2312_str; // 转换失败，返回原字符串
+        return gb2312_str; // Conversion failed, return original string
     }
     
     std::vector<wchar_t> wideBuf(len);
@@ -133,8 +133,8 @@ std::string EncodingUtil::GB2312ToUTF8(const std::string& gb2312_str) {
     
     return std::string(utf8Buf.data());
 #else
-    // Linux/macOS平台可以使用iconv，这里简单实现返回原字符串
-    // 在实际项目中可以集成iconv库
+    // Linux/macOS platform can use iconv library, return original string for now
+    // Implementation can add iconv in actual projects
     return gb2312_str;
 #endif
 }
@@ -175,7 +175,7 @@ std::string EncodingUtil::ToUTF8(const std::string& str) {
     } else if (encoding == "GB2312") {
         return GB2312ToUTF8(str);
     } else {
-        // 未知编码，尝试清理并返回
+        // Unknown encoding, perform sanitization
         return SanitizeString(str);
     }
 }
@@ -191,26 +191,26 @@ std::string EncodingUtil::SanitizeString(const std::string& str) {
     for (char c : str) {
         unsigned char uc = static_cast<unsigned char>(c);
         
-        // 允许可打印ASCII字符
+        // Allow printable ASCII characters
         if (uc >= 0x20 && uc <= 0x7E) {
             result += c;
             lastWasSpace = false;
         }
-        // 允许空格字符，但避免连续空格
+        // Handle whitespace characters, avoid consecutive spaces
         else if (std::isspace(uc)) {
             if (!lastWasSpace) {
                 result += ' ';
                 lastWasSpace = true;
             }
         }
-        // 对于其他字符，可以替换为问号或直接跳过
+        // Replace other characters with question mark or skip
         else {
             result += '?';
             lastWasSpace = false;
         }
     }
     
-    // 去除首尾空格
+    // Trim leading and trailing spaces
     size_t start = result.find_first_not_of(" \t\n\r");
     if (start == std::string::npos) {
         return "";

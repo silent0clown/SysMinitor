@@ -7,14 +7,14 @@
 #include <algorithm>
 #include <stdexcept>
 #include <sstream>
-#include <cctype>  // 添加 cctype 头文件
+#include <cctype>  // Add cctype header
 
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "setupapi.lib")
 #pragma comment(lib, "cfgmgr32.lib")
-#pragma comment(lib, "version.lib")  // 添加版本信息库
+#pragma comment(lib, "version.lib")  // Add version information library
 
-// 修复转换函数
+// Fix conversion function
 namespace {
     char toLowerChar(char c) {
         return static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
@@ -30,33 +30,33 @@ DriverSnapshot DriverMonitor::GetDriverSnapshot() {
     snapshot.timestamp = GetTickCount64();
     
     try {
-        // 获取服务驱动
+        // Get service drivers
         auto scmDrivers = GetAllDriversViaSCM();
         
-        // 获取硬件驱动
+        // Get hardware drivers
         auto hardwareDrivers = GetHardwareDriversViaSetupAPI();
         
-        // 合并所有驱动
+        // Merge all drivers
         std::vector<DriverDetail> allDrivers = scmDrivers;
         allDrivers.insert(allDrivers.end(), hardwareDrivers.begin(), hardwareDrivers.end());
         
-        // 分类驱动
+        // Categorize drivers
         CategorizeDrivers(snapshot, allDrivers);
         CategorizeHardwareDrivers(snapshot, hardwareDrivers);
         
-        // 计算统计信息
+        // Calculate statistics
         CalculateStatistics(snapshot);
         
-        // 编码清理
+        // Encoding cleanup
         SanitizeAllDrivers(snapshot);
         
-        std::cout << "获取驱动快照成功 - "
-                  << "内核驱动: " << snapshot.kernelDrivers.size() << " 个, "
-                  << "文件系统驱动: " << snapshot.fileSystemDrivers.size() << " 个, "
-                  << "硬件驱动: " << snapshot.hardwareDrivers.size() << " 个" << std::endl;
+        std::cout << "Driver snapshot retrieved successfully - "
+                  << "Kernel drivers: " << snapshot.kernelDrivers.size() << ", "
+                  << "File system drivers: " << snapshot.fileSystemDrivers.size() << ", "
+                  << "Hardware drivers: " << snapshot.hardwareDrivers.size() << std::endl;
                   
     } catch (const std::exception& e) {
-        std::cerr << "获取驱动快照时发生异常: " << e.what() << std::endl;
+        std::cerr << "Exception occurred while getting driver snapshot: " << e.what() << std::endl;
     }
     
     return snapshot;
@@ -67,14 +67,14 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
     
     SC_HANDLE scm = OpenSCManager(nullptr, nullptr, SC_MANAGER_ENUMERATE_SERVICE);
     if (!scm) {
-        throw std::runtime_error("无法打开服务控制管理器");
+        throw std::runtime_error("Unable to open Service Control Manager");
     }
     
     DWORD bufferSize = 0;
     DWORD serviceCount = 0;
     DWORD resumeHandle = 0;
     
-    // 获取所需缓冲区大小
+    // Get required buffer size
     EnumServicesStatusEx(
         scm, SC_ENUM_PROCESS_INFO, SERVICE_DRIVER, SERVICE_STATE_ALL,
         nullptr, 0, &bufferSize, &serviceCount, &resumeHandle, nullptr);
@@ -84,7 +84,7 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
         return drivers;
     }
     
-    // 分配缓冲区并获取服务信息
+    // Allocate buffer and get service information
     std::vector<BYTE> buffer(bufferSize);
     ENUM_SERVICE_STATUS_PROCESS* services = 
         reinterpret_cast<ENUM_SERVICE_STATUS_PROCESS*>(buffer.data());
@@ -97,13 +97,13 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
             DriverDetail driver;
             driver.name = services[i].lpServiceName ? services[i].lpServiceName : "";
             driver.displayName = services[i].lpDisplayName ? services[i].lpDisplayName : "";
-            driver.driverType = "Service"; // 标记为服务驱动
+            driver.driverType = "Service"; // Mark as service driver
             
-            // 获取详细服务信息
+            // Get detailed service information
             SC_HANDLE service = OpenService(scm, services[i].lpServiceName, 
                                           SERVICE_QUERY_CONFIG | SERVICE_QUERY_STATUS);
             if (service) {
-                // 获取服务配置
+                // Get service configuration
                 DWORD configSize = 0;
                 QueryServiceConfig(service, nullptr, 0, &configSize);
                 if (GetLastError() == ERROR_INSUFFICIENT_BUFFER) {
@@ -115,7 +115,7 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
                         driver.binaryPath = config->lpBinaryPathName ? config->lpBinaryPathName : "";
                         driver.account = config->lpServiceStartName ? config->lpServiceStartName : "";
                         
-                        // 启动类型
+                        // Start type
                         switch (config->dwStartType) {
                             case SERVICE_BOOT_START: driver.startType = "Boot"; break;
                             case SERVICE_SYSTEM_START: driver.startType = "System"; break;
@@ -125,7 +125,7 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
                             default: driver.startType = "Unknown"; break;
                         }
                         
-                        // 服务类型
+                        // Service type
                         switch (config->dwServiceType) {
                             case SERVICE_KERNEL_DRIVER:
                                 driver.serviceType = "Kernel Driver";
@@ -140,7 +140,7 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
                                 break;
                         }
                         
-                        // 错误控制
+                        // Error control
                         switch (config->dwErrorControl) {
                             case SERVICE_ERROR_IGNORE: driver.errorControl = "Ignore"; break;
                             case SERVICE_ERROR_NORMAL: driver.errorControl = "Normal"; break;
@@ -151,7 +151,7 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
                     }
                 }
                 
-                // 获取服务状态
+                // Get service status
                 SERVICE_STATUS_PROCESS status;
                 DWORD bytesNeeded;
                 if (QueryServiceStatusEx(service, SC_STATUS_PROCESS_INFO, 
@@ -177,9 +177,9 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
                 CloseServiceHandle(service);
             }
             
-            // 获取版本信息
+            // Get version information
             if (!driver.binaryPath.empty()) {
-                // 清理路径中的系统目录引用
+                // Clean path of system directory references
                 std::string cleanPath = driver.binaryPath;
                 if (cleanPath.find("System32\\") != std::string::npos) {
                     char systemDir[MAX_PATH];
@@ -203,7 +203,7 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
 std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
     std::vector<DriverDetail> drivers;
     
-    // 获取设备信息集
+    // Get device information set
     HDEVINFO deviceInfoSet = SetupDiGetClassDevs(nullptr, nullptr, nullptr, 
                                                 DIGCF_ALLCLASSES | DIGCF_PRESENT);
     if (deviceInfoSet == INVALID_HANDLE_VALUE) {
@@ -216,9 +216,9 @@ std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
     for (DWORD i = 0; SetupDiEnumDeviceInfo(deviceInfoSet, i, &deviceInfoData); i++) {
         DriverDetail driver;
         driver.driverType = "Hardware";
-        driver.state = "Running"; // 硬件驱动通常都在运行
+        driver.state = "Running"; // Hardware drivers are usually running
         
-        // 获取设备描述
+        // Get device description
         char deviceDesc[256] = {0};
         if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData, 
                                            SPDRP_DEVICEDESC, nullptr, 
@@ -226,7 +226,7 @@ std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
             driver.displayName = deviceDesc;
         }
         
-        // 获取设备名称
+        // Get device name
         char deviceName[256] = {0};
         if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
                                            SPDRP_FRIENDLYNAME, nullptr,
@@ -236,7 +236,7 @@ std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
             driver.name = driver.displayName;
         }
         
-        // 获取硬件类别
+        // Get hardware class
         char hardwareClass[256] = {0};
         if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
                                            SPDRP_CLASS, nullptr,
@@ -244,7 +244,7 @@ std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
             driver.hardwareClass = hardwareClass;
         }
         
-        // 获取驱动信息
+        // Get driver information
         SP_DRVINFO_DATA driverInfoData;
         driverInfoData.cbSize = sizeof(SP_DRVINFO_DATA);
         
@@ -252,7 +252,7 @@ std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
                                 SPDIT_COMPATDRIVER, 0, &driverInfoData)) {
             driver.description = driverInfoData.Description;
             
-            // 获取驱动文件路径 - 使用硬件ID
+            // Get driver file path - use hardware ID
             char hardwareID[1024] = {0};
             if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
                                                SPDRP_HARDWAREID, nullptr,
@@ -260,20 +260,20 @@ std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
                 driver.binaryPath = hardwareID;
             }
             
-            // 获取INF文件路径
+            // Get INF file path
             char infPath[MAX_PATH] = {0};
             if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
                                                SPDRP_DRIVER, nullptr,
                                                (PBYTE)infPath, sizeof(infPath), nullptr)) {
                 if (strlen(infPath) > 0) {
-                    // 尝试从INF文件获取版本信息
+                    // Try to get version information from INF file
                     std::string infFilePath = infPath;
                     driver.version = GetDriverVersionInfo(infFilePath);
                 }
             }
         }
         
-        // 检测硬件类别
+        // Detect hardware class
         driver.hardwareClass = DetectHardwareClass(driver);
         
         drivers.push_back(driver);
@@ -286,7 +286,7 @@ std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
 DriverVersion DriverMonitor::GetDriverVersionInfo(const std::string& filePath) {
     DriverVersion version;
     
-    // 如果文件路径为空，直接返回
+    // Return directly if file path is empty
     if (filePath.empty()) {
         return version;
     }
@@ -301,7 +301,7 @@ DriverVersion DriverMonitor::GetDriverVersionInfo(const std::string& filePath) {
         return version;
     }
     
-    // 获取版本信息
+    // Get version information
     VS_FIXEDFILEINFO* fileInfo;
     UINT fileInfoLen;
     if (VerQueryValueA(versionData.data(), "\\", (LPVOID*)&fileInfo, &fileInfoLen)) {
@@ -316,7 +316,7 @@ DriverVersion DriverMonitor::GetDriverVersionInfo(const std::string& filePath) {
                                std::to_string(LOWORD(fileInfo->dwProductVersionLS));
     }
     
-    // 获取其他版本信息
+    // Get other version information
     struct LANGANDCODEPAGE {
         WORD language;
         WORD codePage;
@@ -333,25 +333,25 @@ DriverVersion DriverMonitor::GetDriverVersionInfo(const std::string& filePath) {
             char* value;
             UINT valueLen;
             
-            // 公司名称
+            // Company name
             if (VerQueryValueA(versionData.data(), (std::string(subBlock) + "CompanyName").c_str(), 
                              (LPVOID*)&value, &valueLen)) {
                 version.companyName = value;
             }
             
-            // 文件描述
+            // File description
             if (VerQueryValueA(versionData.data(), (std::string(subBlock) + "FileDescription").c_str(), 
                              (LPVOID*)&value, &valueLen)) {
                 version.fileDescription = value;
             }
             
-            // 版权信息
+            // Copyright information
             if (VerQueryValueA(versionData.data(), (std::string(subBlock) + "LegalCopyright").c_str(), 
                              (LPVOID*)&value, &valueLen)) {
                 version.legalCopyright = value;
             }
             
-            // 原始文件名
+            // Original filename
             if (VerQueryValueA(versionData.data(), (std::string(subBlock) + "OriginalFilename").c_str(), 
                              (LPVOID*)&value, &valueLen)) {
                 version.originalFilename = value;
@@ -366,12 +366,12 @@ void DriverMonitor::CategorizeHardwareDrivers(DriverSnapshot& snapshot, const st
     for (const auto& driver : hardwareDrivers) {
         snapshot.hardwareDrivers.push_back(driver);
         
-        // 按硬件类别分类
+        // Classify by hardware category
         std::string hardwareClass = driver.hardwareClass;
         std::string name = driver.name;
         std::string displayName = driver.displayName;
         
-        // 使用安全的转换函数
+        // Use safe conversion function
         std::transform(hardwareClass.begin(), hardwareClass.end(), hardwareClass.begin(), toLowerChar);
         std::transform(name.begin(), name.end(), name.begin(), toLowerChar);
         std::transform(displayName.begin(), displayName.end(), displayName.begin(), toLowerChar);
@@ -440,7 +440,7 @@ void DriverMonitor::CategorizeHardwareDrivers(DriverSnapshot& snapshot, const st
 
 void DriverMonitor::CategorizeDrivers(DriverSnapshot& snapshot, const std::vector<DriverDetail>& allDrivers) {
     for (const auto& driver : allDrivers) {
-        // 按类型分类
+        // Classify by type
         if (driver.driverType == "Kernel") {
             snapshot.kernelDrivers.push_back(driver);
         } else if (driver.driverType == "FileSystem") {
@@ -449,19 +449,19 @@ void DriverMonitor::CategorizeDrivers(DriverSnapshot& snapshot, const std::vecto
             snapshot.hardwareDrivers.push_back(driver);
         }
         
-        // 按状态分类
+        // Classify by state
         if (driver.state == "Running") {
             snapshot.runningDrivers.push_back(driver);
         } else if (driver.state == "Stopped") {
             snapshot.stoppedDrivers.push_back(driver);
         }
         
-        // 按启动类型分类
+        // Classify by start type
         if (driver.startType == "Auto" || driver.startType == "Boot" || driver.startType == "System") {
             snapshot.autoStartDrivers.push_back(driver);
         }
         
-        // 判断第三方驱动
+        // Determine third-party drivers
         if (driver.binaryPath.find("Microsoft") == std::string::npos && 
             driver.binaryPath.find("Windows") == std::string::npos &&
             !driver.binaryPath.empty()) {
@@ -522,7 +522,7 @@ std::string DriverMonitor::DetectHardwareClass(const DriverDetail& driver) {
     std::string displayName = driver.displayName;
     std::string hardwareClass = driver.hardwareClass;
     
-    // 使用安全的转换函数
+    // Use safe conversion function
     std::transform(name.begin(), name.end(), name.begin(), toLowerChar);
     std::transform(displayName.begin(), displayName.end(), displayName.begin(), toLowerChar);
     std::transform(hardwareClass.begin(), hardwareClass.end(), hardwareClass.begin(), toLowerChar);
@@ -594,7 +594,7 @@ DriverDetail DriverMonitor::GetDriverDetail(const std::string& driverName) {
     auto snapshot = GetDriverSnapshot();
     std::string safeName = util::EncodingUtil::SafeString(driverName);
     
-    // 在所有分类中查找驱动
+    // Search for driver in all categories
     std::vector<std::vector<DriverDetail>> allCategories = {
         snapshot.kernelDrivers,
         snapshot.fileSystemDrivers,
@@ -616,7 +616,7 @@ DriverDetail DriverMonitor::GetDriverDetail(const std::string& driverName) {
         }
     }
     
-    throw std::runtime_error("驱动未找到: " + driverName);
+    throw std::runtime_error("Driver not found: " + driverName);
 }
 
 bool DriverMonitor::IsDriverRunning(const std::string& driverName) {

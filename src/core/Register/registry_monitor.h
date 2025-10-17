@@ -39,8 +39,8 @@ struct RegistryKey {
     std::vector<RegistryValue> values;
     std::vector<std::string> subkeys;
     uint64_t lastModified;
-    std::string category;  // 分类标识
-    std::string autoStartType;  // 新增：自启动项类型
+    std::string category;  // Category identifier
+    std::string autoStartType;  // New: auto-start item type
 
     bool operator==(const RegistryKey& other) const {
         return path == other.path &&
@@ -92,7 +92,7 @@ public:
     bool SafeQueryValue(const std::string& fullPath, RegistryValue& value);
 
 private:
-    // 私有辅助方法
+    // Private helper methods
     RegistryKey FilterAutoStartServices(const RegistryKey& servicesKey);
     std::string GetAutoStartType(HKEY root, const std::string& path);
     
@@ -101,7 +101,7 @@ private:
     bool SafeOpenKey(HKEY root, const std::string& subKey, HKEY& hKey);
     void SafeCloseKey(HKEY hKey);
     
-    // 预定义的关注路径
+    // Predefined paths of interest
     const std::vector<std::string> systemInfoPaths = {
         "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion",
         "HARDWARE\\DESCRIPTION\\System",
@@ -121,7 +121,7 @@ private:
         "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\NetworkList\\Signatures\\Unmanaged"
     };
     
-    // 自启动项路径
+    // Auto-start item paths
     const std::vector<std::pair<HKEY, std::string>> autoStartPaths = {
         {HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run"},
         {HKEY_CURRENT_USER, "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\RunOnce"},

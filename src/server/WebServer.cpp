@@ -1,4 +1,3 @@
-
 #define WIN32_LEAN_AND_MEAN
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 
@@ -26,33 +25,33 @@ bool HttpServer::Start(int port) {
     port_ = port;
     server_ = std::make_unique<httplib::Server>();
     
-    // 设置路由
+    // Set up routes
     SetupRoutes();
     
-    // 初始化CPU监控
+    // Initialize CPU monitoring
     if (!cpuMonitor_.Initialize()) {
-        std::cerr << "CPU监控初始化失败" << std::endl;
+        std::cerr << "CPU monitor initialization failed" << std::endl;
         return false;
     }
     
-    // 启动后台监控
+    // Start background monitoring
     StartBackgroundMonitoring();
     
-    // 启动HTTP服务器
+    // Start HTTP server
     serverThread_ = std::make_unique<std::thread>([this]() {
-        std::cout << "启动HTTP服务器，端口: " << port_ << std::endl;
-        std::cout << "API端点:" << std::endl;
-        std::cout << "  GET /api/cpu/info     - 获取CPU信息" << std::endl;
-        std::cout << "  GET /api/cpu/usage    - 获取当前CPU使用率" << std::endl;
-        std::cout << "  GET /api/system/info  - 获取系统信息" << std::endl;
-        std::cout << "  GET /api/cpu/stream   - 实时流式CPU使用率" << std::endl;
+        std::cout << "Starting HTTP server on port: " << port_ << std::endl;
+        std::cout << "API endpoints:" << std::endl;
+        std::cout << "  GET /api/cpu/info     - Get CPU information" << std::endl;
+        std::cout << "  GET /api/cpu/usage    - Get current CPU usage" << std::endl;
+        std::cout << "  GET /api/system/info  - Get system information" << std::endl;
+        std::cout << "  GET /api/cpu/stream   - Real-time streaming CPU usage" << std::endl;
         
         isRunning_ = true;
         server_->listen("0.0.0.0", port_);
         isRunning_ = false;
     });
     
-    // 等待服务器启动
+    // Wait for server to start
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     return true;
 }
@@ -72,11 +71,11 @@ void HttpServer::Stop() {
 }
 
 void HttpServer::SetupRoutes() {
-    // 静态文件服务（用于前端页面）
-    server_->set_mount_point("/", "www");//测试页面
+    // Static file service (for frontend pages)
+    server_->set_mount_point("/", "www");//Test page
     // server_->set_mount_point("/", "webclient");
 
-    // API路由 CPU相关
+    // API routes - CPU related
     server_->Get("/api/cpu/info", [this](const httplib::Request& req, httplib::Response& res) {
         HandleGetCPUInfo(req, res);
     });
@@ -93,12 +92,12 @@ void HttpServer::SetupRoutes() {
         HandleStreamCPUUsage(req, res);
     });
     
-    // API路由 内存相关
+    // API routes - Memory related
     server_->Get("/api/memory/usage", [this](const httplib::Request& req, httplib::Response& res) {
         HandleGetMemoryUsage(req, res);
     });
 
-    // 历史数据路由
+    // Historical data routes
     server_->Get("/api/cpu/history", [this](const httplib::Request& req, httplib::Response& res) {
         HandleGetCPUHistory(req, res);
     });
@@ -107,7 +106,7 @@ void HttpServer::SetupRoutes() {
         HandleGetMemoryHistory(req, res);
     });
 
-    // 添加新的API路由 进程相关
+    // Add new API routes - Process related
     server_->Get("/api/processes", [this](const httplib::Request& req, httplib::Response& res) {
         HandleGetProcesses(req, res);
     });
@@ -125,7 +124,7 @@ void HttpServer::SetupRoutes() {
     });
 
 
-    // 磁盘相关路由
+    // Disk related routes
     server_->Get("/api/disk/info", [this](const httplib::Request& req, httplib::Response& res) {
         HandleGetDiskInfo(req, res);
     });
@@ -134,7 +133,7 @@ void HttpServer::SetupRoutes() {
         HandleGetDiskPerformance(req, res);
     });
 
-    // 添加OPTIONS请求处理（用于CORS预检）
+    // Add OPTIONS request handling (for CORS preflight)
     server_->Options("/api/disk/info", [](const httplib::Request& req, httplib::Response& res) {
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
@@ -150,7 +149,7 @@ void HttpServer::SetupRoutes() {
     });
 
 
-    // 注册表相关API
+    // Registry related APIs
     server_->Get("/api/registry/snapshot", [this](const httplib::Request& req, httplib::Response& res) {
         HandleGetRegistrySnapshot(req, res);
     });
@@ -172,7 +171,7 @@ void HttpServer::SetupRoutes() {
     });
 
 
-    // 驱动信息
+    // Driver information
     server_->Get("/api/drivers/snapshot", [this](const httplib::Request& req, httplib::Response& res) {
         HandleGetDriverSnapshot(req, res);
     });
@@ -181,14 +180,14 @@ void HttpServer::SetupRoutes() {
         HandleGetDriverDetail(req, res);
     });
 
-    // 默认路由
+    // Default route
     server_->Get("/", [](const httplib::Request& req, httplib::Response& res) {
         res.set_redirect("/index.html");
     });
 }
 
 void HttpServer::StartBackgroundMonitoring() {
-    // 设置CPU使用率回调并记录历史样本
+    // Set CPU usage callback and record historical samples
     cpuMonitor_.SetUsageCallback([this](const CPUUsage& usage) {
         currentUsage_.store(usage.totalUsage);
 
@@ -202,10 +201,10 @@ void HttpServer::StartBackgroundMonitoring() {
         }
     });
 
-    // 启动CPU监控
+    // Start CPU monitoring
     cpuMonitor_.StartMonitoring(1000);
 
-    // 设置内存使用率回调并记录历史样本
+    // Set memory usage callback and record historical samples
     memoryMonitor_.SetUsageCallback([this](const MemoryUsage& usage) {
         {
             std::lock_guard<std::mutex> lk(memoryUsageMutex_);
@@ -222,7 +221,7 @@ void HttpServer::StartBackgroundMonitoring() {
         }
     });
 
-    // 启动内存监控
+    // Start memory monitoring
     memoryMonitor_.StartMonitoring(1000);
 }
 
@@ -301,7 +300,7 @@ void HttpServer::HandleGetMemoryUsage(const httplib::Request& req, httplib::Resp
 void HttpServer::HandleGetSystemInfo(const httplib::Request& req, httplib::Response& res) {
     json response;
     
-    // 基础系统信息
+    // Basic system information
     response["cpu"]["info"] = {
         {"name", cpuInfo_.name},
         {"cores", cpuInfo_.physicalCores},
@@ -315,23 +314,23 @@ void HttpServer::HandleGetSystemInfo(const httplib::Request& req, httplib::Respo
 }
 
 void HttpServer::HandleStreamCPUUsage(const httplib::Request& req, httplib::Response& res) {
-    // 设置Server-Sent Events (SSE) 头
+    // Set Server-Sent Events (SSE) headers
     res.set_header("Content-Type", "text/event-stream");
     res.set_header("Cache-Control", "no-cache");
     res.set_header("Connection", "keep-alive");
     res.set_header("Access-Control-Allow-Origin", "*");
     
-    // 发送初始数据
+    // Send initial data
     std::stringstream initialData;
     initialData << "data: " << json{{"usage", currentUsage_.load()}, {"timestamp", GetTickCount64()}}.dump() << "\n\n";
     res.set_content(initialData.str(), "text/event-stream");
     
-    // 注意：这是一个简化的流实现，实际生产环境需要更复杂的连接管理
+    // Note: This is a simplified streaming implementation, production environment requires more complex connection management
 }
 
 
 
-// 添加新的处理函数实现
+// Add new handler function implementations
 void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Response& res) {
     try {
         auto snapshot = processMonitor_.GetProcessSnapshot();
@@ -453,7 +452,7 @@ void HttpServer::HandleTerminateProcess(const httplib::Request& req, httplib::Re
         uint32_t pid = std::stoi(req.matches[1]);
         uint32_t exitCode = 0;
         
-        // 解析可选的退出代码
+        // Parse optional exit code
         auto exitCodeParam = req.get_param_value("exitCode");
         if (!exitCodeParam.empty()) {
             exitCode = std::stoi(exitCodeParam);
@@ -480,10 +479,10 @@ void HttpServer::HandleTerminateProcess(const httplib::Request& req, httplib::Re
     }
 }
 
-// 添加磁盘信息处理函数
+// Add disk information handler functions
 void HttpServer::HandleGetDiskInfo(const httplib::Request& req, httplib::Response& res) {
     try {
-        // 设置CORS头
+        // Set CORS headers
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         res.set_header("Access-Control-Allow-Headers", "Content-Type");
@@ -493,12 +492,12 @@ void HttpServer::HandleGetDiskInfo(const httplib::Request& req, httplib::Respons
         
         response["timestamp"] = snapshot.timestamp;
         
-        // 磁盘驱动器信息 - 使用更安全的JSON构建方式
+        // Disk drive information - use safer JSON building approach
         json drivesJson = json::array();
         for (const auto& drive : snapshot.drives) {
             try {
                 json driveJson;
-                // 确保所有字符串都是有效的UTF-8
+                // Ensure all strings are valid UTF-8
                 driveJson["model"] = drive.model.empty() ? "Unknown" : drive.model;
                 driveJson["serialNumber"] = drive.serialNumber.empty() ? "" : drive.serialNumber;
                 driveJson["interfaceType"] = drive.interfaceType.empty() ? "Unknown" : drive.interfaceType;
@@ -508,17 +507,17 @@ void HttpServer::HandleGetDiskInfo(const httplib::Request& req, httplib::Respons
                 driveJson["status"] = drive.status.empty() ? "Unknown" : drive.status;
                 driveJson["deviceId"] = drive.deviceId.empty() ? "Unknown" : drive.deviceId;
                 
-                // 验证JSON对象是否可以序列化
+                // Verify JSON object can be serialized
                 std::string test = driveJson.dump();
                 drivesJson.push_back(driveJson);
             } catch (const std::exception& e) {
-                std::cerr << "跳过有问题的驱动器数据: " << e.what() << std::endl;
+                std::cerr << "Skipping problematic drive data: " << e.what() << std::endl;
                 continue;
             }
         }
         response["drives"] = drivesJson;
         
-        // 分区信息 - 使用更安全的JSON构建方式
+        // Partition information - use safer JSON building approach
         json partitionsJson = json::array();
         for (const auto& partition : snapshot.partitions) {
             try {
@@ -532,25 +531,25 @@ void HttpServer::HandleGetDiskInfo(const httplib::Request& req, httplib::Respons
                 partitionJson["usagePercentage"] = partition.usagePercentage;
                 partitionJson["serialNumber"] = partition.serialNumber;
                 
-                // 验证JSON对象是否可以序列化
+                // Verify JSON object can be serialized
                 std::string test = partitionJson.dump();
                 partitionsJson.push_back(partitionJson);
             } catch (const std::exception& e) {
-                std::cerr << "跳过有问题的分区数据: " << e.what() << std::endl;
+                std::cerr << "Skipping problematic partition data: " << e.what() << std::endl;
                 continue;
             }
         }
         response["partitions"] = partitionsJson;
         
         std::string responseStr = response.dump();
-        std::cout << "返回磁盘信息，驱动器数量: " << snapshot.drives.size() 
-                  << ", 分区数量: " << snapshot.partitions.size() 
-                  << ", JSON长度: " << responseStr.length() << std::endl;
+        std::cout << "Returning disk information, drive count: " << snapshot.drives.size() 
+                  << ", partition count: " << snapshot.partitions.size() 
+                  << ", JSON length: " << responseStr.length() << std::endl;
         
         res.set_content(responseStr, "application/json");
         
     } catch (const std::exception& e) {
-        std::cerr << "HandleGetDiskInfo 异常: " << e.what() << std::endl;
+        std::cerr << "HandleGetDiskInfo exception: " << e.what() << std::endl;
         json error;
         error["error"] = "Internal server error";
         res.status = 500;
@@ -560,7 +559,7 @@ void HttpServer::HandleGetDiskInfo(const httplib::Request& req, httplib::Respons
 
 void HttpServer::HandleGetDiskPerformance(const httplib::Request& req, httplib::Response& res) {
     try {
-        // 设置CORS头
+        // Set CORS headers
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         res.set_header("Access-Control-Allow-Headers", "Content-Type");
@@ -587,12 +586,12 @@ void HttpServer::HandleGetDiskPerformance(const httplib::Request& req, httplib::
         }
         response["performance"] = performanceJson;
         
-        std::cout << "返回磁盘性能数据，性能计数器数量: " << snapshot.performance.size() << std::endl;
+        std::cout << "Returning disk performance data, performance counter count: " << snapshot.performance.size() << std::endl;
         
         res.set_content(response.dump(), "application/json");
         
     } catch (const std::exception& e) {
-        std::cerr << "HandleGetDiskPerformance 异常: " << e.what() << std::endl;
+        std::cerr << "HandleGetDiskPerformance exception: " << e.what() << std::endl;
         json error;
         error["error"] = e.what();
         res.status = 500;
@@ -600,7 +599,7 @@ void HttpServer::HandleGetDiskPerformance(const httplib::Request& req, httplib::
     }
 }
 
-// 辅助函数：获取当前时间字符串
+// Helper function: Get current time string
 std::string HttpServer::GetCurrentTimeString() {
     auto now = std::chrono::system_clock::now();
     auto time_t = std::chrono::system_clock::to_time_t(now);
@@ -620,7 +619,7 @@ void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib:
         
         response["timestamp"] = snapshot.timestamp;
         
-        // 系统信息键
+        // System information keys
         json systemInfoJson = json::array();
         for (const auto& key : snapshot.systemInfoKeys) {
             json keyJson;
@@ -642,7 +641,7 @@ void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib:
         }
         response["systemInfo"] = systemInfoJson;
         
-        // 软件信息键
+        // Software information keys
         json softwareJson = json::array();
         for (const auto& key : snapshot.softwareKeys) {
             json keyJson;
@@ -664,7 +663,7 @@ void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib:
         }
         response["software"] = softwareJson;
         
-        // 网络配置键
+        // Network configuration keys
         json networkJson = json::array();
         for (const auto& key : snapshot.networkKeys) {
             json keyJson;
@@ -686,7 +685,7 @@ void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib:
         }
         response["network"] = networkJson;
         
-        // 新增：自启动项
+        // New: Auto-start items
         json autoStartJson = json::array();
         for (const auto& key : snapshot.autoStartKeys) {
             json keyJson;
@@ -704,7 +703,7 @@ void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib:
             keyJson["values"] = valuesJson;
             keyJson["subkeys"] = key.subkeys;
             
-            // 添加自启动项特有字段
+            // Add auto-start specific fields
             if (!key.autoStartType.empty()) {
                 keyJson["autoStartType"] = key.autoStartType;
             }
@@ -717,17 +716,17 @@ void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib:
         response["autoStart"] = autoStartJson;
         
         std::string responseStr = response.dump();
-        std::cout << "返回注册表快照，系统信息键: " << snapshot.systemInfoKeys.size()
-                  << ", 软件键: " << snapshot.softwareKeys.size()
-                  << ", 网络键: " << snapshot.networkKeys.size()
-                  << ", 自启动项: " << snapshot.autoStartKeys.size() << std::endl;
+        std::cout << "Returning registry snapshot, system info keys: " << snapshot.systemInfoKeys.size()
+                  << ", software keys: " << snapshot.softwareKeys.size()
+                  << ", network keys: " << snapshot.networkKeys.size()
+                  << ", auto-start items: " << snapshot.autoStartKeys.size() << std::endl;
         
         res.set_content(responseStr, "application/json");
         
     } catch (const std::exception& e) {
-        std::cerr << "HandleGetRegistrySnapshot 异常: " << e.what() << std::endl;
+        std::cerr << "HandleGetRegistrySnapshot exception: " << e.what() << std::endl;
         json error;
-        error["error"] = "获取注册表快照失败: " + std::string(e.what());
+        error["error"] = "Failed to get registry snapshot: " + std::string(e.what());
         res.status = 500;
         res.set_content(error.dump(), "application/json");
     }
@@ -739,25 +738,25 @@ void HttpServer::HandleSaveRegistrySnapshot(const httplib::Request& req, httplib
         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
         res.set_header("Access-Control-Allow-Headers", "Content-Type");
         
-        std::cout << "收到保存注册表快照请求" << std::endl;
-        std::cout << "请求体大小: " << req.body.size() << " 字节" << std::endl;
+        std::cout << "Received save registry snapshot request" << std::endl;
+        std::cout << "Request body size: " << req.body.size() << " bytes" << std::endl;
         
-        // 解析JSON数据
+        // Parse JSON data
         json request_json;
         try {
             request_json = json::parse(req.body);
-            std::cout << "JSON解析成功" << std::endl;
+            std::cout << "JSON parsing successful" << std::endl;
         } catch (const json::exception& e) {
-            std::cerr << "JSON解析失败: " << e.what() << std::endl;
+            std::cerr << "JSON parsing failed: " << e.what() << std::endl;
             json error;
             error["success"] = false;
-            error["error"] = "无效的JSON格式";
+            error["error"] = "Invalid JSON format";
             res.status = 400;
             res.set_content(error.dump(), "application/json");
             return;
         }
         
-        // 获取快照名称
+        // Get snapshot name
         std::string snapshotName;
         if (request_json.contains("snapshotName") && request_json["snapshotName"].is_string()) {
             snapshotName = request_json["snapshotName"];
@@ -766,11 +765,11 @@ void HttpServer::HandleSaveRegistrySnapshot(const httplib::Request& req, httplib
             snapshotName = "snapshot_" + std::to_string(GetTickCount64());
         }
         
-        // 创建快照对象但不解析详细内容（避免编码问题）
+        // Create snapshot object but don't parse detailed content (avoid encoding issues)
         RegistrySnapshot snapshot;
         snapshot.timestamp = GetTickCount64();
         
-        // 只记录数量，不解析具体内容
+        // Only record count, don't parse specific content
         if (request_json.contains("systemInfo") && request_json["systemInfo"].is_array()) {
             snapshot.systemInfoKeys.resize(request_json["systemInfo"].size());
         }
@@ -783,139 +782,44 @@ void HttpServer::HandleSaveRegistrySnapshot(const httplib::Request& req, httplib
             snapshot.networkKeys.resize(request_json["network"].size());
         }
         
-        // 保存快照
+        // Save snapshot
         registrySnapshots_[snapshotName] = snapshot;
         
-        // 构建响应 - 确保所有字符串都是安全的
+        // Build response - ensure all strings are safe
         json response;
         response["success"] = true;
-        response["snapshotName"] = snapshotName; // snapshotName 应该是安全的
+        response["snapshotName"] = snapshotName; // snapshotName should be safe
         response["timestamp"] = snapshot.timestamp;
         response["systemInfoCount"] = snapshot.systemInfoKeys.size();
         response["softwareCount"] = snapshot.softwareKeys.size();
         response["networkCount"] = snapshot.networkKeys.size();
-        response["message"] = "快照保存成功";
+        response["message"] = "Snapshot saved successfully";
         
-        std::cout << "保存注册表快照成功: " << snapshotName 
-                  << " (系统: " << snapshot.systemInfoKeys.size()
-                  << ", 软件: " << snapshot.softwareKeys.size() 
-                  << ", 网络: " << snapshot.networkKeys.size() << ")" << std::endl;
+        std::cout << "Registry snapshot saved successfully: " << snapshotName 
+                  << " (System: " << snapshot.systemInfoKeys.size()
+                  << ", Software: " << snapshot.softwareKeys.size() 
+                  << ", Network: " << snapshot.networkKeys.size() << ")" << std::endl;
         
-        // 安全地设置响应内容
+        // Safely set response content
         std::string response_str;
         try {
             response_str = response.dump();
             res.set_content(response_str, "application/json");
         } catch (const json::exception& e) {
-            std::cerr << "JSON序列化失败: " << e.what() << std::endl;
-            // 回退方案：构建一个简单的响应
-            res.set_content("{\"success\":true,\"message\":\"快照保存成功\"}", "application/json");
+            std::cerr << "JSON serialization failed: " << e.what() << std::endl;
+            // Fallback: build a simple response
+            res.set_content("{\"success\":true,\"message\":\"Snapshot saved successfully\"}", "application/json");
         }
         
     } catch (const std::exception& e) {
-        std::cerr << "HandleSaveRegistrySnapshot 异常: " << e.what() << std::endl;
-        // 使用简单的错误响应，避免JSON问题
+        std::cerr << "HandleSaveRegistrySnapshot exception: " << e.what() << std::endl;
+        // Use simple error response to avoid JSON issues
         res.status = 500;
-        res.set_content("{\"success\":false,\"error\":\"服务器内部错误\"}", "application/json");
+        res.set_content("{\"success\":false,\"error\":\"Internal server error\"}", "application/json");
     }
 }
 
-// void HttpServer::HandleSaveRegistrySnapshot(const httplib::Request& req, httplib::Response& res) {
-//     try {
-//         res.set_header("Access-Control-Allow-Origin", "*");
-//         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-//         res.set_header("Access-Control-Allow-Headers", "Content-Type");
-        
-//         // 添加请求日志
-//         std::cout << "收到保存注册表快照请求" << std::endl;
-//         std::cout << "请求体大小: " << req.body.size() << " 字节" << std::endl;
-        
-//         // 解析JSON数据
-//         json request_json;
-//         try {
-//             request_json = json::parse(req.body);
-//             std::cout << "JSON解析成功" << std::endl;
-//         } catch (const json::exception& e) {
-//             std::cerr << "JSON解析失败: " << e.what() << std::endl;
-//             json error;
-//             error["success"] = false;
-//             error["error"] = "无效的JSON格式: " + std::string(e.what());
-//             res.status = 400;
-//             res.set_content(error.dump(), "application/json");
-//             return;
-//         }
-        
-//         // 获取快照名称
-//         std::string snapshotName;
-//         if (request_json.contains("snapshotName") && !request_json["snapshotName"].is_null()) {
-//             snapshotName = request_json["snapshotName"];
-//         }
-//         if (snapshotName.empty()) {
-//             snapshotName = "snapshot_" + std::to_string(GetTickCount64());
-//         }
-        
-//         // 提取注册表数据
-//         RegistrySnapshot snapshot;
-//         snapshot.timestamp = GetTickCount64();
-        
-//         // 安全地提取系统信息
-//         if (request_json.contains("systemInfo") && request_json["systemInfo"].is_array()) {
-//             try {
-//                 snapshot.systemInfoKeys = ParseRegistryKeysFromJson(request_json["systemInfo"]);
-//             } catch (const std::exception& e) {
-//                 std::cerr << "解析系统信息失败: " << e.what() << std::endl;
-//                 // 继续处理其他部分
-//             }
-//         }
-        
-//         // 安全地提取软件信息
-//         if (request_json.contains("software") && request_json["software"].is_array()) {
-//             try {
-//                 snapshot.softwareKeys = ParseRegistryKeysFromJson(request_json["software"]);
-//             } catch (const std::exception& e) {
-//                 std::cerr << "解析软件信息失败: " << e.what() << std::endl;
-//             }
-//         }
-        
-//         // 安全地提取网络配置
-//         if (request_json.contains("network") && request_json["network"].is_array()) {
-//             try {
-//                 snapshot.networkKeys = ParseRegistryKeysFromJson(request_json["network"]);
-//             } catch (const std::exception& e) {
-//                 std::cerr << "解析网络配置失败: " << e.what() << std::endl;
-//             }
-//         }
-        
-//         // 保存快照
-//         registrySnapshots_[snapshotName] = snapshot;
-        
-//         json response;
-//         response["success"] = true;
-//         response["snapshotName"] = snapshotName;
-//         response["timestamp"] = snapshot.timestamp;
-//         response["systemInfoCount"] = snapshot.systemInfoKeys.size();
-//         response["softwareCount"] = snapshot.softwareKeys.size();
-//         response["networkCount"] = snapshot.networkKeys.size();
-//         response["message"] = "快照保存成功";
-        
-//         std::cout << "保存注册表快照成功: " << snapshotName 
-//                   << " (系统: " << snapshot.systemInfoKeys.size()
-//                   << ", 软件: " << snapshot.softwareKeys.size() 
-//                   << ", 网络: " << snapshot.networkKeys.size() << ")" << std::endl;
-        
-//         res.set_content(response.dump(), "application/json");
-        
-//     } catch (const std::exception& e) {
-//         std::cerr << "HandleSaveRegistrySnapshot 异常: " << e.what() << std::endl;
-//         json error;
-//         error["success"] = false;
-//         error["error"] = "服务器内部错误: " + std::string(e.what());
-//         res.status = 500;
-//         res.set_content(error.dump(), "application/json");
-//     }
-// }
-
-// 添加安全解析JSON的方法
+// Add safe JSON parsing method
 std::vector<RegistryKey> HttpServer::ParseRegistryKeysFromJson(const json& json_array) {
     std::vector<RegistryKey> keys;
     
@@ -927,12 +831,12 @@ std::vector<RegistryKey> HttpServer::ParseRegistryKeysFromJson(const json& json_
         try {
             RegistryKey key;
             
-            // 安全提取路径
+            // Safely extract path
             if (item.contains("path") && item["path"].is_string()) {
                 key.path = SafeJsonToString(item["path"]);
             }
             
-            // 安全提取值
+            // Safely extract values
             if (item.contains("values") && item["values"].is_array()) {
                 for (const auto& value_item : item["values"]) {
                     RegistryValue value;
@@ -954,7 +858,7 @@ std::vector<RegistryKey> HttpServer::ParseRegistryKeysFromJson(const json& json_
                 }
             }
             
-            // 安全提取子键
+            // Safely extract subkeys
             if (item.contains("subkeys") && item["subkeys"].is_array()) {
                 for (const auto& subkey_item : item["subkeys"]) {
                     if (subkey_item.is_string()) {
@@ -966,15 +870,15 @@ std::vector<RegistryKey> HttpServer::ParseRegistryKeysFromJson(const json& json_
             keys.push_back(key);
             
         } catch (const std::exception& e) {
-            std::cerr << "解析注册表键失败: " << e.what() << std::endl;
-            // 跳过有问题的键，继续处理下一个
+            std::cerr << "Failed to parse registry key: " << e.what() << std::endl;
+            // Skip problematic key, continue processing next
         }
     }
     
     return keys;
 }
 
-// 安全地从JSON提取字符串
+// Safely extract string from JSON
 std::string HttpServer::SafeJsonToString(const json& json_value) {
     if (json_value.is_null()) {
         return "";
@@ -985,7 +889,7 @@ std::string HttpServer::SafeJsonToString(const json& json_value) {
             std::string str = json_value.get<std::string>();
             return SanitizeUTF8(str);
         } catch (const std::exception& e) {
-            std::cerr << "JSON字符串转换失败: " << e.what() << std::endl;
+            std::cerr << "JSON string conversion failed: " << e.what() << std::endl;
             return "[Invalid String]";
         }
     }
@@ -1001,7 +905,7 @@ std::string HttpServer::SafeJsonToString(const json& json_value) {
     return "[Unsupported Type]";
 }
 
-// UTF-8清理函数（在HttpServer类中添加）
+// UTF-8 sanitization function (add to HttpServer class)
 std::string HttpServer::SanitizeUTF8(const std::string& str) {
     std::string result;
     result.reserve(str.length());
@@ -1010,11 +914,11 @@ std::string HttpServer::SanitizeUTF8(const std::string& str) {
         unsigned char c = static_cast<unsigned char>(str[i]);
         
         if (c <= 0x7F) {
-            // ASCII字符
+            // ASCII character
             result += c;
             i++;
         } else if ((c & 0xE0) == 0xC0) {
-            // 2字节UTF-8字符
+            // 2-byte UTF-8 character
             if (i + 1 < str.length() && (str[i+1] & 0xC0) == 0x80) {
                 result += str.substr(i, 2);
                 i += 2;
@@ -1023,7 +927,7 @@ std::string HttpServer::SanitizeUTF8(const std::string& str) {
                 i++;
             }
         } else if ((c & 0xF0) == 0xE0) {
-            // 3字节UTF-8字符
+            // 3-byte UTF-8 character
             if (i + 2 < str.length() && (str[i+1] & 0xC0) == 0x80 && (str[i+2] & 0xC0) == 0x80) {
                 result += str.substr(i, 3);
                 i += 3;
@@ -1032,7 +936,7 @@ std::string HttpServer::SanitizeUTF8(const std::string& str) {
                 i++;
             }
         } else if ((c & 0xF8) == 0xF0) {
-            // 4字节UTF-8字符
+            // 4-byte UTF-8 character
             if (i + 3 < str.length() && (str[i+1] & 0xC0) == 0x80 && 
                 (str[i+2] & 0xC0) == 0x80 && (str[i+3] & 0xC0) == 0x80) {
                 result += str.substr(i, 4);
@@ -1042,7 +946,7 @@ std::string HttpServer::SanitizeUTF8(const std::string& str) {
                 i++;
             }
         } else {
-            // 无效的UTF-8字节
+            // Invalid UTF-8 byte
             result += '?';
             i++;
         }
@@ -1068,21 +972,21 @@ void HttpServer::HandleGetSavedSnapshots(const httplib::Request& req, httplib::R
             response.push_back(snapshotJson);
         }
         
-        std::cout << "返回保存的快照列表，数量: " << registrySnapshots_.size() << std::endl;
+        std::cout << "Returning saved snapshot list, count: " << registrySnapshots_.size() << std::endl;
         
         res.set_content(response.dump(), "application/json");
         
     } catch (const std::exception& e) {
-        std::cerr << "HandleGetSavedSnapshots 异常: " << e.what() << std::endl;
+        std::cerr << "HandleGetSavedSnapshots exception: " << e.what() << std::endl;
         json error;
-        error["error"] = "获取快照列表失败";
+        error["error"] = "Failed to get snapshot list";
         res.status = 500;
         res.set_content(error.dump(), "application/json");
     }
 }
 
 
-// 辅助函数：比较两个注册表键列表
+// Helper function: Compare two registry key lists
 json HttpServer::CompareRegistrySnapshots(const std::vector<RegistryKey>& keys1, const std::vector<RegistryKey>& keys2) {
     json changes = json::object();
     changes["added"] = json::array();
@@ -1099,21 +1003,21 @@ json HttpServer::CompareRegistrySnapshots(const std::vector<RegistryKey>& keys1,
         map2[key.path] = key;
     }
     
-    // 查找新增的键
+    // Find added keys
     for (const auto& [path, key] : map2) {
         if (map1.find(path) == map1.end()) {
             changes["added"].push_back(path);
         }
     }
     
-    // 查找删除的键
+    // Find removed keys
     for (const auto& [path, key] : map1) {
         if (map2.find(path) == map2.end()) {
             changes["removed"].push_back(path);
         }
     }
     
-    // 查找修改的键
+    // Find modified keys
     for (const auto& [path, key1] : map1) {
         if (map2.find(path) != map2.end()) {
             const auto& key2 = map2[path];
@@ -1133,20 +1037,20 @@ void HttpServer::HandleCompareSnapshots(const httplib::Request& req, httplib::Re
         res.set_header("Access-Control-Allow-Headers", "Content-Type");
         res.set_header("Content-Type", "application/json; charset=utf-8");
         
-        // 解析JSON请求体
+        // Parse JSON request body
         json request_json;
         try {
             request_json = json::parse(req.body);
         } catch (const json::exception& e) {
             json error;
             error["success"] = false;
-            error["error"] = "无效的JSON格式: " + std::string(e.what());
+            error["error"] = "Invalid JSON format: " + std::string(e.what());
             res.status = 400;
             res.set_content(error.dump(), "application/json");
             return;
         }
         
-        // 从JSON中获取参数
+        // Get parameters from JSON
         std::string snapshot1, snapshot2;
         if (request_json.contains("snapshot1") && request_json["snapshot1"].is_string()) {
             snapshot1 = request_json["snapshot1"];
@@ -1155,22 +1059,22 @@ void HttpServer::HandleCompareSnapshots(const httplib::Request& req, httplib::Re
             snapshot2 = request_json["snapshot2"];
         }
         
-        std::cout << "收到比较快照请求: " << snapshot1 << " vs " << snapshot2 << std::endl;
+        std::cout << "Received compare snapshots request: " << snapshot1 << " vs " << snapshot2 << std::endl;
         
         if (snapshot1.empty() || snapshot2.empty()) {
             json error;
             error["success"] = false;
-            error["error"] = "需要提供两个快照名称";
+            error["error"] = "Two snapshot names are required";
             res.status = 400;
             res.set_content(error.dump(), "application/json");
             return;
         }
         
-        // 检查快照是否存在
+        // Check if snapshots exist
         if (registrySnapshots_.find(snapshot1) == registrySnapshots_.end()) {
             json error;
             error["success"] = false;
-            error["error"] = "快照不存在: " + snapshot1;
+            error["error"] = "Snapshot does not exist: " + snapshot1;
             res.status = 404;
             res.set_content(error.dump(), "application/json");
             return;
@@ -1179,13 +1083,13 @@ void HttpServer::HandleCompareSnapshots(const httplib::Request& req, httplib::Re
         if (registrySnapshots_.find(snapshot2) == registrySnapshots_.end()) {
             json error;
             error["success"] = false;
-            error["error"] = "快照不存在: " + snapshot2;
+            error["error"] = "Snapshot does not exist: " + snapshot2;
             res.status = 404;
             res.set_content(error.dump(), "application/json");
             return;
         }
         
-        // 获取快照
+        // Get snapshots
         const auto& snap1 = registrySnapshots_[snapshot1];
         const auto& snap2 = registrySnapshots_[snapshot2];
         
@@ -1195,19 +1099,19 @@ void HttpServer::HandleCompareSnapshots(const httplib::Request& req, httplib::Re
         response["timestamp1"] = snap1.timestamp;
         response["timestamp2"] = snap2.timestamp;
         
-        // 比较系统信息
+        // Compare system information
         response["systemInfoChanges"] = CompareRegistrySnapshots(snap1.systemInfoKeys, snap2.systemInfoKeys);
-        // 比较软件信息
+        // Compare software information
         response["softwareChanges"] = CompareRegistrySnapshots(snap1.softwareKeys, snap2.softwareKeys);
-        // 比较网络配置
+        // Compare network configuration
         response["networkChanges"] = CompareRegistrySnapshots(snap1.networkKeys, snap2.networkKeys);
         
-        std::cout << "比较快照完成: " << snapshot1 << " vs " << snapshot2 << std::endl;
+        std::cout << "Snapshot comparison completed: " << snapshot1 << " vs " << snapshot2 << std::endl;
         
         res.set_content(response.dump(), "application/json");
         
     } catch (const std::exception& e) {
-        std::cerr << "HandleCompareSnapshots 异常: " << e.what() << std::endl;
+        std::cerr << "HandleCompareSnapshots exception: " << e.what() << std::endl;
         json error;
         error["error"] = e.what();
         res.status = 500;
@@ -1220,28 +1124,28 @@ void HttpServer::HandleDeleteSnapshot(const httplib::Request& req, httplib::Resp
         res.set_header("Access-Control-Allow-Origin", "*");
         res.set_header("Content-Type", "application/json; charset=utf-8");
         
-        // 从路径参数获取快照名称
+        // Get snapshot name from path parameter
         if (req.matches.size() < 2) {
             res.status = 400;
-            res.set_content(R"({"success":false,"error":"缺少快照名称参数"})", "application/json");
+            res.set_content(R"({"success":false,"error":"Missing snapshot name parameter"})", "application/json");
             return;
         }
         
         std::string snapshotName = req.matches[1];
         
-        std::cout << "收到删除快照请求，原始名称: " << snapshotName << std::endl;
+        std::cout << "Received delete snapshot request, original name: " << snapshotName << std::endl;
         
         if (snapshotName.empty()) {
             res.status = 400;
-            res.set_content(R"({"success":false,"error":"快照名称不能为空"})", "application/json");
+            res.set_content(R"({"success":false,"error":"Snapshot name cannot be empty"})", "application/json");
             return;
         }
         
-        // 清理快照名称中的非UTF-8字符
+        // Clean non-UTF-8 characters from snapshot name
         std::string cleanSnapshotName = SanitizeUTF8(snapshotName);
-        std::cout << "清理后的快照名称: " << cleanSnapshotName << std::endl;
+        std::cout << "Cleaned snapshot name: " << cleanSnapshotName << std::endl;
         
-        // 在map中查找匹配的快照
+        // Find matching snapshot in map
         bool found = false;
         std::string actualSnapshotName;
         
@@ -1255,49 +1159,49 @@ void HttpServer::HandleDeleteSnapshot(const httplib::Request& req, httplib::Resp
         }
         
         if (found) {
-            // 使用原始名称删除
+            // Delete using original name
             registrySnapshots_.erase(actualSnapshotName);
             
-            // 构建JSON响应
+            // Build JSON response
             json response;
             response["success"] = true;
-            response["message"] = "快照删除成功";
+            response["message"] = "Snapshot deleted successfully";
             
-            // 安全地序列化JSON
+            // Safely serialize JSON
             std::string response_str;
             try {
                 response_str = response.dump();
             } catch (const json::exception& e) {
-                std::cerr << "JSON序列化失败，使用回退响应: " << e.what() << std::endl;
-                response_str = R"({"success":true,"message":"快照删除成功"})";
+                std::cerr << "JSON serialization failed, using fallback response: " << e.what() << std::endl;
+                response_str = R"({"success":true,"message":"Snapshot deleted successfully"})";
             }
             
             res.set_content(response_str, "application/json");
-            std::cout << "删除快照成功: " << actualSnapshotName << std::endl;
+            std::cout << "Snapshot deleted successfully: " << actualSnapshotName << std::endl;
             
         } else {
-            // 快照不存在
+            // Snapshot does not exist
             json error;
             error["success"] = false;
-            error["error"] = "快照不存在: " + cleanSnapshotName;
+            error["error"] = "Snapshot does not exist: " + cleanSnapshotName;
             
             std::string error_str;
             try {
                 error_str = error.dump();
             } catch (const json::exception& e) {
-                std::cerr << "错误JSON序列化失败: " << e.what() << std::endl;
-                error_str = R"({"success":false,"error":"快照不存在"})";
+                std::cerr << "Error JSON serialization failed: " << e.what() << std::endl;
+                error_str = R"({"success":false,"error":"Snapshot does not exist"})";
             }
             
             res.status = 404;
             res.set_content(error_str, "application/json");
-            std::cout << "删除快照失败: 快照不存在 - " << cleanSnapshotName << std::endl;
+            std::cout << "Failed to delete snapshot: Snapshot does not exist - " << cleanSnapshotName << std::endl;
         }
         
     } catch (const std::exception& e) {
-        std::cerr << "HandleDeleteSnapshot 异常: " << e.what() << std::endl;
+        std::cerr << "HandleDeleteSnapshot exception: " << e.what() << std::endl;
         res.status = 500;
-        res.set_content(R"({"success":false,"error":"删除快照失败"})", "application/json");
+        res.set_content(R"({"success":false,"error":"Failed to delete snapshot"})", "application/json");
     }
 }
 
@@ -1312,7 +1216,7 @@ void HttpServer::HandleGetDriverSnapshot(const httplib::Request& req, httplib::R
         
         response["timestamp"] = snapshot.timestamp;
         
-        // 统计信息
+        // Statistics
         json statsJson;
         statsJson["totalDrivers"] = snapshot.stats.totalDrivers;
         statsJson["runningCount"] = snapshot.stats.runningCount;
@@ -1323,7 +1227,7 @@ void HttpServer::HandleGetDriverSnapshot(const httplib::Request& req, httplib::R
         statsJson["thirdPartyCount"] = snapshot.stats.thirdPartyCount;
         response["statistics"] = statsJson;
         
-        // 内核驱动
+        // Kernel drivers
         json kernelDriversJson = json::array();
         for (const auto& driver : snapshot.kernelDrivers) {
             json driverJson;
@@ -1343,7 +1247,7 @@ void HttpServer::HandleGetDriverSnapshot(const httplib::Request& req, httplib::R
         }
         response["kernelDrivers"] = kernelDriversJson;
         
-        // 文件系统驱动
+        // File system drivers
         json fileSystemDriversJson = json::array();
         for (const auto& driver : snapshot.fileSystemDrivers) {
             json driverJson;
@@ -1363,7 +1267,7 @@ void HttpServer::HandleGetDriverSnapshot(const httplib::Request& req, httplib::R
         }
         response["fileSystemDrivers"] = fileSystemDriversJson;
         
-        // 运行中的驱动
+        // Running drivers
         json runningDriversJson = json::array();
         for (const auto& driver : snapshot.runningDrivers) {
             json driverJson;
@@ -1378,7 +1282,7 @@ void HttpServer::HandleGetDriverSnapshot(const httplib::Request& req, httplib::R
         }
         response["runningDrivers"] = runningDriversJson;
         
-        // 已停止的驱动
+        // Stopped drivers
         json stoppedDriversJson = json::array();
         for (const auto& driver : snapshot.stoppedDrivers) {
             json driverJson;
@@ -1392,7 +1296,7 @@ void HttpServer::HandleGetDriverSnapshot(const httplib::Request& req, httplib::R
         }
         response["stoppedDrivers"] = stoppedDriversJson;
         
-        // 自动启动的驱动
+        // Auto-start drivers
         json autoStartDriversJson = json::array();
         for (const auto& driver : snapshot.autoStartDrivers) {
             json driverJson;
@@ -1406,7 +1310,7 @@ void HttpServer::HandleGetDriverSnapshot(const httplib::Request& req, httplib::R
         }
         response["autoStartDrivers"] = autoStartDriversJson;
         
-        // 第三方驱动
+        // Third-party drivers
         json thirdPartyDriversJson = json::array();
         for (const auto& driver : snapshot.thirdPartyDrivers) {
             json driverJson;
@@ -1421,17 +1325,17 @@ void HttpServer::HandleGetDriverSnapshot(const httplib::Request& req, httplib::R
         response["thirdPartyDrivers"] = thirdPartyDriversJson;
         
         std::string responseStr = response.dump();
-        std::cout << "返回驱动快照 - "
-                  << "内核驱动: " << snapshot.kernelDrivers.size() << " 个, "
-                  << "文件系统驱动: " << snapshot.fileSystemDrivers.size() << " 个, "
-                  << "运行中: " << snapshot.runningDrivers.size() << " 个" << std::endl;
+        std::cout << "Returning driver snapshot - "
+                  << "Kernel drivers: " << snapshot.kernelDrivers.size() << ", "
+                  << "File system drivers: " << snapshot.fileSystemDrivers.size() << ", "
+                  << "Running: " << snapshot.runningDrivers.size() << std::endl;
         
         res.set_content(responseStr, "application/json");
         
     } catch (const std::exception& e) {
-        std::cerr << "HandleGetDriverSnapshot 异常: " << e.what() << std::endl;
+        std::cerr << "HandleGetDriverSnapshot exception: " << e.what() << std::endl;
         json error;
-        error["error"] = "获取驱动快照失败: " + std::string(e.what());
+        error["error"] = "Failed to get driver snapshot: " + std::string(e.what());
         res.status = 500;
         res.set_content(error.dump(), "application/json");
     }
@@ -1447,7 +1351,7 @@ void HttpServer::HandleGetDriverDetail(const httplib::Request& req, httplib::Res
         if (driverName.empty()) {
             res.status = 400;
             json error;
-            error["error"] = "缺少驱动名称参数";
+            error["error"] = "Missing driver name parameter";
             res.set_content(error.dump(), "application/json");
             return;
         }
@@ -1475,9 +1379,9 @@ void HttpServer::HandleGetDriverDetail(const httplib::Request& req, httplib::Res
         res.set_content(response.dump(), "application/json");
         
     } catch (const std::exception& e) {
-        std::cerr << "HandleGetDriverDetail 异常: " << e.what() << std::endl;
+        std::cerr << "HandleGetDriverDetail exception: " << e.what() << std::endl;
         json error;
-        error["error"] = "获取驱动详情失败: " + std::string(e.what());
+        error["error"] = "Failed to get driver details: " + std::string(e.what());
         res.status = 500;
         res.set_content(error.dump(), "application/json");
     }

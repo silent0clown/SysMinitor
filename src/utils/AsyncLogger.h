@@ -32,7 +32,7 @@ private:
     int maxFiles_ = 5;
     std::string currentLogFilePath_;
    
-    // 私有构造函数，防止外部实例化
+    // Private constructor to prevent external instantiation
     Logger() {
         initializeLogFile();
     }
@@ -43,12 +43,12 @@ private:
         }
     }
    
-    // 禁止拷贝和赋值
+    // Disable copy and assignment
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
    
     /**
-     * @brief 初始化日志文件
+     * @brief Initialize log file
      */
     void initializeLogFile() {
         std::lock_guard<std::mutex> lock(logMutex_);
@@ -63,7 +63,7 @@ private:
                 return;
             }
             
-            // 写入日志文件头
+            // Write log file header
             *logFile_ << "=== Log Started at " << getCurrentTime() << " ===" << std::endl;
             logFile_->flush();
             
@@ -73,8 +73,8 @@ private:
     }
     
     /**
-     * @brief 生成日志文件路径
-     * @return 完整的日志文件路径
+     * @brief Generate log file path
+     * @return Complete log file path
      */
     std::string generateLogFilePath() {
         auto now = std::chrono::system_clock::now();
@@ -88,22 +88,22 @@ private:
     }
     
     /**
-     * @brief 检查并执行日志轮转
+     * @brief Check and perform log rotation
      */
     void rotateLogIfNeeded() {
         if (!logFile_ || !logFile_->is_open()) return;
         
         try {
-            // 获取当前文件大小
+            // Get current file size
             auto currentPos = logFile_->tellp();
             if (currentPos > static_cast<std::streampos>(maxFileSize_)) {
-                // 关闭当前文件
+                // Close current file
                 logFile_->close();
                 
-                // 创建新日志文件
+                // Create new log file
                 initializeLogFile();
                 
-                // 清理旧文件
+                // Clean up old files
                 cleanupOldFiles();
             }
         } catch (const std::exception& e) {
@@ -112,13 +112,13 @@ private:
     }
     
     /**
-     * @brief 清理旧的日志文件
+     * @brief Clean up old log files
      */
     void cleanupOldFiles() {
         try {
             std::vector<std::filesystem::path> files;
             
-            // 收集所有相关的日志文件
+            // Collect all relevant log files
             for (const auto& entry : std::filesystem::directory_iterator(logDir_)) {
                 if (entry.is_regular_file() && 
                     entry.path().extension() == ".log" &&
@@ -127,16 +127,16 @@ private:
                 }
             }
             
-            // 如果文件数量超过限制，按时间排序并删除最旧的
+            // If file count exceeds limit, sort by time and delete oldest
             if (files.size() > static_cast<size_t>(maxFiles_)) {
-                // 按修改时间排序（最旧的在前面）
+                // Sort by modification time (oldest first)
                 std::sort(files.begin(), files.end(),
                          [](const auto& a, const auto& b) {
                              return std::filesystem::last_write_time(a) < 
                                     std::filesystem::last_write_time(b);
                          });
                 
-                // 删除最旧的文件，直到满足数量限制
+                // Delete oldest files until count limit is satisfied
                 while (files.size() > static_cast<size_t>(maxFiles_)) {
                     std::filesystem::remove(files.front());
                     files.erase(files.begin());
@@ -148,9 +148,9 @@ private:
     }
    
     /**
-     * @brief 将日志级别转换为字符串
-     * @param level 日志级别
-     * @return 对应的字符串表示
+     * @brief Convert log level to string
+     * @param level Log level
+     * @return Corresponding string representation
      */
     const char* levelToString(LogLevel level) {
         switch(level) {
@@ -163,8 +163,8 @@ private:
     }
    
     /**
-     * @brief 获取当前时间的字符串表示
-     * @return 时间字符串
+     * @brief Get current time as string
+     * @return Time string
      */
     std::string getCurrentTime() {
         auto now = std::chrono::system_clock::now();
@@ -173,7 +173,7 @@ private:
             now.time_since_epoch()) % 1000;
         
         std::tm tm;
-        // 使用安全的 localtime_s 替代 localtime
+        // Use safe localtime_s instead of localtime
         localtime_s(&tm, &time_t);
         
         std::ostringstream oss;
@@ -183,9 +183,9 @@ private:
     }
    
     /**
-     * @brief 提取文件名（去除路径）
-     * @param filePath 完整文件路径
-     * @return 文件名
+     * @brief Extract file name (remove path)
+     * @param filePath Complete file path
+     * @return File name
      */
     const char* extractFileName(const char* filePath) {
         const char* fileName = filePath;
@@ -199,8 +199,8 @@ private:
 
 public:
     /**
-     * @brief 获取单例实例
-     * @return Logger单例引用
+     * @brief Get singleton instance
+     * @return Logger singleton reference
      */
     static Logger& getInstance() {
         static Logger instance;
@@ -208,8 +208,8 @@ public:
     }
    
     /**
-     * @brief 设置日志级别
-     * @param level 要设置的日志级别
+     * @brief Set log level
+     * @param level Log level to set
      */
     void setLevel(LogLevel level) {
         std::lock_guard<std::mutex> lock(logMutex_);
@@ -217,16 +217,16 @@ public:
     }
    
     /**
-     * @brief 获取当前日志级别
-     * @return 当前日志级别
+     * @brief Get current log level
+     * @return Current log level
      */
     LogLevel getLevel() const {
         return currentLevel_;
     }
     
     /**
-     * @brief 设置日志目录
-     * @param dir 日志目录路径
+     * @brief Set log directory
+     * @param dir Log directory path
      */
     void setLogDirectory(const std::string& dir) {
         std::lock_guard<std::mutex> lock(logMutex_);
@@ -235,8 +235,8 @@ public:
     }
     
     /**
-     * @brief 设置日志文件基础名称
-     * @param baseName 基础名称
+     * @brief Set log file base name
+     * @param baseName Base name
      */
     void setLogBaseName(const std::string& baseName) {
         std::lock_guard<std::mutex> lock(logMutex_);
@@ -245,8 +245,8 @@ public:
     }
     
     /**
-     * @brief 设置最大文件大小
-     * @param size 文件大小（字节）
+     * @brief Set maximum file size
+     * @param size File size in bytes
      */
     void setMaxFileSize(size_t size) {
         std::lock_guard<std::mutex> lock(logMutex_);
@@ -254,8 +254,8 @@ public:
     }
     
     /**
-     * @brief 设置最大文件数量
-     * @param count 文件数量
+     * @brief Set maximum number of files
+     * @param count File count
      */
     void setMaxFiles(int count) {
         std::lock_guard<std::mutex> lock(logMutex_);
@@ -263,15 +263,15 @@ public:
     }
     
     /**
-     * @brief 获取当前日志文件路径
-     * @return 当前日志文件路径
+     * @brief Get current log file path
+     * @return Current log file path
      */
     std::string getCurrentLogFilePath() const {
         return currentLogFilePath_;
     }
     
     /**
-     * @brief 立即刷新日志缓冲区
+     * @brief Immediately flush log buffer
      */
     void flush() {
         std::lock_guard<std::mutex> lock(logMutex_);
@@ -281,46 +281,46 @@ public:
     }
    
     /**
-     * @brief 核心日志方法
-     * @tparam Args 可变参数类型
-     * @param level 日志级别
-     * @param file 源文件名
-     * @param line 源代码行号
-     * @param args 日志内容参数
+     * @brief Core logging method
+     * @tparam Args Variadic parameter types
+     * @param level Log level
+     * @param file Source file name
+     * @param line Source code line number
+     * @param args Log content parameters
      */
     template<typename... Args>
     void log(LogLevel level, const char* file, int line, Args&&... args) {
-        // 检查日志级别是否满足输出条件
+        // Check if log level meets output condition
         if (level < currentLevel_) return;
        
-        // 将参数拼接成字符串
+        // Concatenate parameters into string
         std::ostringstream stream;
         (stream << ... << std::forward<Args>(args));
         std::string logMessage = stream.str();
        
         std::lock_guard<std::mutex> lock(logMutex_);
         
-        // 格式化日志信息
+        // Format log information
         std::string formattedLog = "[" + getCurrentTime() + "]"
                                  + "[" + levelToString(level) + "]"
                                  + "[" + extractFileName(file) + ":" + std::to_string(line) + "] "
                                  + logMessage;
         
-        // 输出到控制台
+        // Output to console
         std::cout << formattedLog << std::endl;
         
-        // 输出到文件（持久化）
+        // Output to file (persistent)
         if (logFile_ && logFile_->is_open()) {
             *logFile_ << formattedLog << std::endl;
-            logFile_->flush(); // 立即刷新缓冲区，确保日志写入磁盘
+            logFile_->flush(); // Immediately flush buffer to ensure log is written to disk
             
-            // 检查是否需要轮转日志
+            // Check if log rotation is needed
             rotateLogIfNeeded();
         }
     }
 };
 
-// 日志宏定义 - 保持现有使用方式不变
+// Log macros - maintain existing usage pattern
 #define LOG_DEBUG(...)  Logger::getInstance().log(LogLevel::DEBUG,   __FILE__, __LINE__, __VA_ARGS__)
 #define LOG_INFO(...)   Logger::getInstance().log(LogLevel::INFO,    __FILE__, __LINE__, __VA_ARGS__)
 #define LOG_WARN(...)   Logger::getInstance().log(LogLevel::WARNING, __FILE__, __LINE__, __VA_ARGS__)

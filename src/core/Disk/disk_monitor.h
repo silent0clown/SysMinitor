@@ -37,14 +37,14 @@ struct DiskPerformance {
     uint64_t readCountPerSec;
     uint64_t writeCountPerSec;
     double queueLength;
-    double usagePercentage;  // ´ÅÅÌÊ¹ÓÃÂÊ%
-    uint64_t responseTime;   // ÏìÓ¦Ê±¼ä(ms)
+    double usagePercentage;  // ç£ç›˜ä½¿ç”¨ç‡%
+    uint64_t responseTime;   // å“åº”æ—¶é—´(ms)
 };
 
 struct DiskSMARTData {
     std::string deviceId;
-    int temperature;         // ÎÂ¶È¡ãC
-    int healthStatus;        // ½¡¿µ×´Ì¬ 0-100
+    int temperature;         // æ¸©åº¦Â°C
+    int healthStatus;        // å¥åº·çŠ¶æ€ 0-100
     uint64_t powerOnHours;
     uint64_t powerOnCount;
     uint64_t badSectors;
@@ -66,22 +66,22 @@ public:
     DiskMonitor();
     ~DiskMonitor();
 
-    // »ñÈ¡´ÅÅÌ¿ìÕÕ
+    // è·å–ç£ç›˜å¿«ç…§
     DiskSnapshot GetDiskSnapshot();
     
-    // »ñÈ¡´ÅÅÌÇı¶¯Æ÷ĞÅÏ¢
+    // è·å–ç£ç›˜é©±åŠ¨å™¨ä¿¡æ¯
     std::vector<DiskDriveInfo> GetDiskDrives();
     
-    // »ñÈ¡·ÖÇøĞÅÏ¢
+    // è·å–åˆ†åŒºä¿¡æ¯
     std::vector<PartitionInfo> GetPartitions();
     
-    // »ñÈ¡´ÅÅÌĞÔÄÜÊı¾İ
+    // è·å–ç£ç›˜æ€§èƒ½æ•°æ®
     std::vector<DiskPerformance> GetDiskPerformance();
     
-    // »ñÈ¡SMARTÊı¾İ (ĞèÒª¹ÜÀíÔ±È¨ÏŞ)
+    // è·å–SMARTæ•°æ® (éœ€è¦ç®¡ç†å‘˜æƒé™)
     std::vector<DiskSMARTData> GetSMARTData();
     
-    // ¼à¿ØÌØ¶¨·ÖÇøµÄÊµÊ±IO
+    // ç›‘æ§ç‰¹å®šåˆ†åŒºçš„å®æ—¶IO
     bool StartIOMonitoring(const std::string& driveLetter);
     void StopIOMonitoring();
 
@@ -89,22 +89,22 @@ private:
     bool Initialize();
     void Cleanup();
     
-    // Ê¹ÓÃWMI»ñÈ¡´ÅÅÌĞÅÏ¢
+    // ä½¿ç”¨WMIè·å–ç£ç›˜ä¿¡æ¯
     std::vector<DiskDriveInfo> GetDrivesViaWMI();
     std::vector<PartitionInfo> GetPartitionsViaWMI();
     
-    // Ê¹ÓÃWindows API»ñÈ¡´ÅÅÌĞÅÏ¢
+    // ä½¿ç”¨Windows APIè·å–ç£ç›˜ä¿¡æ¯
     std::vector<DiskDriveInfo> GetDrivesViaAPI();
     std::vector<PartitionInfo> GetPartitionsViaAPI();
     
-    // Ê¹ÓÃPerformance Data Helper (PDH) »ñÈ¡ĞÔÄÜÊı¾İ
+    // ä½¿ç”¨Performance Data Helper (PDH) è·å–æ€§èƒ½æ•°æ®
     std::vector<DiskPerformance> GetPerformanceViaPDH();
     std::vector<DiskPerformance> GetPhysicalDiskPerformance();
     
-    // Ê¹ÓÃDeviceIoControl»ñÈ¡SMARTÊı¾İ
+    // ä½¿ç”¨DeviceIoControlè·å–SMARTæ•°æ®
     DiskSMARTData GetSMARTDataForDrive(const std::string& deviceId);
     
-    // IO¼à¿ØÏà¹Ø
+    // IOç›‘æ§ç›¸å…³
     struct IOMonitorData {
         uint64_t lastReadBytes;
         uint64_t lastWriteBytes;
