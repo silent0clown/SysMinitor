@@ -65,12 +65,20 @@ void CPUMonitor::MonitoringLoop() {
 CPUUsage CPUMonitor::GetCurrentUsage() {
     CPUUsage usage;
     usage.timestamp = GetTickCount64();
-    
     if (!UpdateUsageData()) {
         usage.totalUsage = -1.0;
         return usage;
     }
-    
+
+    usage.totalUsage = currentUsage.load();
+    // cpu核心使用率暂未实现，默认返回0
+    try {
+        uint32_t cores = cpuInfo_.logicalCores > 0 ? cpuInfo_.logicalCores : SystemInfo::GetLogicalCoreCount();
+        usage.coreUsages.assign(cores, 0.0);
+    } catch (...) {
+        usage.coreUsages.clear();
+    }
+
     return usage;
 }
 
@@ -97,15 +105,20 @@ bool CPUMonitor::UpdateUsageData() {
         uint64_t idleDiff = idleTimeValue - lastIdleTime_;
         
         if (totalDiff > 0) {
-            double usage = 100.0 * (totalDiff - idleDiff) / totalDiff;
+            double usage = 100.0 * (static_cast<double>(totalDiff) - static_cast<double>(idleDiff)) / static_cast<double>(totalDiff);
             usage = usage < 0.0 ? 0.0 : (usage > 100.0 ? 100.0 : usage);
+            currentUsage.store(usage);
             std::cout << "Debug: CPU Usage = " << usage << "%" << std::endl;
+        } else {
+            currentUsage.store(0.0);
         }
+    } else {
+        currentUsage.store(0.0);
     }
-    
+
     lastTotalTime_ = totalTime;
     lastIdleTime_ = idleTimeValue;
-    
+
     return true;
 }
 double CPUMonitor::CalculateUsage() {

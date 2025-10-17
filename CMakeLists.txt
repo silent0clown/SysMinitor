@@ -40,7 +40,7 @@ add_executable(SnapshotTool
     src/main.cpp
     # src/core/SystemSnapshot.cpp
     # src/core/DataCollector.cpp
-    # src/core/SnapshotManager.cpp
+    src/core/SnapshotManager.cpp
     # src/core/SnapshotComparator.cpp
     src/core/CPUInfo/cpu_monitor.cpp
     src/core/CPUInfo/wmi_helper.cpp

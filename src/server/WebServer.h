@@ -1,13 +1,12 @@
 #pragma once
-// #include "../core/SystemSnapshot.h"
-// #include "../core/SnapshotManager.h"
+#include "../core/SystemSnapshot.h"
+#include "../core/SnapshotManager.h"
 // #include "../core/SnapshotComparator.h"
 #include "../core/CPUInfo/system_info.h"
 #include "../core/CPUInfo/cpu_monitor.h"
 #include "../core/Memory/memory_monitor.h"
 #include "../core/Process/process_monitor.h"
 #include "../core/Disk/disk_monitor.h"
-// #include "../core/Register/register_minitor.h"
 #include "../core/Register/registry_monitor.h"
 #include "../core/Driver/driver_monitor.h"
 #include "../third_party/httplib.h"
@@ -63,6 +62,11 @@ private:
     void HandleGetDriverSnapshot(const httplib::Request& req, httplib::Response& res);
     void HandleGetDriverDetail(const httplib::Request& req, httplib::Response& res);
 
+    void HandleCreateSystemSnapshot(const httplib::Request& req, httplib::Response& res);
+    void HandleListSystemSnapshots(const httplib::Request& req, httplib::Response& res);
+    void HandleSaveSystemSnapshot(const httplib::Request& req, httplib::Response& res);
+    void HandleDeleteSystemSnapshot(const httplib::Request& req, httplib::Response& res);
+
     json CompareRegistrySnapshots(const std::vector<RegistryKey>& keys1, const std::vector<RegistryKey>& keys2);
     std::string GetCurrentTimeString();
     std::vector<RegistryKey> ParseRegistryKeysFromJson(const json& json_array);
@@ -98,6 +102,11 @@ private:
     RegistryMonitor registryMonitor_;  
     std::map<std::string, RegistrySnapshot> registrySnapshots_; 
     DriverMonitor driverMonitor_;
+
+    std::map<std::string, std::string> systemSnapshotsJson_; // name -> json
+    std::mutex systemSnapshotsMutex_;
+    // Persistent store
+    std::unique_ptr<snapshot::SnapshotManager> snapshotStore_;
     
     int port_;
 };

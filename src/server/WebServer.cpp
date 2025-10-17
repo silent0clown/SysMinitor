@@ -6,6 +6,7 @@
 #include "../third_party/nlohmann/json.hpp"
 #include <sstream>
 #include <iomanip>
+#include "../core/SystemSnapshotCollector.h"
 
 using json = nlohmann::json;
 
@@ -180,7 +181,25 @@ void HttpServer::SetupRoutes() {
         HandleGetDriverDetail(req, res);
     });
 
-    // Default route
+    // SystemSnapshot
+    server_->Post("/api/system/snapshot/create", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleCreateSystemSnapshot(req, res);
+    });
+
+    server_->Get("/api/system/snapshot/list", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleListSystemSnapshots(req, res);
+    });
+
+    server_->Post("/api/system/snapshot/save", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleSaveSystemSnapshot(req, res);
+    });
+
+    // Delete system snapshot (by name)
+    server_->Delete("/api/system/snapshot/delete/([^/]+)", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleDeleteSystemSnapshot(req, res);
+    });
+
+    // 默认路由
     server_->Get("/", [](const httplib::Request& req, httplib::Response& res) {
         res.set_redirect("/index.html");
     });
@@ -339,9 +358,9 @@ void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Respon
         response["timestamp"] = snapshot.timestamp;
         response["totalProcesses"] = snapshot.totalProcesses;
         response["totalThreads"] = snapshot.totalThreads;
-        response["totalHandles"] = snapshot.totalHandles;        // 新增
-        response["totalGdiObjects"] = snapshot.totalGdiObjects;  // 新增
-        response["totalUserObjects"] = snapshot.totalUserObjects; // 新增
+        response["totalHandles"] = snapshot.totalHandles;        // 新�??
+        response["totalGdiObjects"] = snapshot.totalGdiObjects;  // 新�??
+        response["totalUserObjects"] = snapshot.totalUserObjects; // 新�??
         
         json processesJson = json::array();
         for (const auto& process : snapshot.processes) {
@@ -360,9 +379,9 @@ void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Respon
             processJson["priority"] = process.priority;
             processJson["threadCount"] = process.threadCount;
             processJson["commandLine"] = process.commandLine;
-            processJson["handleCount"] = process.handleCount;    // 新增
-            processJson["gdiCount"] = process.gdiCount;          // 新增
-            processJson["userCount"] = process.userCount;        // 新增
+            processJson["handleCount"] = process.handleCount;    // 新�??
+            processJson["gdiCount"] = process.gdiCount;          // 新�??
+            processJson["userCount"] = process.userCount;        // 新�??
             
             processesJson.push_back(processJson);
         }
@@ -1393,9 +1412,171 @@ void HttpServer::HandleGetDriverDetail(const httplib::Request& req, httplib::Res
     }
 }
 
+void HttpServer::HandleCreateSystemSnapshot(const httplib::Request& req, httplib::Response& res) {
+    try {
+        auto snapshot = SystemSnapshotCollector::Collect(cpuMonitor_, memoryMonitor_, diskMonitor_, driverMonitor_, registryMonitor_, processMonitor_);
+        json out = snapshot.ToJson();
 
+        std::string name = "snapshot_" + std::to_string(snapshot.timestamp);
+        if (!req.body.empty()) {
+            try {
+                auto body = json::parse(req.body);
+                if (body.contains("name") && body["name"].is_string()) {
+                    name = body["name"];
+                }
+            } catch (...) {}
+        }
 
+        std::string serialized = out.dump();
+        {
+            std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
+            systemSnapshotsJson_[name] = serialized;
+        }
 
+        json resp;
+        resp["success"] = true;
+        resp["name"] = name;
+        resp["timestamp"] = snapshot.timestamp;
+        res.set_content(resp.dump(), "application/json");
+    } catch (const std::exception& e) {
+        json error;
+        error["success"] = false;
+        error["error"] = e.what();
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
 
+void HttpServer::HandleListSystemSnapshots(const httplib::Request& req, httplib::Response& res) {
+    try {
+        json arr = json::array();
+        std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
+        for (const auto &kv : systemSnapshotsJson_) {
+            arr.push_back(kv.first);
+        }
 
+        res.set_content(arr.dump(), "application/json");
+    } catch (const std::exception& e) {
+        json error;
+        error["error"] = e.what();
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
+void HttpServer::HandleSaveSystemSnapshot(const httplib::Request& req, httplib::Response& res) {
+    try {
+        std::string name;
+
+        if (req.has_param("name")) {
+            name = req.get_param_value("name");
+        }
+
+        if (name.empty() && !req.body.empty()) {
+            try {
+                auto body = json::parse(req.body);
+                if (body.is_object() && body.contains("name") && body["name"].is_string()) {
+                    name = body["name"].get<std::string>();
+                }
+            } catch (const json::exception& e) {
+                snapshot::Logger::getInstance().log(snapshot::LogLevel::WARNING, __FILE__, __LINE__, "HandleSaveSystemSnapshot: json parse failed: ", e.what());
+            }
+        }
+
+        if (name.empty()) name = "snapshot_" + std::to_string(GetTickCount64());
+
+        std::string payload;
+        {
+            std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
+            auto it = systemSnapshotsJson_.find(name);
+            if (it != systemSnapshotsJson_.end()) payload = it->second;
+        }
+
+        if (payload.empty()) {
+            auto snapshot = SystemSnapshotCollector::Collect(cpuMonitor_, memoryMonitor_, diskMonitor_, driverMonitor_, registryMonitor_, processMonitor_);
+            payload = snapshot.ToJson().dump();
+        }
+
+        bool ok = false;
+        try {
+            if (!snapshotStore_) snapshotStore_ = std::make_unique<snapshot::SnapshotManager>();
+            ok = snapshotStore_->Save(name, payload);
+        } catch (const std::exception& e) {
+            snapshot::Logger::getInstance().log(snapshot::LogLevel::E_ERROR, __FILE__, __LINE__, "HandleSaveSystemSnapshot: exception saving snapshot: ", e.what());
+            ok = false;
+        }
+
+        json resp;
+        resp["success"] = ok;
+        resp["name"] = name;
+        res.set_content(resp.dump(), "application/json");
+    } catch (const std::exception& e) {
+        json error; error["error"] = e.what(); res.status = 500; res.set_content(error.dump(), "application/json");
+    }
+}
+
+void HttpServer::HandleDeleteSystemSnapshot(const httplib::Request& req, httplib::Response& res) {
+    try {
+        if (req.matches.size() < 2) {
+            res.status = 400;
+            res.set_content(R"({"success":false,"error":"Missing snapshot name parameter"})", "application/json");
+            return;
+        }
+
+        std::string snapshotName = req.matches[1];
+        if (snapshotName.empty()) {
+            res.status = 400;
+            res.set_content(R"({"success":false,"error":"Snapshot name cannot be empty"})", "application/json");
+            return;
+        }
+
+        std::string sanitized = SanitizeUTF8(snapshotName);
+
+        bool removedInMemory = false;
+        {
+            std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
+            auto it = systemSnapshotsJson_.find(snapshotName);
+            if (it != systemSnapshotsJson_.end()) {
+                systemSnapshotsJson_.erase(it);
+                removedInMemory = true;
+            } else {
+                for (auto iter = systemSnapshotsJson_.begin(); iter != systemSnapshotsJson_.end(); ++iter) {
+                    if (SanitizeUTF8(iter->first) == sanitized) {
+                        systemSnapshotsJson_.erase(iter);
+                        removedInMemory = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        bool removedOnDisk = false;
+        if (snapshotStore_) {
+            try {
+                removedOnDisk = snapshotStore_->Delete(snapshotName) || snapshotStore_->Delete(sanitized);
+            } catch (const std::exception& e) {
+                std::cerr << "SnapshotManager::Delete threw: " << e.what() << std::endl;
+            }
+        }
+
+        if (!removedInMemory && !removedOnDisk) {
+            res.status = 404;
+            res.set_content(R"({"success":false,"error":"Snapshot not found"})", "application/json");
+            return;
+        }
+
+        json resp;
+        resp["success"] = true;
+        resp["deletedInMemory"] = removedInMemory;
+        resp["deletedOnDisk"] = removedOnDisk;
+        std::string out;
+        try { out = resp.dump(); } catch (...) { out = "{\"success\":true}"; }
+        res.set_content(out, "application/json");
+
+    } catch (const std::exception& e) {
+        std::cerr << "HandleDeleteSystemSnapshot exception: " << e.what() << std::endl;
+        res.status = 500;
+        res.set_content(R"({"success":false,"error":"Internal server error"})", "application/json");
+    }
+}
 } // namespace snapshot
