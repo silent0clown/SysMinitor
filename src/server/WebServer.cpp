@@ -339,6 +339,9 @@ void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Respon
         response["timestamp"] = snapshot.timestamp;
         response["totalProcesses"] = snapshot.totalProcesses;
         response["totalThreads"] = snapshot.totalThreads;
+        response["totalHandles"] = snapshot.totalHandles;        // 新增
+        response["totalGdiObjects"] = snapshot.totalGdiObjects;  // 新增
+        response["totalUserObjects"] = snapshot.totalUserObjects; // 新增
         
         json processesJson = json::array();
         for (const auto& process : snapshot.processes) {
@@ -357,6 +360,9 @@ void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Respon
             processJson["priority"] = process.priority;
             processJson["threadCount"] = process.threadCount;
             processJson["commandLine"] = process.commandLine;
+            processJson["handleCount"] = process.handleCount;    // 新增
+            processJson["gdiCount"] = process.gdiCount;          // 新增
+            processJson["userCount"] = process.userCount;        // 新增
             
             processesJson.push_back(processJson);
         }

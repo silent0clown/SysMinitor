@@ -22,6 +22,9 @@ struct ProcessInfo {
     int32_t priority;          // Process priority
     int32_t threadCount;       // Thread count
     std::string commandLine;   // Command line parameters
+    uint32_t handleCount;      // 句柄数
+    uint32_t gdiCount;         // GDI对象数
+    uint32_t userCount;        // USER对象数
 };
 
 struct ProcessSnapshot {
@@ -29,6 +32,18 @@ struct ProcessSnapshot {
     uint64_t timestamp;
     uint32_t totalProcesses;
     uint32_t totalThreads;
+    uint32_t totalHandles;     // 总句柄数
+    uint32_t totalGdiObjects;  // 总GDI对象数
+    uint32_t totalUserObjects; // 总USER对象数
+};
+
+struct HandleStatistics {
+    uint32_t totalHandles;
+    uint32_t totalGdiObjects;
+    uint32_t totalUserObjects;
+    std::unordered_map<uint32_t, uint32_t> processHandles;
+    std::unordered_map<uint32_t, uint32_t> processGdiObjects;
+    std::unordered_map<uint32_t, uint32_t> processUserObjects;
 };
 
 class ProcessMonitor {
@@ -51,18 +66,24 @@ public:
     // Get process CPU usage history (requires continuous monitoring)
     double GetProcessCpuUsage(uint32_t pid);
 
+    // 新增：获取进程句柄数
+    uint32_t GetProcessHandleCount1(uint32_t pid);
+    
+    // 新增：获取进程GDI对象数
+    uint32_t GetProcessGdiCount(uint32_t pid);
+    
+    // 新增：获取进程USER对象数  
+    uint32_t GetProcessUserCount(uint32_t pid);
+    
+    // 新增：获取所有进程的句柄统计
+    HandleStatistics GetHandleStatistics();
+
 private:
     bool Initialize();
     void Cleanup();
     
     // Use WMI to get process information
-    std::vector<ProcessInfo> GetProcessesViaWMI();
-    
-    // Use ToolHelp API to get process information
     std::vector<ProcessInfo> GetProcessesViaToolHelp();
-    
-    // Use NTQuerySystemInformation to get process information
-    std::vector<ProcessInfo> GetProcessesViaNTQuery();
     
     // Get process username
     std::string GetProcessUsername(uint32_t pid);
