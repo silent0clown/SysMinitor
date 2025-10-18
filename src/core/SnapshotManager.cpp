@@ -2,6 +2,7 @@
 #include <filesystem>
 #include <fstream>
 #include "../utils/AsyncLogger.h"
+#include "../utils/encode.h"
 
 using namespace std::string_literals;
 
@@ -12,7 +13,7 @@ SnapshotManager::SnapshotManager(const std::string& dir) : dir_(dir) {
 }
 
 std::string SnapshotManager::PathFor(const std::string& id) const {
-    return dir_ + "/" + id + ".json";
+    return util::EncodingUtil::UTF8ToGB2312(dir_ + "/" + id + ".json");
 }
 
 bool SnapshotManager::Save(const std::string& id, const std::string& json) {

@@ -65,6 +65,8 @@ private:
     void HandleCreateSystemSnapshot(const httplib::Request& req, httplib::Response& res);
     void HandleListSystemSnapshots(const httplib::Request& req, httplib::Response& res);
     void HandleSaveSystemSnapshot(const httplib::Request& req, httplib::Response& res);
+    void HandleGetSystemSnapshot(const httplib::Request& req, httplib::Response& res);
+    void LoadSnapshotsFromDisk();
     void HandleDeleteSystemSnapshot(const httplib::Request& req, httplib::Response& res);
 
     json CompareRegistrySnapshots(const std::vector<RegistryKey>& keys1, const std::vector<RegistryKey>& keys2);
@@ -107,6 +109,7 @@ private:
     std::mutex systemSnapshotsMutex_;
     // Persistent store
     std::unique_ptr<snapshot::SnapshotManager> snapshotStore_;
+    bool snapshotsLoadedFromDisk_ = false;
     
     int port_;
 };

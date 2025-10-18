@@ -190,11 +190,15 @@ void HttpServer::SetupRoutes() {
         HandleListSystemSnapshots(req, res);
     });
 
+    server_->Get("/api/system/snapshot/get", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleGetSystemSnapshot(req, res);
+    });
+
     server_->Post("/api/system/snapshot/save", [this](const httplib::Request& req, httplib::Response& res) {
         HandleSaveSystemSnapshot(req, res);
     });
 
-    // Delete system snapshot (by name)
+
     server_->Delete("/api/system/snapshot/delete/([^/]+)", [this](const httplib::Request& req, httplib::Response& res) {
         HandleDeleteSystemSnapshot(req, res);
     });
@@ -1417,7 +1421,15 @@ void HttpServer::HandleCreateSystemSnapshot(const httplib::Request& req, httplib
         auto snapshot = SystemSnapshotCollector::Collect(cpuMonitor_, memoryMonitor_, diskMonitor_, driverMonitor_, registryMonitor_, processMonitor_);
         json out = snapshot.ToJson();
 
-        std::string name = "snapshot_" + std::to_string(snapshot.timestamp);
+        std::ostringstream nameoss;
+        {
+            auto now = std::chrono::system_clock::now();
+            auto tt = std::chrono::system_clock::to_time_t(now);
+            std::tm tm;
+            localtime_s(&tm, &tt);
+            nameoss << "snapshot_" << std::put_time(&tm, "%Y%m%d_%H%M%S");
+        }
+        std::string name = nameoss.str();
         if (!req.body.empty()) {
             try {
                 auto body = json::parse(req.body);
@@ -1447,13 +1459,80 @@ void HttpServer::HandleCreateSystemSnapshot(const httplib::Request& req, httplib
     }
 }
 
+void HttpServer::LoadSnapshotsFromDisk() {
+    if (snapshotsLoadedFromDisk_) return;
+    snapshotsLoadedFromDisk_ = true;
+
+    try {
+        if (!snapshotStore_) snapshotStore_ = std::make_unique<snapshot::SnapshotManager>();
+        auto files = snapshotStore_->List();
+        for (const auto& name : files) {
+            auto opt = snapshotStore_->Load(name);
+            if (opt) {
+                std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
+                systemSnapshotsJson_[name] = *opt;
+            }
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "LoadSnapshotsFromDisk failed: " << e.what() << std::endl;
+    }
+}
+
+void HttpServer::HandleGetSystemSnapshot(const httplib::Request& req, httplib::Response& res) {
+    try {
+        std::string name;
+        if (req.has_param("name")) name = req.get_param_value("name");
+        if (name.empty() && req.matches.size() >= 2) name = req.matches[1];
+        if (name.empty()) {
+            res.status = 400;
+            res.set_content(R"({"success":false,"error":"Missing snapshot name"})", "application/json");
+            return;
+        }
+
+        LoadSnapshotsFromDisk();
+
+        std::string payload;
+        {
+            std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
+            auto it = systemSnapshotsJson_.find(name);
+            if (it != systemSnapshotsJson_.end()) payload = it->second;
+        }
+
+        if (payload.empty() && snapshotStore_) {
+            auto opt = snapshotStore_->Load(name);
+            if (opt) payload = *opt;
+        }
+
+        if (payload.empty()) {
+            res.status = 404;
+            res.set_content(R"({"success":false,"error":"Snapshot not found"})", "application/json");
+            return;
+        }
+
+        res.set_content(payload, "application/json");
+    } catch (const std::exception& e) {
+        res.status = 500;
+        res.set_content(R"({"success":false,"error":"Internal error"})", "application/json");
+    }
+}
+
 void HttpServer::HandleListSystemSnapshots(const httplib::Request& req, httplib::Response& res) {
     try {
-        json arr = json::array();
-        std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
-        for (const auto &kv : systemSnapshotsJson_) {
-            arr.push_back(kv.first);
+        LoadSnapshotsFromDisk();
+
+        std::vector<std::string> names;
+        {
+            std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
+            names.reserve(systemSnapshotsJson_.size());
+            for (const auto &kv : systemSnapshotsJson_) {
+                names.push_back(kv.first);
+            }
         }
+
+        std::sort(names.begin(), names.end(), std::greater<std::string>());
+
+        json arr = json::array();
+        for (const auto &n : names) arr.push_back(n);
 
         res.set_content(arr.dump(), "application/json");
     } catch (const std::exception& e) {
@@ -1483,7 +1562,15 @@ void HttpServer::HandleSaveSystemSnapshot(const httplib::Request& req, httplib::
             }
         }
 
-        if (name.empty()) name = "snapshot_" + std::to_string(GetTickCount64());
+        if (name.empty()) {
+            auto now = std::chrono::system_clock::now();
+            auto tt = std::chrono::system_clock::to_time_t(now);
+            std::tm tm;
+            localtime_s(&tm, &tt);
+            std::ostringstream oss;
+            oss << "snapshot_" << std::put_time(&tm, "%Y%m%d_%H%M%S");
+            name = oss.str();
+        }
 
         std::string payload;
         {
@@ -1501,6 +1588,10 @@ void HttpServer::HandleSaveSystemSnapshot(const httplib::Request& req, httplib::
         try {
             if (!snapshotStore_) snapshotStore_ = std::make_unique<snapshot::SnapshotManager>();
             ok = snapshotStore_->Save(name, payload);
+            if (ok) {
+                std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
+                systemSnapshotsJson_[name] = payload;
+            }
         } catch (const std::exception& e) {
             snapshot::Logger::getInstance().log(snapshot::LogLevel::E_ERROR, __FILE__, __LINE__, "HandleSaveSystemSnapshot: exception saving snapshot: ", e.what());
             ok = false;
