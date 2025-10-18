@@ -5,6 +5,8 @@
 #include <pdh.h>
 #include <pdhmsg.h>
 #include <algorithm>
+#include <mutex>
+#include <vector>
 
 #pragma comment(lib, "pdh.lib")
 
@@ -71,10 +73,10 @@ CPUUsage CPUMonitor::GetCurrentUsage() {
     }
 
     usage.totalUsage = currentUsage.load();
-    // cpu核心使用率暂未实现，默认返回0
+
     try {
-        uint32_t cores = cpuInfo_.logicalCores > 0 ? cpuInfo_.logicalCores : SystemInfo::GetLogicalCoreCount();
-        usage.coreUsages.assign(cores, 0.0);
+        std::lock_guard<std::mutex> lk(coreUsageMutex_);
+        usage.coreUsages = currentCoreUsages_;
     } catch (...) {
         usage.coreUsages.clear();
     }
@@ -118,6 +120,66 @@ bool CPUMonitor::UpdateUsageData() {
 
     lastTotalTime_ = totalTime;
     lastIdleTime_ = idleTimeValue;
+
+    try {
+        HMODULE ntdll = GetModuleHandleA("ntdll.dll");
+        if (ntdll) {
+            using NtQuerySystemInformation_t = NTSTATUS(WINAPI*)(int, PVOID, ULONG, PULONG);
+            auto NtQuerySystemInformation = reinterpret_cast<NtQuerySystemInformation_t>(GetProcAddress(ntdll, "NtQuerySystemInformation"));
+            if (NtQuerySystemInformation) {
+                uint32_t cores = cpuInfo_.logicalCores > 0 ? cpuInfo_.logicalCores : SystemInfo::GetLogicalCoreCount();
+
+                struct SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION {
+                    LARGE_INTEGER IdleTime;
+                    LARGE_INTEGER KernelTime;
+                    LARGE_INTEGER UserTime;
+                    LARGE_INTEGER DpcTime;
+                    LARGE_INTEGER InterruptTime;
+                    ULONG InterruptCount;
+                };
+
+                std::vector<SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION> info;
+                info.resize(cores);
+                ULONG returnLength = 0;
+
+                NTSTATUS status = NtQuerySystemInformation(8, info.data(), static_cast<ULONG>(sizeof(SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION) * info.size()), &returnLength);
+                if (status == 0) {
+                    if (lastCoreTotalTimes_.size() != cores) {
+                        lastCoreTotalTimes_.assign(cores, 0);
+                        lastCoreIdleTimes_.assign(cores, 0);
+                        currentCoreUsages_.assign(cores, 0.0);
+                    }
+
+                    std::lock_guard<std::mutex> lk(coreUsageMutex_);
+                    for (uint32_t i = 0; i < cores; ++i) {
+                        uint64_t k = static_cast<uint64_t>(info[i].KernelTime.QuadPart);
+                        uint64_t u = static_cast<uint64_t>(info[i].UserTime.QuadPart);
+                        uint64_t idle = static_cast<uint64_t>(info[i].IdleTime.QuadPart);
+                        uint64_t total = k + u;
+
+                        if (lastCoreTotalTimes_[i] != 0 || lastCoreIdleTimes_[i] != 0) {
+                            uint64_t totalDiff = total - lastCoreTotalTimes_[i];
+                            uint64_t idleDiff = idle - lastCoreIdleTimes_[i];
+                            double usage = 0.0;
+                            if (totalDiff > 0) {
+                                usage = 100.0 * (static_cast<double>(totalDiff) - static_cast<double>(idleDiff)) / static_cast<double>(totalDiff);
+                                if (usage < 0.0) usage = 0.0;
+                                if (usage > 100.0) usage = 100.0;
+                            }
+                            currentCoreUsages_[i] = usage;
+                        } else {
+                            currentCoreUsages_[i] = 0.0;
+                        }
+
+                        lastCoreTotalTimes_[i] = total;
+                        lastCoreIdleTimes_[i] = idle;
+                    }
+                }
+            }
+        }
+    } catch (...) {
+
+    }
 
     return true;
 }
