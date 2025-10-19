@@ -4,6 +4,7 @@
 #include <thread>
 #include <functional>
 #include <memory>
+#include <mutex>
 
 namespace sysmonitor {
 
@@ -47,7 +48,11 @@ private:
     std::atomic<double> currentUsage{0.0};
     uint64_t lastTotalTime_{0};
     uint64_t lastIdleTime_{0};
-    std::vector<uint64_t> lastCoreTimes_;
+
+    std::vector<uint64_t> lastCoreTotalTimes_;
+    std::vector<uint64_t> lastCoreIdleTimes_;
+    std::vector<double> currentCoreUsages_;
+    std::mutex coreUsageMutex_;
 };
 
 } // namespace sysmonitor

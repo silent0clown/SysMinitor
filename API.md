@@ -617,6 +617,124 @@ data: {"usage": 23.5, "timestamp": 1635427800000}
 }
 ```
 
+### 8. 系统快照（SystemSnapshot）API
+
+本组接口用于创建、保存、获取和删除整机系统快照（包含 CPU/内存/磁盘/驱动/注册表/进程等信息）。
+
+注意事项:
+- 快照名称支持 UTF-8（例如可以使用中文）。服务端会以 `snapshot_YYYYMMDD_HHMMSS` 为默认名称（精确到秒）当未提供名称时使用。
+- 当快照存储到磁盘时，文件名会使用快照名称并追加 `.json` 后缀。请避免在名称中使用文件系统不允许的字符（例如 Windows 中的 `<>:\"/\\|?*`）。
+
+#### 8.1 创建系统快照（不持久化）
+- 接口说明: 生成当前系统快照并返回 JSON 内容（仅保存在内存，未写入磁盘）
+- 请求URL: `/api/system/snapshot/create`
+- 请求方法: POST
+- 请求体 (可选): JSON，可以包含 { "name": "自定义名称" } 来指定返回的内存快照名称
+
+响应示例:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "success": true,
+    "name": "snapshot_20251018_153045",
+    "timestamp": "2025-10-18 15:30:45"
+  }
+}
+```
+
+#### 8.2 保存系统快照到磁盘
+- 接口说明: 将内存中的快照保存到磁盘，或在请求中提交快照内容并保存
+- 请求URL: `/api/system/snapshot/save`
+- 请求方法: POST
+- 请求参数: 可通过查询参数 `name` 指定保存名称，或在 JSON 请求体中提供 `{ "name": "自定义名称", ...snapshot... }`。
+- 请求体 (可选): 如果请求体为空，服务端会尝试将当前内存快照（按 name 查找）保存；如果指定了完整 snapshot JSON，服务端会直接持久化它。
+
+请求示例（通过查询参数指定名称并保存当前内存快照）:
+```text
+POST /api/system/snapshot/save?name=我的快照
+```
+
+响应示例:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "success": true,
+    "name": "我的快照"
+  }
+}
+```
+
+#### 8.3 列表已保存的系统快照
+- 接口说明: 列出当前内存缓存和磁盘上已保存的快照名称（按名称排序，默认最新的排在前面）
+- 请求URL: `/api/system/snapshot/list`
+- 请求方法: GET
+
+响应示例:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    "snapshot_20251018_153045",
+    "snapshot_20251018_152800",
+    "我的快照"
+  ]
+}
+```
+
+#### 8.4 获取已保存的系统快照内容
+- 接口说明: 根据快照名称返回完整 JSON 快照内容（优先在内存中查找，找不到则从磁盘读取）
+- 请求URL: `/api/system/snapshot/get`
+- 请求方法: GET
+- 查询参数: `name` (必需)
+
+请求示例:
+```text
+GET /api/system/snapshot/get?name=snapshot_20251018_153045
+```
+
+响应示例（返回快照 JSON）:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": { /* 完整的 SystemSnapshot JSON 内容 */ }
+}
+```
+
+#### 8.5 删除系统快照
+- 接口说明: 从内存缓存和磁盘删除指定名称的快照
+- 请求URL: `/api/system/snapshot/delete/{snapshotName}`
+- 请求方法: DELETE
+- 路径参数: `snapshotName`（快照名称）
+
+响应示例:
+```json
+{
+  "code": 200,
+  "message": "success",
+  "data": {
+    "success": true,
+    "deletedInMemory": true,
+    "deletedOnDisk": true
+  }
+}
+```
+
+错误情况示例:
+
+```json
+{
+  "code": 404,
+  "message": "Snapshot not found",
+  "data": null
+}
+```
+
 ## 测试建议
 
 ### 1. 基础功能测试
