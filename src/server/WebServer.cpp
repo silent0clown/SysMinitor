@@ -761,6 +761,234 @@ void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib:
     }
 }
 
+void HttpServer::HandleSaveRegistry(const httplib::Request& req, httplib::Response& res) {
+    try {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        
+        json response;
+        
+        // 调用注册表备份函数
+        int result = registryMonitor_.SaveReg();
+        
+        // 构建响应
+        response["code"] = result;
+        
+        if (result == 0) {
+            response["message"] = "All registry backups completed successfully!";
+            response["status"] = "success";
+        } else if (result == -1) {
+            response["message"] = "Some registry backups failed. Please check permissions or registry paths.";
+            response["status"] = "partial_failure";
+        } else {
+            response["message"] = "Registry backup failed to start. Unable to create backup directory!";
+            response["status"] = "failed";
+        }
+        
+        // 添加备份目录信息
+        extern char g_backupDir[];
+        response["backupDir"] = std::string(g_backupDir); 
+        
+        // 添加时间戳
+        auto now = std::chrono::system_clock::now();
+        response["timestamp"] = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch()).count();
+        
+        std::string responseStr = response.dump();
+        std::cout << "Registry backup completed with result: " << result 
+                  << ", backup directory: " << response["backupDir"] << std::endl;
+        
+        res.set_content(responseStr, "application/json");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "HandleSaveRegistry exception: " << e.what() << std::endl;
+        json error;
+        error["code"] = -2;
+        error["error"] = "Failed to execute registry backup: " + std::string(e.what());
+        error["status"] = "exception";
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
+void HttpServer::HandleGetRegistryInfo(const httplib::Request& req, httplib::Response& res) {
+    try {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        
+        // 获取所有备份信息
+        auto backupInfoMap = registryMonitor_.GetAllBackupInfo();
+        json response;
+        
+        response["timestamp"] = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        
+        // 备份信息数组
+        json backupsJson = json::array();
+        
+        for (const auto& [backupName, backupInfo] : backupInfoMap) {
+            json backupJson;
+            backupJson["folderName"] = backupInfo.folderName;
+            backupJson["folderPath"] = backupInfo.folderPath;
+            backupJson["createTime"] = backupInfo.createTime;
+            backupJson["totalSize"] = backupInfo.totalSize;
+            backupJson["fileCount"] = backupInfo.regFiles.size();
+            
+            // 注册表文件列表
+            json regFilesJson = json::array();
+            for (const auto& regFile : backupInfo.regFiles) {
+                json fileJson;
+                fileJson["fileName"] = regFile.fileName;
+                fileJson["fileSize"] = regFile.fileSize;
+                
+                regFilesJson.push_back(fileJson);
+            }
+            backupJson["regFiles"] = regFilesJson;
+            
+            backupsJson.push_back(backupJson);
+        }
+        
+        response["backups"] = backupsJson;
+        response["totalBackups"] = backupInfoMap.size();
+        
+        std::string responseStr = response.dump();
+        std::cout << "Returning backup summary, total backups: " << backupInfoMap.size() 
+                  << ", timestamp: " << response["timestamp"] << std::endl;
+        
+        res.set_content(responseStr, "application/json");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "HandleGetRegistrySnapshot exception: " << e.what() << std::endl;
+        json error;
+        error["error"] = "Failed to get backup information: " + std::string(e.what());
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
+void HttpServer::HandleCompareFolders(const httplib::Request& req, httplib::Response& res) {
+    try {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        
+        json response;
+        
+        // 解析JSON请求体
+        json jsonBody;
+        try {
+            jsonBody = json::parse(req.body);
+        } catch (const json::parse_error& e) {
+            std::cerr << "JSON parse error: " << e.what() << std::endl;
+            json error;
+            error["error"] = "Invalid JSON format in request body";
+            res.status = 400;
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        
+        // 检查参数是否存在
+        if (!jsonBody.contains("folder1") || !jsonBody.contains("folder2")) {
+            json error;
+            error["error"] = "Missing required parameters: folder1 and folder2 are required";
+            res.status = 400;
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        std::string folder1 = jsonBody["folder1"];
+        std::string folder2 = jsonBody["folder2"];
+        
+        // 检查参数是否为空
+        if (folder1.empty() || folder2.empty()) {
+            json error;
+            error["error"] = "Parameters cannot be empty: folder1 and folder2 must not be empty";
+            res.status = 400;
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        std::cout << "Comparing folders: " << folder1 << " and " << folder2 << std::endl;
+        
+        // 调用文件夹比较函数
+        auto result = registryMonitor_.compareFolders(folder1, folder2);
+        
+        // 构建响应
+        response["folder1"] = result.folder1;
+        response["folder2"] = result.folder2;
+        response["totalComparedFiles"] = result.totalComparedFiles;
+        response["totalAddedKeys"] = result.totalAddedKeys;
+        response["totalRemovedKeys"] = result.totalRemovedKeys;
+        response["totalModifiedKeys"] = result.totalModifiedKeys;
+        
+        // 只在文件夹1中的文件
+        json filesOnlyInFolder1Json = json::array();
+        for (const auto& file : result.filesOnlyInFolder1) {
+            filesOnlyInFolder1Json.push_back(file);
+        }
+        response["filesOnlyInFolder1"] = filesOnlyInFolder1Json;
+        
+        // 只在文件夹2中的文件
+        json filesOnlyInFolder2Json = json::array();
+        for (const auto& file : result.filesOnlyInFolder2) {
+            filesOnlyInFolder2Json.push_back(file);
+        }
+        response["filesOnlyInFolder2"] = filesOnlyInFolder2Json;
+        
+        // 比较过的文件对及其差异
+        json comparedFilesJson = json::array();
+        for (const auto& [prefix, fileResult] : result.comparedFiles) {
+            json fileComparisonJson;
+            fileComparisonJson["prefix"] = prefix;
+            fileComparisonJson["file1"] = fileResult.file1;
+            fileComparisonJson["file2"] = fileResult.file2;
+            fileComparisonJson["addedKeys"] = fileResult.addedKeys.size();
+            fileComparisonJson["removedKeys"] = fileResult.removedKeys.size();
+            fileComparisonJson["modifiedKeys"] = fileResult.modifiedKeys.size();
+            
+            // 详细的键变化信息
+            json addedKeysJson = json::array();
+            for (const auto& key : fileResult.addedKeys) {
+                addedKeysJson.push_back(key);
+            }
+            fileComparisonJson["addedKeysDetails"] = addedKeysJson;
+            
+            json removedKeysJson = json::array();
+            for (const auto& key : fileResult.removedKeys) {
+                removedKeysJson.push_back(key);
+            }
+            fileComparisonJson["removedKeysDetails"] = removedKeysJson;
+            
+            json modifiedKeysJson = json::array();
+            for (const auto& key : fileResult.modifiedKeys) {
+                modifiedKeysJson.push_back(key);
+            }
+            fileComparisonJson["modifiedKeysDetails"] = modifiedKeysJson;
+            
+            comparedFilesJson.push_back(fileComparisonJson);
+        }
+        response["comparedFiles"] = comparedFilesJson;
+        
+        // 添加时间戳
+        auto now = std::chrono::system_clock::now();
+        response["timestamp"] = std::chrono::duration_cast<std::chrono::milliseconds>(
+            now.time_since_epoch()).count();
+        
+        std::string responseStr = response.dump();
+        std::cout << "Folder comparison completed, compared " << result.totalComparedFiles 
+                  << " file pairs" << std::endl;
+        
+        res.set_content(responseStr, "application/json");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "HandleCompareFolders exception: " << e.what() << std::endl;
+        json error;
+        error["error"] = "Failed to compare folders: " + std::string(e.what());
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
 void HttpServer::HandleSaveRegistrySnapshot(const httplib::Request& req, httplib::Response& res) {
     try {
         res.set_header("Access-Control-Allow-Origin", "*");
