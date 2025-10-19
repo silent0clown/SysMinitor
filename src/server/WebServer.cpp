@@ -390,9 +390,9 @@ void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Respon
                 processJson["pagefileUsage"] = process.pagefileUsage;
                 processJson["createTime"] = process.createTime;
                 processJson["priority"] = process.priority;
-                processJson["handleCount"] = process.handleCount;
-                processJson["gdiCount"] = process.gdiCount;
-                processJson["userCount"] = process.userCount;
+                processJson["handleCount"] = process.handleCount;   // 获取指定进程当前打开的句柄总数,用于评估进程的资源使用情况，排查句柄泄漏问题
+                processJson["gdiCount"] = process.gdiCount;         // 获取进程使用的 GDI 对象数量,监控 GDI 数量有助于检测图形资源泄漏
+                processJson["userCount"] = process.userCount;       // 获取进程使用的 USER 对象数量,监控 USER 数量有助于检测窗口泄漏或 UI 资源泄漏
                 
                 // 字符串字段需要 UTF-8 清理
                 processJson["name"] = SanitizeUTF8(process.name);
@@ -515,7 +515,10 @@ void HttpServer::HandleGetProcessInfo(const httplib::Request& req, httplib::Resp
         response["priority"] = processInfo.priority;
         response["threadCount"] = processInfo.threadCount;
         response["commandLine"] = processInfo.commandLine;
-        
+        response["handleCount"] = processInfo.handleCount;   // 获取指定进程当前打开的句柄总数,用于评估进程的资源使用情况，排查句柄泄漏问题
+        response["gdiCount"] = processInfo.gdiCount;         // 获取进程使用的 GDI 对象数量,监控 GDI 数量有助于检测图形资源泄漏
+        response["userCount"] = processInfo.userCount;  
+
         res.set_content(response.dump(), "application/json");
         
     } catch (const std::exception& e) {
@@ -548,8 +551,11 @@ void HttpServer::HandleFindProcesses(const httplib::Request& req, httplib::Respo
             processJson["memoryUsage"] = process.memoryUsage;
             processJson["username"] = process.username;
             processJson["threadCount"] = process.threadCount;
-            
-            response.push_back(processJson);
+            processJson["handleCount"] = process.handleCount;   // 获取指定进程当前打开的句柄总数,用于评估进程的资源使用情况，排查句柄泄漏问题
+            processJson["gdiCount"] = process.gdiCount;         // 获取进程使用的 GDI 对象数量,监控 GDI 数量有助于检测图形资源泄漏
+            processJson["userCount"] = process.userCount;              
+        
+                response.push_back(processJson);
         }
         
         res.set_content(response.dump(), "application/json");

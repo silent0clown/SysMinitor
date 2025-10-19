@@ -64,7 +64,9 @@ public:
      * @return 安全的UTF-8字符串
      */
     static std::string SafeString(const std::string& str, const std::string& default_val = "Unknown");
-
+    // 添加宽字符到 UTF-8 转换
+    static std::string WideToUTF8(const wchar_t* wideStr);
+    static std::string WideToUTF8(const std::wstring& wideStr);
 private:
     /**
      * @brief 验证UTF-8字节序列
@@ -81,6 +83,7 @@ private:
      * @return true-是GB2312字符, false-不是
      */
     static bool IsGB2312Char(unsigned char byte1, unsigned char byte2);
+
 };
 
 } // namespace util

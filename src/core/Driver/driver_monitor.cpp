@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <cctype>  // Add cctype header
+#include "../../utils/encode.h"
 #include "../../utils/util_time.h"
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "setupapi.lib")
@@ -203,9 +204,9 @@ std::vector<DriverDetail> DriverMonitor::GetAllDriversViaSCM() {
 std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
     std::vector<DriverDetail> drivers;
     
-    // Get device information set
-    HDEVINFO deviceInfoSet = SetupDiGetClassDevs(nullptr, nullptr, nullptr, 
-                                                DIGCF_ALLCLASSES | DIGCF_PRESENT);
+    // 使用宽字符版本
+    HDEVINFO deviceInfoSet = SetupDiGetClassDevsW(nullptr, nullptr, nullptr, 
+                                                 DIGCF_ALLCLASSES | DIGCF_PRESENT);
     if (deviceInfoSet == INVALID_HANDLE_VALUE) {
         return drivers;
     }
@@ -216,34 +217,33 @@ std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
     for (DWORD i = 0; SetupDiEnumDeviceInfo(deviceInfoSet, i, &deviceInfoData); i++) {
         DriverDetail driver;
         driver.driverType = "Hardware";
-        driver.state = "Running"; // Hardware drivers are usually running
+        driver.state = "Running";
         
-        // Get device description
-        char deviceDesc[256] = {0};
-        if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData, 
-                                           SPDRP_DEVICEDESC, nullptr, 
-                                           (PBYTE)deviceDesc, sizeof(deviceDesc), nullptr)) {
-            driver.displayName = deviceDesc;
+        // 使用宽字符获取设备描述
+        wchar_t deviceDesc[256] = {0};
+        if (SetupDiGetDeviceRegistryPropertyW(deviceInfoSet, &deviceInfoData, 
+                                            SPDRP_DEVICEDESC, nullptr, 
+                                            (PBYTE)deviceDesc, sizeof(deviceDesc), nullptr)) {
+            driver.displayName = util::EncodingUtil::WideToUTF8(deviceDesc);
         }
         
-        // Get device name
-        char deviceName[256] = {0};
-        if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
-                                           SPDRP_FRIENDLYNAME, nullptr,
-                                           (PBYTE)deviceName, sizeof(deviceName), nullptr)) {
-            driver.name = deviceName;
+        // 使用宽字符获取设备友好名称
+        wchar_t deviceName[256] = {0};
+        if (SetupDiGetDeviceRegistryPropertyW(deviceInfoSet, &deviceInfoData,
+                                            SPDRP_FRIENDLYNAME, nullptr,
+                                            (PBYTE)deviceName, sizeof(deviceName), nullptr)) {
+            driver.name = util::EncodingUtil::WideToUTF8(deviceName);
         } else {
             driver.name = driver.displayName;
         }
         
-        // Get hardware class
-        char hardwareClass[256] = {0};
-        if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
-                                           SPDRP_CLASS, nullptr,
-                                           (PBYTE)hardwareClass, sizeof(hardwareClass), nullptr)) {
-            driver.hardwareClass = hardwareClass;
+        // 使用宽字符获取硬件类
+        wchar_t hardwareClass[256] = {0};
+        if (SetupDiGetDeviceRegistryPropertyW(deviceInfoSet, &deviceInfoData,
+                                            SPDRP_CLASS, nullptr,
+                                            (PBYTE)hardwareClass, sizeof(hardwareClass), nullptr)) {
+            driver.hardwareClass = util::EncodingUtil::WideToUTF8(hardwareClass);
         }
-        
         // Get driver information
         SP_DRVINFO_DATA driverInfoData;
         driverInfoData.cbSize = sizeof(SP_DRVINFO_DATA);
@@ -275,13 +275,175 @@ std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
         
         // Detect hardware class
         driver.hardwareClass = DetectHardwareClass(driver);
-        
+
         drivers.push_back(driver);
     }
     
     SetupDiDestroyDeviceInfoList(deviceInfoSet);
     return drivers;
 }
+
+
+// 添加中文字符检测函数
+// bool ContainsChinese(const wchar_t* text) {
+//     for (; *text; ++text) {
+//         if ((*text >= 0x4E00 && *text <= 0x9FFF) ||  // 基本汉字
+//             (*text >= 0x3400 && *text <= 0x4DBF) ||  // 扩展A
+//             (*text >= 0x20000 && *text <= 0x2A6DF)) { // 扩展B
+//             return true;
+//         }
+//     }
+//     return false;
+// }
+
+// std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
+//     std::vector<DriverDetail> drivers;
+    
+//     HDEVINFO deviceInfoSet = SetupDiGetClassDevsW(nullptr, nullptr, nullptr, 
+//                                                  DIGCF_ALLCLASSES | DIGCF_PRESENT);
+//     if (deviceInfoSet == INVALID_HANDLE_VALUE) {
+//         DWORD error = GetLastError();
+//         std::cerr << "SetupDiGetClassDevsW failed with error: " << error << std::endl;
+//         return drivers;
+//     }
+    
+//     SP_DEVINFO_DATA deviceInfoData;
+//     deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+    
+//     for (DWORD i = 0; SetupDiEnumDeviceInfo(deviceInfoSet, i, &deviceInfoData); i++) {
+//         DriverDetail driver;
+//         driver.driverType = "Hardware";
+//         driver.state = "Running";
+        
+//         wchar_t deviceDesc[512] = {0};
+//         if (SetupDiGetDeviceRegistryPropertyW(deviceInfoSet, &deviceInfoData, 
+//                                             SPDRP_DEVICEDESC, nullptr, 
+//                                             (PBYTE)deviceDesc, sizeof(deviceDesc)/sizeof(wchar_t), nullptr)) {
+            
+//             // 调试输出：打印原始宽字符和转换后的UTF-8
+//             std::wcout << L"Raw deviceDesc: " << deviceDesc << std::endl;
+            
+//             driver.displayName = util::EncodingUtil::WideToUTF8(deviceDesc);
+//             std::cout << "Converted displayName: " << driver.displayName << std::endl;
+            
+//             // 检查是否包含中文字符
+//             if (ContainsChinese(deviceDesc)) {
+//                 std::cout << "Contains Chinese characters" << std::endl;
+//             }
+//         } else {
+//             DWORD error = GetLastError();
+//             std::cerr << "SetupDiGetDeviceRegistryPropertyW failed for deviceDesc, error: " << error << std::endl;
+//         }
+        
+//         // 使用宽字符获取设备友好名称
+//         wchar_t deviceName[256] = {0};
+//         if (SetupDiGetDeviceRegistryPropertyW(deviceInfoSet, &deviceInfoData,
+//                                             SPDRP_FRIENDLYNAME, nullptr,
+//                                             (PBYTE)deviceName, sizeof(deviceName), nullptr)) {
+//             driver.name = util::EncodingUtil::WideToUTF8(deviceName);
+//         } else {
+//             driver.name = driver.displayName;
+//         }
+        
+//         // 使用宽字符获取硬件类
+//         wchar_t hardwareClass[256] = {0};
+//         if (SetupDiGetDeviceRegistryPropertyW(deviceInfoSet, &deviceInfoData,
+//                                             SPDRP_CLASS, nullptr,
+//                                             (PBYTE)hardwareClass, sizeof(hardwareClass), nullptr)) {
+//             driver.hardwareClass = util::EncodingUtil::WideToUTF8(hardwareClass);
+//         }
+        
+//         drivers.push_back(driver);
+//     }
+    
+//     SetupDiDestroyDeviceInfoList(deviceInfoSet);
+//     return drivers;
+// }
+
+
+
+// std::vector<DriverDetail> DriverMonitor::GetHardwareDriversViaSetupAPI() {
+//     std::vector<DriverDetail> drivers;
+    
+//     // Get device information set
+//     HDEVINFO deviceInfoSet = SetupDiGetClassDevs(nullptr, nullptr, nullptr, 
+//                                                 DIGCF_ALLCLASSES | DIGCF_PRESENT);
+//     if (deviceInfoSet == INVALID_HANDLE_VALUE) {
+//         return drivers;
+//     }
+    
+//     SP_DEVINFO_DATA deviceInfoData;
+//     deviceInfoData.cbSize = sizeof(SP_DEVINFO_DATA);
+    
+//     for (DWORD i = 0; SetupDiEnumDeviceInfo(deviceInfoSet, i, &deviceInfoData); i++) {
+//         DriverDetail driver;
+//         driver.driverType = "Hardware";
+//         driver.state = "Running"; // Hardware drivers are usually running
+        
+//         // Get device description
+//         char deviceDesc[256] = {0};
+//         if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData, 
+//                                            SPDRP_DEVICEDESC, nullptr, 
+//                                            (PBYTE)deviceDesc, sizeof(deviceDesc), nullptr)) {
+//             driver.displayName = deviceDesc;
+//         }
+        
+//         // Get device name
+//         char deviceName[256] = {0};
+//         if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
+//                                            SPDRP_FRIENDLYNAME, nullptr,
+//                                            (PBYTE)deviceName, sizeof(deviceName), nullptr)) {
+//             driver.name = deviceName;
+//         } else {
+//             driver.name = driver.displayName;
+//         }
+        
+//         // Get hardware class
+//         char hardwareClass[256] = {0};
+//         if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
+//                                            SPDRP_CLASS, nullptr,
+//                                            (PBYTE)hardwareClass, sizeof(hardwareClass), nullptr)) {
+//             driver.hardwareClass = hardwareClass;
+//         }
+        
+//         // Get driver information
+//         SP_DRVINFO_DATA driverInfoData;
+//         driverInfoData.cbSize = sizeof(SP_DRVINFO_DATA);
+        
+//         if (SetupDiEnumDriverInfo(deviceInfoSet, &deviceInfoData, 
+//                                 SPDIT_COMPATDRIVER, 0, &driverInfoData)) {
+//             driver.description = driverInfoData.Description;
+            
+//             // Get driver file path - use hardware ID
+//             char hardwareID[1024] = {0};
+//             if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
+//                                                SPDRP_HARDWAREID, nullptr,
+//                                                (PBYTE)hardwareID, sizeof(hardwareID), nullptr)) {
+//                 driver.binaryPath = hardwareID;
+//             }
+            
+//             // Get INF file path
+//             char infPath[MAX_PATH] = {0};
+//             if (SetupDiGetDeviceRegistryProperty(deviceInfoSet, &deviceInfoData,
+//                                                SPDRP_DRIVER, nullptr,
+//                                                (PBYTE)infPath, sizeof(infPath), nullptr)) {
+//                 if (strlen(infPath) > 0) {
+//                     // Try to get version information from INF file
+//                     std::string infFilePath = infPath;
+//                     driver.version = GetDriverVersionInfo(infFilePath);
+//                 }
+//             }
+//         }
+        
+//         // Detect hardware class
+//         driver.hardwareClass = DetectHardwareClass(driver);
+        
+//         drivers.push_back(driver);
+//     }
+    
+//     SetupDiDestroyDeviceInfoList(deviceInfoSet);
+//     return drivers;
+// }
 
 DriverVersion DriverMonitor::GetDriverVersionInfo(const std::string& filePath) {
     DriverVersion version;

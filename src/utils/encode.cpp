@@ -232,4 +232,21 @@ std::string EncodingUtil::SafeString(const std::string& str, const std::string& 
     }
 }
 
+
+std::string EncodingUtil::WideToUTF8(const wchar_t* wideStr) {
+        if (!wideStr || !*wideStr) return "";
+        
+        int utf8Len = WideCharToMultiByte(CP_UTF8, 0, wideStr, -1, nullptr, 0, nullptr, nullptr);
+        if (utf8Len == 0) return "";
+        
+        std::vector<char> utf8Buffer(utf8Len);
+        WideCharToMultiByte(CP_UTF8, 0, wideStr, -1, utf8Buffer.data(), utf8Len, nullptr, nullptr);
+        
+        return std::string(utf8Buffer.data());
+    }
+    
+    std::string EncodingUtil::WideToUTF8(const std::wstring& wideStr) {
+        return WideToUTF8(wideStr.c_str());
+    }
+
 } // namespace util

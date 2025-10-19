@@ -7,7 +7,7 @@
 #include "core/CPUInfo/cpu_monitor.h"
 #include "core/CPUInfo/wmi_helper.h"
 #include "server/WebServer.h"
-
+#include <windows.h>
 using namespace sysmonitor;
 
 // Global variable for signal handling
@@ -16,6 +16,20 @@ std::atomic<bool> g_running{true};
 void SignalHandler(int signal) {
     std::cout << "\nReceived interrupt signal, shutting down server..." << std::endl;
     g_running = false;
+}
+
+
+// 在程序开始时调用
+void SetupConsoleEncoding() {
+    // 设置控制台输入输出为UTF-8
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+    
+    // 设置C++本地化
+    std::locale::global(std::locale("zh_CN.UTF-8"));
+    
+    // 设置C本地化
+    setlocale(LC_ALL, "zh_CN.UTF-8");
 }
 
 void PrintCPUInfo(const CPUInfo& info) {
@@ -35,7 +49,7 @@ void PrintCPUInfo(const CPUInfo& info) {
 int main() {
     // Set console output encoding
     system("chcp 936 > nul");
-    
+    SetupConsoleEncoding();
     // Register signal handlers
     std::signal(SIGINT, SignalHandler);
     std::signal(SIGTERM, SignalHandler);
