@@ -382,6 +382,7 @@
             </div>
 
             <!-- 硬盘信息 -->
+            <!-- 在硬盘信息标签页中替换原有内容 -->
             <div id="disk" class="tab-content p-6">
                 <h2 class="text-2xl font-bold mb-6 text-gray-800">硬盘信息</h2>
 
@@ -410,9 +411,36 @@
                     </div>
                 </div>
 
+                <!-- 添加磁盘使用情况饼图区域 -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">磁盘使用情况</h3>
+                    </div>
+                    <div id="diskUsageCharts" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+
+                <!-- 修改硬盘性能部分 -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">硬盘性能</h3>
-                    <div class="h-80" id="diskPerformanceChart"></div>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">硬盘读写速度</h3>
+                        <!-- 硬盘监控控制 -->
+                        <div class="flex items-center space-x-2">
+                            <button id="diskRefreshToggle"
+                                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                                暂停刷新
+                            </button>
+                            <div class="flex items-center">
+                                <label class="mr-1 text-sm">间隔:</label>
+                                <select id="diskRefreshInterval" class="p-1 border rounded text-sm">
+                                    <option value="1000">1秒</option>
+                                    <option value="2000" selected>2秒</option>
+                                    <option value="5000">5秒</option>
+                                    <option value="10000">10秒</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="diskPerformanceCharts" class="grid grid-cols-1 gap-4"></div>
                 </div>
             </div>
 
@@ -535,6 +563,12 @@
         let memoryRefreshEnabled = true;
         let memoryRefreshTimer = null;
 
+        // 硬盘监控相关变量
+        let diskRefreshInterval = 2000; // 默认2秒
+        let diskRefreshEnabled = true;
+        let diskRefreshTimer = null;
+        let diskCharts = {}; // 存储磁盘图表实例
+
         // API基础URL
         const API_BASE = '/api';
 
@@ -587,6 +621,10 @@
             // 内存监控控制事件
             document.getElementById('memoryRefreshToggle').addEventListener('click', toggleMemoryRefresh);
             document.getElementById('memoryRefreshInterval').addEventListener('change', changeMemoryRefreshInterval);
+
+            // 硬盘监控控制事件
+            document.getElementById('diskRefreshToggle').addEventListener('click', toggleDiskRefresh);
+            document.getElementById('diskRefreshInterval').addEventListener('change', changeDiskRefreshInterval);
         }
 
         // 切换标签
@@ -626,6 +664,9 @@
                 case 'disk':
                     initDiskCharts();
                     loadDiskData();
+                    if (diskRefreshEnabled) {
+                        startDiskRefresh();
+                    }
                     break;
                 case 'process':
                     loadProcessData();
@@ -1125,36 +1166,7 @@
 
         // 初始化硬盘图表
         function initDiskCharts() {
-            if (!charts.diskPerformanceChart) {
-                charts.diskPerformanceChart = echarts.init(document.getElementById('diskPerformanceChart'));
-                charts.diskPerformanceChart.setOption({
-                    tooltip: {
-                        trigger: 'axis'
-                    },
-                    legend: {
-                        data: ['读取速度 (KB/s)', '写入速度 (KB/s)']
-                    },
-                    xAxis: {
-                        type: 'category',
-                        data: []
-                    },
-                    yAxis: {
-                        type: 'value'
-                    },
-                    series: [
-                        {
-                            name: '读取速度 (KB/s)',
-                            type: 'bar',
-                            data: []
-                        },
-                        {
-                            name: '写入速度 (KB/s)',
-                            type: 'bar',
-                            data: []
-                        }
-                    ]
-                });
-            }
+            // 磁盘性能图表容器将在loadDiskData中动态创建
         }
 
         // 初始化驱动图表
@@ -1416,25 +1428,28 @@
                 .then(data => {
                     const diskTableBody = document.getElementById('diskTableBody');
                     diskTableBody.innerHTML = data.partitions.map(partition => `
-                        <tr>
-                            <td class="py-2 px-4 border-b">${partition.driveLetter}</td>
-                            <td class="py-2 px-4 border-b">${partition.label}</td>
-                            <td class="py-2 px-4 border-b">${formatBytes(partition.totalSize)}</td>
-                            <td class="py-2 px-4 border-b">${formatBytes(partition.usedSpace)}</td>
-                            <td class="py-2 px-4 border-b">${formatBytes(partition.freeSpace)}</td>
-                            <td class="py-2 px-4 border-b">${partition.usagePercentage.toFixed(2)}%</td>
-                        </tr>
-                    `).join('');
+                <tr>
+                    <td class="py-2 px-4 border-b">${partition.driveLetter}</td>
+                    <td class="py-2 px-4 border-b">${partition.label}</td>
+                    <td class="py-2 px-4 border-b">${formatBytes(partition.totalSize)}</td>
+                    <td class="py-2 px-4 border-b">${formatBytes(partition.usedSpace)}</td>
+                    <td class="py-2 px-4 border-b">${formatBytes(partition.freeSpace)}</td>
+                    <td class="py-2 px-4 border-b">${partition.usagePercentage.toFixed(2)}%</td>
+                </tr>
+            `).join('');
+
+                    // 创建磁盘使用情况饼图
+                    createDiskUsageCharts(data.partitions);
                 })
                 .catch(err => {
                     console.error('加载硬盘列表失败:', err);
                     document.getElementById('diskTableBody').innerHTML = `
-                        <tr>
-                            <td colspan="6" class="py-4 text-center text-red-500">
-                                加载失败: ${err.message}
-                            </td>
-                        </tr>
-                    `;
+                <tr>
+                    <td colspan="6" class="py-4 text-center text-red-500">
+                        加载失败: ${err.message}
+                    </td>
+                </tr>
+            `;
                 });
 
             // 硬盘性能图表
@@ -1442,26 +1457,306 @@
                 .then(response => response.json())
                 .then(data => {
                     const performance = data.performance;
-                    const driveLetters = performance.map(p => p.driveLetter);
-                    const readSpeeds = performance.map(p => Math.round(p.readBytesPerSec / 1024));
-                    const writeSpeeds = performance.map(p => Math.round(p.writeBytesPerSec / 1024));
 
-                    charts.diskPerformanceChart.setOption({
-                        xAxis: {
-                            data: driveLetters
-                        },
-                        series: [
-                            {
-                                data: readSpeeds
-                            },
-                            {
-                                data: writeSpeeds
-                            }
-                        ]
-                    });
+                    // 创建每个磁盘的读写速度折线图
+                    createDiskPerformanceCharts(performance);
                 })
                 .catch(err => console.error('加载硬盘性能失败:', err));
+
+            // 启动硬盘数据自动刷新（如果已启用）
+            if (diskRefreshEnabled) {
+                startDiskRefresh();
+            }
         }
+        // 创建磁盘使用情况饼图
+        function createDiskUsageCharts(partitions) {
+            const container = document.getElementById('diskUsageCharts');
+            container.innerHTML = ''; // 清空现有内容
+
+            partitions.forEach(partition => {
+                // 创建图表容器
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'p-4';
+                chartContainer.innerHTML = `
+            <h4 class="font-medium text-center mb-2">${partition.driveLetter} 使用情况</h4>
+            <div id="diskUsageChart-${partition.driveLetter}" class="h-48"></div>
+        `;
+                container.appendChild(chartContainer);
+
+                // 初始化图表
+                const chartDom = document.getElementById(`diskUsageChart-${partition.driveLetter}`);
+                const chart = echarts.init(chartDom);
+
+                // 根据使用率确定颜色和状态
+                let color, status;
+                if (partition.usagePercentage > 90) {
+                    color = '#ef4444'; // 红色 - 危险
+                    status = '危险';
+                } else if (partition.usagePercentage > 70) {
+                    color = '#f97316'; // 橙色 - 警告
+                    status = '警告';
+                } else {
+                    color = '#22c55e'; // 绿色 - 良好
+                    status = '良好';
+                }
+
+                chart.setOption({
+                    tooltip: {
+                        trigger: 'item',
+                        formatter: `{a} <br/>{b}: {c}GB ({d}%)`
+                    },
+                    series: [
+                        {
+                            name: `${partition.driveLetter} 使用情况`,
+                            type: 'pie',
+                            radius: ['40%', '70%'],
+                            avoidLabelOverlap: false,
+                            itemStyle: {
+                                borderRadius: 10,
+                                borderColor: '#fff',
+                                borderWidth: 2
+                            },
+                            label: {
+                                show: true,
+                                position: 'center',
+                                formatter: `${status}\n${partition.usagePercentage.toFixed(1)}%`,
+                                fontSize: 14,
+                                fontWeight: 'bold'
+                            },
+                            labelLine: {
+                                show: false
+                            },
+                            data: [
+                                {
+                                    value: (partition.usedSpace / (1024 ** 3)).toFixed(2), // 转换为GB
+                                    name: '已使用',
+                                    itemStyle: { color: color }
+                                },
+                                {
+                                    value: (partition.freeSpace / (1024 ** 3)).toFixed(2), // 转换为GB
+                                    name: '可用空间',
+                                    itemStyle: { color: '#cbd5e1' }
+                                }
+                            ]
+                        }
+                    ]
+                });
+
+                // 保存图表实例
+                diskCharts[`usage-${partition.driveLetter}`] = chart;
+            });
+        }
+
+
+        // 创建磁盘性能折线图
+        function createDiskPerformanceCharts(performanceData) {
+            const container = document.getElementById('diskPerformanceCharts');
+            container.innerHTML = ''; // 清空现有内容
+
+            performanceData.forEach(disk => {
+                // 创建图表容器
+                const chartContainer = document.createElement('div');
+                chartContainer.className = 'p-4 border rounded mb-4';
+                chartContainer.innerHTML = `
+            <h4 class="font-medium mb-2">${disk.driveLetter} 读写速度</h4>
+            <div id="diskPerformanceChart-${disk.driveLetter}" class="h-64"></div>
+        `;
+                container.appendChild(chartContainer);
+
+                // 初始化图表
+                const chartDom = document.getElementById(`diskPerformanceChart-${disk.driveLetter}`);
+                const chart = echarts.init(chartDom);
+
+                chart.setOption({
+                    tooltip: {
+                        trigger: 'axis'
+                    },
+                    legend: {
+                        data: ['读取速度 (KB/s)', '写入速度 (KB/s)']
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: [] // 时间轴数据将在更新时填充
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: 'KB/s'
+                    },
+                    series: [
+                        {
+                            name: '读取速度 (KB/s)',
+                            type: 'line',
+                            data: [],
+                            smooth: true
+                        },
+                        {
+                            name: '写入速度 (KB/s)',
+                            type: 'line',
+                            data: [],
+                            smooth: true
+                        }
+                    ]
+                });
+
+                // 保存图表实例
+                diskCharts[`performance-${disk.driveLetter}`] = chart;
+            });
+
+            // 更新图表数据
+            updateDiskPerformanceChartData(performanceData);
+        }
+
+        // 更新磁盘性能图表数据
+        function updateDiskPerformanceChartData(performanceData) {
+            performanceData.forEach(disk => {
+                const chart = diskCharts[`performance-${disk.driveLetter}`];
+                if (chart) {
+                    // 获取当前图表选项
+                    const option = chart.getOption();
+
+                    // 初始化数据数组（如果为空）
+                    if (!option.xAxis[0].data.length) {
+                        option.xAxis[0].data = Array(20).fill(0).map((_, i) => {
+                            const time = new Date(Date.now() - (19 - i) * 2000);
+                            return `${time.getHours()}:${time.getMinutes().toString().padStart(2, '0')}:${time.getSeconds().toString().padStart(2, '0')}`;
+                        });
+
+                        option.series[0].data = Array(20).fill(0);
+                        option.series[1].data = Array(20).fill(0);
+                    }
+
+                    // 更新数据（移除第一个元素，添加新数据）
+                    option.xAxis[0].data.shift();
+                    const now = new Date();
+                    option.xAxis[0].data.push(`${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`);
+
+                    option.series[0].data.shift();
+                    option.series[0].data.push(Math.round(disk.readBytesPerSec / 1024));
+
+                    option.series[1].data.shift();
+                    option.series[1].data.push(Math.round(disk.writeBytesPerSec / 1024));
+
+                    // 应用更新
+                    chart.setOption(option);
+                }
+            });
+        }
+
+        // 硬盘刷新控制函数
+        function toggleDiskRefresh() {
+            diskRefreshEnabled = !diskRefreshEnabled;
+            const toggleBtn = document.getElementById('diskRefreshToggle');
+
+            if (diskRefreshEnabled) {
+                toggleBtn.textContent = '暂停刷新';
+                toggleBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm';
+                startDiskRefresh();
+            } else {
+                toggleBtn.textContent = '开始刷新';
+                toggleBtn.className = 'bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm';
+                stopDiskRefresh();
+            }
+        }
+
+        function changeDiskRefreshInterval() {
+            diskRefreshInterval = parseInt(document.getElementById('diskRefreshInterval').value);
+            if (diskRefreshEnabled) {
+                stopDiskRefresh();
+                startDiskRefresh();
+            }
+        }
+
+        function startDiskRefresh() {
+            stopDiskRefresh(); // 先清除已有的定时器
+            diskRefreshTimer = setInterval(() => {
+                updateDiskUsageData();
+            }, diskRefreshInterval);
+        }
+
+        function stopDiskRefresh() {
+            if (diskRefreshTimer) {
+                clearInterval(diskRefreshTimer);
+                diskRefreshTimer = null;
+            }
+        }
+
+        // 更新硬盘使用率数据
+        function updateDiskUsageData() {
+            // 更新磁盘使用情况饼图
+            fetch(`${API_BASE}/disk/info`)
+                .then(response => response.json())
+                .then(data => {
+                    // 更新饼图
+                    data.partitions.forEach(partition => {
+                        const chart = diskCharts[`usage-${partition.driveLetter}`];
+                        if (chart) {
+                            // 根据使用率确定颜色和状态
+                            let color, status;
+                            if (partition.usagePercentage > 90) {
+                                color = '#ef4444'; // 红色 - 危险
+                                status = '危险';
+                            } else if (partition.usagePercentage > 70) {
+                                color = '#f97316'; // 橙色 - 警告
+                                status = '警告';
+                            } else {
+                                color = '#22c55e'; // 绿色 - 良好
+                                status = '良好';
+                            }
+
+                            chart.setOption({
+                                series: [{
+                                    data: [
+                                        {
+                                            value: (partition.usedSpace / (1024 ** 3)).toFixed(2),
+                                            name: '已使用',
+                                            itemStyle: { color: color }
+                                        },
+                                        {
+                                            value: (partition.freeSpace / (1024 ** 3)).toFixed(2),
+                                            name: '可用空间',
+                                            itemStyle: { color: '#cbd5e1' }
+                                        }
+                                    ]
+                                }],
+                                series: [{
+                                    label: {
+                                        show: true,
+                                        position: 'center',
+                                        formatter: `${status}\n${partition.usagePercentage.toFixed(1)}%`,
+                                        fontSize: 14,
+                                        fontWeight: 'bold'
+                                    }
+                                }]
+                            });
+                        }
+                    });
+                })
+                .catch(err => console.error('更新磁盘使用情况失败:', err));
+
+            // 更新磁盘性能折线图
+            fetch(`${API_BASE}/disk/performance`)
+                .then(response => response.json())
+                .then(data => {
+                    updateDiskPerformanceChartData(data.performance);
+                })
+                .catch(err => console.error('更新磁盘性能失败:', err));
+        }
+
+        // 在窗口大小改变时重绘图表部分添加磁盘图表处理
+        window.addEventListener('resize', function () {
+            for (let chartName in charts) {
+                if (charts[chartName]) {
+                    charts[chartName].resize();
+                }
+            }
+            // 处理磁盘图表
+            for (let chartName in diskCharts) {
+                if (diskCharts[chartName]) {
+                    diskCharts[chartName].resize();
+                }
+            }
+        });
+
 
         // 加载进程数据
         function loadProcessData(search = '') {
@@ -2068,6 +2363,7 @@
         window.addEventListener('beforeunload', function () {
             stopCpuRefresh();
             stopMemoryRefresh();
+            stopDiskRefresh();
         });
     </script>
 </body>
