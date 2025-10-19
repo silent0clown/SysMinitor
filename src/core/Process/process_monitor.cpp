@@ -36,7 +36,7 @@ void ProcessMonitor::Cleanup() {
 
 ProcessSnapshot ProcessMonitor::GetProcessSnapshot() {
     ProcessSnapshot snapshot;
-    snapshot.timestamp = GetTickCount64();
+    snapshot.timestamp = GET_LOCAL_TIME_MS();
     
     // Use ToolHelp API to get process list (most reliable method)
     auto processes = GetProcessesViaToolHelp();
@@ -367,7 +367,7 @@ double ProcessMonitor::GetProcessCpuUsage(uint32_t pid) {
     processCpuData_[pid] = {
         currentKernelTime.QuadPart,
         currentUserTime.QuadPart,
-        GetTickCount64()
+        GET_LOCAL_TIME_MS()
     };
     
     lastSystemTime_ = currentSystemTime;
