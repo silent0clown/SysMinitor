@@ -59,6 +59,10 @@ private:
     void HandleCompareSnapshots(const httplib::Request& req, httplib::Response& res);
     void HandleDeleteSnapshot(const httplib::Request& req, httplib::Response& res);
 
+    void HandleSaveRegistry(const httplib::Request& req, httplib::Response& res);
+    void HandleGetRegistryInfo(const httplib::Request& req, httplib::Response& res);
+    void HandleCompareFolders(const httplib::Request& req, httplib::Response& res);
+
     void HandleGetDriverSnapshot(const httplib::Request& req, httplib::Response& res);
     void HandleGetDriverDetail(const httplib::Request& req, httplib::Response& res);
 
