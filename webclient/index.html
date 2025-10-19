@@ -282,8 +282,8 @@
                                 <div class="flex items-center">
                                     <label class="mr-1 text-sm">间隔:</label>
                                     <select id="cpuRefreshInterval" class="p-1 border rounded text-sm">
-                                        <option value="1000">1秒</option>
-                                        <option value="3000" selected>3秒</option>
+                                        <option value="1000" selected>1秒</option>
+                                        <option value="3000">3秒</option>
                                         <option value="10000">10秒</option>
                                     </select>
                                 </div>
@@ -327,8 +327,34 @@
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                     <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-semibold mb-4">内存使用情况</h3>
-                        <div class="h-64" id="memoryUsageGauge"></div>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold">内存使用情况</h3>
+                            <!-- 内存监控控制 -->
+                            <div class="flex items-center space-x-2">
+                                <button id="memoryRefreshToggle"
+                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                                    暂停刷新
+                                </button>
+                                <div class="flex items-center">
+                                    <label class="mr-1 text-sm">间隔:</label>
+                                    <select id="memoryRefreshInterval" class="p-1 border rounded text-sm">
+                                        <option value="1000">1秒</option>
+                                        <option value="2000" selected>2秒</option>
+                                        <option value="5000">5秒</option>
+                                        <option value="10000">10秒</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div class="h-64 flex-1" id="memoryUsageGauge"></div>
+                            <div class="flex items-center justify-center w-32">
+                                <div id="memoryStatus" class="text-center">
+                                    <p class="text-lg font-semibold" id="memoryStatusText">良好</p>
+                                    <p class="text-sm text-gray-500" id="memoryStatusDescription">内存使用率正常</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="bg-white rounded-lg shadow p-6">
                         <h3 class="text-lg font-semibold mb-4">内存详细信息</h3>
@@ -504,6 +530,11 @@
         let cpuRefreshEnabled = true;
         let cpuRefreshTimer = null;
 
+        // 内存监控相关变量
+        let memoryRefreshInterval = 2000; // 默认2秒
+        let memoryRefreshEnabled = true;
+        let memoryRefreshTimer = null;
+
         // API基础URL
         const API_BASE = '/api';
 
@@ -552,6 +583,10 @@
             // CPU监控控制事件
             document.getElementById('cpuRefreshToggle').addEventListener('click', toggleCpuRefresh);
             document.getElementById('cpuRefreshInterval').addEventListener('change', changeCpuRefreshInterval);
+
+            // 内存监控控制事件
+            document.getElementById('memoryRefreshToggle').addEventListener('click', toggleMemoryRefresh);
+            document.getElementById('memoryRefreshInterval').addEventListener('change', changeMemoryRefreshInterval);
         }
 
         // 切换标签
@@ -584,6 +619,9 @@
                 case 'memory':
                     initMemoryCharts();
                     loadMemoryData();
+                    if (memoryRefreshEnabled) {
+                        startMemoryRefresh();
+                    }
                     break;
                 case 'disk':
                     initDiskCharts();
@@ -1039,6 +1077,46 @@
                             type: 'line',
                             showSymbol: false,
                             data: []
+                        },
+                        {
+                            name: '危险阈值',
+                            type: 'line',
+                            markLine: {
+                                silent: true,
+                                symbol: 'none',
+                                label: {
+                                    position: 'middle',
+                                    formatter: '危险(80%)'
+                                },
+                                lineStyle: {
+                                    color: 'red',
+                                    width: 2,
+                                    type: 'dashed'
+                                },
+                                data: [{
+                                    yAxis: 80
+                                }]
+                            }
+                        },
+                        {
+                            name: '警告阈值',
+                            type: 'line',
+                            markLine: {
+                                silent: true,
+                                symbol: 'none',
+                                label: {
+                                    position: 'middle',
+                                    formatter: '警告(60%)'
+                                },
+                                lineStyle: {
+                                    color: 'orange',
+                                    width: 2,
+                                    type: 'dashed'
+                                },
+                                data: [{
+                                    yAxis: 60
+                                }]
+                            }
                         }
                     ]
                 });
@@ -1280,6 +1358,9 @@
                         }]
                     });
 
+                    // 更新内存状态显示
+                    updateMemoryStatus(percent);
+
                     // 更新内存详细信息
                     document.getElementById('totalMemory').textContent = formatBytes(data.totalPhysical);
                     document.getElementById('usedMemory').textContent = formatBytes(data.usedPhysical);
@@ -1291,7 +1372,7 @@
             fetch(`${API_BASE}/memory/history`)
                 .then(response => response.json())
                 .then(data => {
-                    const chartData = data.map(item => [item.timestamp * 1000, item.value]);
+                    const chartData = data.map(item => [item.timestamp, item.value]);
                     charts.memoryHistoryChart.setOption({
                         series: [{
                             data: chartData
@@ -1299,8 +1380,34 @@
                     });
                 })
                 .catch(err => console.error('加载内存历史数据失败:', err));
-        }
 
+            // 启动内存数据自动刷新（如果已启用）
+            if (memoryRefreshEnabled) {
+                startMemoryRefresh();
+            }
+        }
+        // 添加更新内存状态显示的函数
+        function updateMemoryStatus(usage) {
+            const statusText = document.getElementById('memoryStatusText');
+            const statusDescription = document.getElementById('memoryStatusDescription');
+
+            if (usage > 80) {
+                statusText.textContent = '危险';
+                statusText.className = 'text-lg font-semibold text-red-600';
+                statusDescription.textContent = '内存使用率过高';
+                statusDescription.className = 'text-sm text-red-500';
+            } else if (usage > 60) {
+                statusText.textContent = '警告';
+                statusText.className = 'text-lg font-semibold text-orange-500';
+                statusDescription.textContent = '内存使用率较高';
+                statusDescription.className = 'text-sm text-orange-400';
+            } else {
+                statusText.textContent = '良好';
+                statusText.className = 'text-lg font-semibold text-green-600';
+                statusDescription.textContent = '内存使用率正常';
+                statusDescription.className = 'text-sm text-gray-500';
+            }
+        }
         // 加载硬盘数据
         function loadDiskData() {
             // 硬盘列表
@@ -1561,7 +1668,7 @@
                     snapshotTableBody.innerHTML = data.map(snapshot => `
                         <tr>
                             <td class="py-2 px-4 border-b">${snapshot.name}</td>
-                            <td class="py-2 px-4 border-b">${new Date(snapshot.timestamp * 1000).toLocaleString()}</td>
+                            <td class="py-2 px-4 border-b">${new Date(snapshot.timestamp).toLocaleString()}</td>
                             <td class="py-2 px-4 border-b">${snapshot.systemInfoCount}</td>
                             <td class="py-2 px-4 border-b">${snapshot.softwareCount}</td>
                             <td class="py-2 px-4 border-b">${snapshot.networkCount}</td>
@@ -1809,6 +1916,44 @@
             }
         }
 
+        // 内存刷新控制函数
+        function toggleMemoryRefresh() {
+            memoryRefreshEnabled = !memoryRefreshEnabled;
+            const toggleBtn = document.getElementById('memoryRefreshToggle');
+
+            if (memoryRefreshEnabled) {
+                toggleBtn.textContent = '暂停刷新';
+                toggleBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm';
+                startMemoryRefresh();
+            } else {
+                toggleBtn.textContent = '开始刷新';
+                toggleBtn.className = 'bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm';
+                stopMemoryRefresh();
+            }
+        }
+
+        function changeMemoryRefreshInterval() {
+            memoryRefreshInterval = parseInt(document.getElementById('memoryRefreshInterval').value);
+            if (memoryRefreshEnabled) {
+                stopMemoryRefresh();
+                startMemoryRefresh();
+            }
+        }
+
+        function startMemoryRefresh() {
+            stopMemoryRefresh(); // 先清除已有的定时器
+            memoryRefreshTimer = setInterval(() => {
+                updateMemoryUsageData();
+            }, memoryRefreshInterval);
+        }
+
+        function stopMemoryRefresh() {
+            if (memoryRefreshTimer) {
+                clearInterval(memoryRefreshTimer);
+                memoryRefreshTimer = null;
+            }
+        }
+
         // 更新CPU使用率数据
         function updateCpuUsageData() {
             // 更新当前CPU使用率
@@ -1839,6 +1984,43 @@
                     });
                 })
                 .catch(err => console.error('更新CPU历史数据失败:', err));
+        }
+
+        // 更新内存使用率数据
+        function updateMemoryUsageData() {
+            // 更新当前内存使用率
+            fetch(`${API_BASE}/memory/usage`)
+                .then(response => response.json())
+                .then(data => {
+                    const percent = data.usedPercent;
+                    charts.memoryUsageGauge.setOption({
+                        series: [{
+                            data: [{ value: percent }]
+                        }]
+                    });
+
+                    // 更新内存状态显示
+                    updateMemoryStatus(percent);
+
+                    // 更新内存详细信息
+                    document.getElementById('totalMemory').textContent = formatBytes(data.totalPhysical);
+                    document.getElementById('usedMemory').textContent = formatBytes(data.usedPhysical);
+                    document.getElementById('availableMemory').textContent = formatBytes(data.availablePhysical);
+                })
+                .catch(err => console.error('更新内存使用率失败:', err));
+
+            // 更新历史数据
+            fetch(`${API_BASE}/memory/history`)
+                .then(response => response.json())
+                .then(data => {
+                    const chartData = data.map(item => [item.timestamp, item.value]);
+                    charts.memoryHistoryChart.setOption({
+                        series: [{
+                            data: chartData
+                        }]
+                    });
+                })
+                .catch(err => console.error('更新内存历史数据失败:', err));
         }
 
         // 更新CPU状态显示
@@ -1885,6 +2067,7 @@
         // 页面卸载时清理定时器
         window.addEventListener('beforeunload', function () {
             stopCpuRefresh();
+            stopMemoryRefresh();
         });
     </script>
 </body>
