@@ -382,7 +382,6 @@
             </div>
 
             <!-- 硬盘信息 -->
-            <!-- 在硬盘信息标签页中替换原有内容 -->
             <div id="disk" class="tab-content p-6">
                 <h2 class="text-2xl font-bold mb-6 text-gray-800">硬盘信息</h2>
 
@@ -445,8 +444,50 @@
             </div>
 
             <!-- 进程信息 -->
+            <!-- 修改进程信息部分 -->
             <div id="process" class="tab-content p-6">
                 <h2 class="text-2xl font-bold mb-6 text-gray-800">进程信息</h2>
+
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-lg">
+                                总进程数: <span id="totalProcessCount" class="font-semibold">0</span>
+                            </div>
+                            <div class="text-lg">
+                                总线程数: <span id="totalThreadCount" class="font-semibold">0</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center">
+                                <label class="mr-2 text-sm">显示数量:</label>
+                                <select id="processDisplayCount" class="p-1 border rounded text-sm">
+                                    <option value="20">20条</option>
+                                    <option value="50" selected>50条</option>
+                                    <option value="100">100条</option>
+                                    <option value="all">全部</option>
+                                </select>
+                            </div>
+
+                            <div class="flex items-center">
+                                <button id="processRefreshToggle"
+                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                                    暂停刷新
+                                </button>
+                                <div class="flex items-center ml-2">
+                                    <label class="mr-1 text-sm">间隔:</label>
+                                    <select id="processRefreshInterval" class="p-1 border rounded text-sm">
+                                        <option value="1000">1秒</option>
+                                        <option value="2000" selected>2秒</option>
+                                        <option value="5000">5秒</option>
+                                        <option value="10000">10秒</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex justify-between items-center mb-4">
@@ -476,6 +517,27 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 进程详情模态窗口 -->
+            <div id="processDetailModal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                <div class="bg-white rounded-lg shadow-lg w-1/2 max-h-[90vh] overflow-y-auto">
+                    <div class="border-b p-4 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">进程详情</h3>
+                        <button id="closeProcessDetailModal" class="text-gray-500 hover:text-gray-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12">
+                                </path>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6" id="processDetailContent">
+                        <!-- 进程详情内容将在这里显示 -->
                     </div>
                 </div>
             </div>
@@ -569,6 +631,12 @@
         let diskRefreshTimer = null;
         let diskCharts = {}; // 存储磁盘图表实例
 
+        // 进程监控相关变量
+        let processRefreshInterval = 2000; // 默认2秒
+        let processRefreshEnabled = true;
+        let processRefreshTimer = null;
+        let processDisplayCount = 50; // 默认显示50条
+
         // API基础URL
         const API_BASE = '/api';
 
@@ -590,6 +658,15 @@
 
             // 加载首页数据
             loadDashboardData();
+
+                // 初始化进程相关事件
+            bindProcessEvents();
+
+            // 启动进程数据自动刷新（如果已启用）
+            if (processRefreshEnabled) {
+                startProcessRefresh();
+            }
+
         });
 
         // 绑定事件
@@ -1757,116 +1834,212 @@
             }
         });
 
+        // 绑定进程相关事件
+        function bindProcessEvents() {
+            // 进程搜索事件
+            document.getElementById('processSearch').addEventListener('input', function () {
+                loadProcessData(this.value);
+            });
 
+            // 进程排序事件
+            document.querySelectorAll('.sortable').forEach(th => {
+                th.addEventListener('click', function () {
+                    const field = this.getAttribute('data-sort');
+                    sortProcesses(field);
+                });
+            });
+
+            // 进程刷新控制事件
+            document.getElementById('processRefreshToggle').addEventListener('click', toggleProcessRefresh);
+            document.getElementById('processRefreshInterval').addEventListener('change', changeProcessRefreshInterval);
+            document.getElementById('processDisplayCount').addEventListener('change', changeProcessDisplayCount);
+
+            // 进程详情模态窗口事件
+            document.getElementById('closeProcessDetailModal').addEventListener('click', closeProcessDetailModal);
+        }
+
+
+        // 进程刷新控制函数
+        function toggleProcessRefresh() {
+            processRefreshEnabled = !processRefreshEnabled;
+            const toggleBtn = document.getElementById('processRefreshToggle');
+
+            if (processRefreshEnabled) {
+                toggleBtn.textContent = '暂停刷新';
+                toggleBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm';
+                startProcessRefresh();
+            } else {
+                toggleBtn.textContent = '开始刷新';
+                toggleBtn.className = 'bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm';
+                stopProcessRefresh();
+            }
+        }
+
+        function changeProcessRefreshInterval() {
+            processRefreshInterval = parseInt(document.getElementById('processRefreshInterval').value);
+            if (processRefreshEnabled) {
+                stopProcessRefresh();
+                startProcessRefresh();
+            }
+        }
+
+        function changeProcessDisplayCount() {
+            const value = document.getElementById('processDisplayCount').value;
+            processDisplayCount = value === 'all' ? Infinity : parseInt(value);
+            loadProcessData(document.getElementById('processSearch').value);
+        }
+
+        function startProcessRefresh() {
+            stopProcessRefresh(); // 先清除已有的定时器
+            processRefreshTimer = setInterval(() => {
+                loadProcessData(document.getElementById('processSearch').value);
+            }, processRefreshInterval);
+        }
+
+        function stopProcessRefresh() {
+            if (processRefreshTimer) {
+                clearInterval(processRefreshTimer);
+                processRefreshTimer = null;
+            }
+        }
+
+
+        // 加载进程数据
         // 加载进程数据
         function loadProcessData(search = '') {
             fetch(`${API_BASE}/processes`)
                 .then(response => response.json())
                 .then(data => {
-                    // 首页进程表格
-                    const processTableBody = document.getElementById('processTableBody');
-                    const topProcesses = data.processes
-                        .sort((a, b) => b.cpuUsage - a.cpuUsage)
-                        .slice(0, 5);
+                    // 更新进程统计信息
+                    document.getElementById('totalProcessCount').textContent = data.totalProcesses;
+                    document.getElementById('totalThreadCount').textContent = data.totalThreads;
 
-                    processTableBody.innerHTML = topProcesses.map(process => `
-                        <tr>
-                            <td class="py-2 px-4 border-b">${process.name}</td>
-                            <td class="py-2 px-4 border-b">${process.pid}</td>
-                            <td class="py-2 px-4 border-b">${process.cpuUsage.toFixed(2)}%</td>
-                            <td class="py-2 px-4 border-b">${formatBytes(process.memoryUsage)}</td>
-                            <td class="py-2 px-4 border-b">${process.threadCount}</td>
-                        </tr>
-                    `).join('');
+                    let processes = data.processes;
 
-                    // 进程列表页面
-                    if (activeTab === 'process') {
-                        let processes = data.processes;
+                    // 应用搜索过滤
+                    if (search) {
+                        processes = processes.filter(p =>
+                            p.name.toLowerCase().includes(search.toLowerCase())
+                        );
+                    }
 
-                        // 应用搜索过滤
-                        if (search) {
-                            processes = processes.filter(p =>
-                                p.name.toLowerCase().includes(search.toLowerCase())
-                            );
+                    // 应用排序
+                    processes.sort((a, b) => {
+                        let aVal, bVal;
+
+                        switch (processSort.field) {
+                            case 'name':
+                                aVal = a.name.toLowerCase();
+                                bVal = b.name.toLowerCase();
+                                break;
+                            case 'pid':
+                                aVal = a.pid;
+                                bVal = b.pid;
+                                break;
+                            case 'cpu':
+                                aVal = a.cpuUsage;
+                                bVal = b.cpuUsage;
+                                break;
+                            case 'memory':
+                                aVal = a.memoryUsage;
+                                bVal = b.memoryUsage;
+                                break;
+                            default:
+                                return 0;
                         }
 
-                        // 应用排序
-                        processes.sort((a, b) => {
-                            let aVal, bVal;
+                        if (processSort.direction === 'asc') {
+                            return aVal > bVal ? 1 : -1;
+                        } else {
+                            return aVal < bVal ? 1 : -1;
+                        }
+                    });
 
-                            switch (processSort.field) {
-                                case 'name':
-                                    aVal = a.name.toLowerCase();
-                                    bVal = b.name.toLowerCase();
-                                    break;
-                                case 'pid':
-                                    aVal = a.pid;
-                                    bVal = b.pid;
-                                    break;
-                                case 'cpu':
-                                    aVal = a.cpuUsage;
-                                    bVal = b.cpuUsage;
-                                    break;
-                                case 'memory':
-                                    aVal = a.memoryUsage;
-                                    bVal = b.memoryUsage;
-                                    break;
-                                default:
-                                    return 0;
-                            }
-
-                            if (processSort.direction === 'asc') {
-                                return aVal > bVal ? 1 : -1;
-                            } else {
-                                return aVal < bVal ? 1 : -1;
-                            }
-                        });
-
-                        const processListTableBody = document.getElementById('processListTableBody');
-                        processListTableBody.innerHTML = processes.map(process => `
-                            <tr>
-                                <td class="py-2 px-4 border-b">${process.name}</td>
-                                <td class="py-2 px-4 border-b">${process.pid}</td>
-                                <td class="py-2 px-4 border-b">${process.cpuUsage.toFixed(2)}%</td>
-                                <td class="py-2 px-4 border-b">${formatBytes(process.memoryUsage)}</td>
-                                <td class="py-2 px-4 border-b">${process.threadCount}</td>
-                                <td class="py-2 px-4 border-b">${process.state}</td>
-                                <td class="py-2 px-4 border-b">
-                                    <button class="text-blue-500 hover:text-blue-700 mr-2 process-detail" data-pid="${process.pid}">详情</button>
-                                    <button class="text-red-500 hover:text-red-700 process-terminate" data-pid="${process.pid}">终止</button>
-                                </td>
-                            </tr>
-                        `).join('');
-
-                        // 绑定详情和终止按钮事件
-                        document.querySelectorAll('.process-detail').forEach(btn => {
-                            btn.addEventListener('click', function () {
-                                const pid = this.getAttribute('data-pid');
-                                alert(`进程详情 PID: ${pid}`);
-                            });
-                        });
-
-                        document.querySelectorAll('.process-terminate').forEach(btn => {
-                            btn.addEventListener('click', function () {
-                                const pid = this.getAttribute('data-pid');
-                                if (confirm(`确定要终止进程 PID: ${pid} 吗？`)) {
-                                    terminateProcess(pid);
-                                }
-                            });
-                        });
+                    // 应用显示数量限制
+                    if (processDisplayCount !== Infinity) {
+                        processes = processes.slice(0, processDisplayCount);
                     }
+
+                    const processListTableBody = document.getElementById('processListTableBody');
+                    processListTableBody.innerHTML = processes.map(process => `
+                <tr>
+                    <td class="py-2 px-4 border-b">${process.name}</td>
+                    <td class="py-2 px-4 border-b">${process.pid}</td>
+                    <td class="py-2 px-4 border-b">${process.cpuUsage.toFixed(2)}%</td>
+                    <td class="py-2 px-4 border-b">${formatBytes(process.memoryUsage)}</td>
+                    <td class="py-2 px-4 border-b">${process.threadCount}</td>
+                    <td class="py-2 px-4 border-b">${process.state}</td>
+                    <td class="py-2 px-4 border-b">
+                        <button class="text-blue-500 hover:text-blue-700 process-detail" data-pid="${process.pid}">详情</button>
+                    </td>
+                </tr>
+            `).join('');
+
+                    // 绑定详情按钮事件
+                    document.querySelectorAll('.process-detail').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const pid = this.getAttribute('data-pid');
+                            showProcessDetail(pid);
+                        });
+                    });
                 })
                 .catch(err => {
                     console.error('加载进程数据失败:', err);
-                    document.getElementById('processTableBody').innerHTML = `
-                        <tr>
-                            <td colspan="5" class="py-4 text-center text-red-500">
-                                加载失败: ${err.message}
-                            </td>
-                        </tr>
-                    `;
                 });
         }
+
+
+        // 显示进程详情
+        function showProcessDetail(pid) {
+            fetch(`${API_BASE}/process/${pid}`)
+                .then(response => response.json())
+                .then(data => {
+                    const detailContent = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="font-semibold text-gray-700">基本信息</h4>
+                        <div class="ml-2">
+                            <p><span class="font-medium">进程名:</span> ${data.name}</p>
+                            <p><span class="font-medium">PID:</span> ${data.pid}</p>
+                            <p><span class="font-medium">父进程PID:</span> ${data.parentPid}</p>
+                            <p><span class="font-medium">状态:</span> ${data.state}</p>
+                            <p><span class="font-medium">优先级:</span> ${data.priority}</p>
+                            <p><span class="font-medium">线程数:</span> ${data.threadCount}</p>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-gray-700">资源使用</h4>
+                        <div class="ml-2">
+                            <p><span class="font-medium">CPU使用率:</span> ${data.cpuUsage.toFixed(2)}%</p>
+                            <p><span class="font-medium">内存使用:</span> ${formatBytes(data.memoryUsage)}</p>
+                            <p><span class="font-medium">工作集大小:</span> ${formatBytes(data.workingSetSize)}</p>
+                            <p><span class="font-medium">页面文件使用:</span> ${formatBytes(data.pagefileUsage)}</p>
+                        </div>
+                    </div>
+                    <div class="md:col-span-2">
+                        <h4 class="font-semibold text-gray-700">其他信息</h4>
+                        <div class="ml-2">
+                            <p><span class="font-medium">命令行:</span> ${data.commandLine || 'N/A'}</p>
+                            <p><span class="font-medium">完整路径:</span> ${data.fullPath || 'N/A'}</p>
+                            <p><span class="font-medium">用户名:</span> ${data.username || 'N/A'}</p>
+                            <p><span class="font-medium">创建时间:</span> ${new Date(data.createTime / 10000 - 11644473600000).toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+                    document.getElementById('processDetailContent').innerHTML = detailContent;
+                    document.getElementById('processDetailModal').classList.remove('hidden');
+                })
+                .catch(err => {
+                    console.error('获取进程详情失败:', err);
+                    alert('获取进程详情失败');
+                });
+        }
+        // 关闭进程详情模态窗口
+        function closeProcessDetailModal() {
+            document.getElementById('processDetailModal').classList.add('hidden');
+        }
+
 
         // 终止进程
         function terminateProcess(pid) {
@@ -2345,7 +2518,7 @@
         function formatBytes(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
