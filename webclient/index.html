@@ -5,8 +5,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>系统监控面板</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script>
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script> -->
+    <!-- 引入Tailwind CSS样式库 -->
+    <link rel="stylesheet" href="assets/css/tailwind.min.css">
+    <!-- 引入anime.js动画库 -->
+    <script src="assets/js/anime.min.js"></script>
+    <!-- 引入ECharts图表库 -->
+    <script src="assets/js/echarts.min.js"></script>
+    <!-- 引入自定义字体样式 -->
+    <link href="assets/css/fonts.css" rel="stylesheet">
     <script>
         tailwind.config = {
             theme: {
@@ -261,6 +269,36 @@
                 <h2 class="text-2xl font-bold mb-6 text-gray-800">CPU信息</h2>
 
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold">CPU当前使用率</h3>
+                            <!-- CPU监控控制 -->
+                            <div class="flex items-center space-x-2">
+                                <button id="cpuRefreshToggle"
+                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">
+                                    暂停刷新
+                                </button>
+                                <div class="flex items-center">
+                                    <label class="mr-1 text-sm">间隔:</label>
+                                    <select id="cpuRefreshInterval" class="p-1 border rounded text-sm">
+                                        <option value="1000">1秒</option>
+                                        <option value="3000" selected>3秒</option>
+                                        <option value="10000">10秒</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex">
+                            <div class="h-64 flex-1" id="cpuUsageGauge"></div>
+                            <div class="flex items-center justify-center w-32">
+                                <div id="cpuStatus" class="text-center">
+                                    <p class="text-lg font-semibold" id="cpuStatusText">良好</p>
+                                    <p class="text-sm text-gray-500" id="cpuStatusDescription">CPU使用率正常</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="bg-white rounded-lg shadow p-6">
                         <h3 class="text-lg font-semibold mb-4">CPU详细信息</h3>
                         <div class="overflow-x-auto">
@@ -274,10 +312,6 @@
                                 </tbody>
                             </table>
                         </div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-semibold mb-4">CPU当前使用率</h3>
-                        <div class="h-64" id="cpuUsageGauge"></div>
                     </div>
                 </div>
 
@@ -465,6 +499,11 @@
             direction: 'asc'
         };
 
+        // CPU监控相关变量
+        let cpuRefreshInterval = 1000; // 默认1秒
+        let cpuRefreshEnabled = true;
+        let cpuRefreshTimer = null;
+
         // API基础URL
         const API_BASE = '/api';
 
@@ -509,6 +548,10 @@
                     sortProcesses(field);
                 });
             });
+
+            // CPU监控控制事件
+            document.getElementById('cpuRefreshToggle').addEventListener('click', toggleCpuRefresh);
+            document.getElementById('cpuRefreshInterval').addEventListener('change', changeCpuRefreshInterval);
         }
 
         // 切换标签
@@ -534,6 +577,9 @@
                 case 'cpu':
                     initCpuCharts();
                     loadCpuData();
+                    if (cpuRefreshEnabled) {
+                        startCpuRefresh();
+                    }
                     break;
                 case 'memory':
                     initMemoryCharts();
@@ -849,6 +895,46 @@
                             type: 'line',
                             showSymbol: false,
                             data: []
+                        },
+                        {
+                            name: '危险阈值',
+                            type: 'line',
+                            markLine: {
+                                silent: true,
+                                symbol: 'none',
+                                label: {
+                                    position: 'middle',
+                                    formatter: '危险(95%)'
+                                },
+                                lineStyle: {
+                                    color: 'red',
+                                    width: 2,
+                                    type: 'dashed'
+                                },
+                                data: [{
+                                    yAxis: 95
+                                }]
+                            }
+                        },
+                        {
+                            name: '警告阈值',
+                            type: 'line',
+                            markLine: {
+                                silent: true,
+                                symbol: 'none',
+                                label: {
+                                    position: 'middle',
+                                    formatter: '警告(80%)'
+                                },
+                                lineStyle: {
+                                    color: 'orange',
+                                    width: 2,
+                                    type: 'dashed'
+                                },
+                                data: [{
+                                    yAxis: 80
+                                }]
+                            }
                         }
                     ]
                 });
@@ -1156,7 +1242,7 @@
                 .then(data => {
                     charts.cpuUsageGauge.setOption({
                         series: [{
-                            data: [{ value: data.usage }]
+                            data: [{ value: data.usage.toFixed(2) }]
                         }]
                     });
                 })
@@ -1166,7 +1252,7 @@
             fetch(`${API_BASE}/cpu/history`)
                 .then(response => response.json())
                 .then(data => {
-                    const chartData = data.map(item => [item.timestamp * 1000, item.value]);
+                    const chartData = data.map(item => [item.timestamp, item.value]);
                     charts.cpuHistoryChart.setOption({
                         series: [{
                             data: chartData
@@ -1174,6 +1260,11 @@
                     });
                 })
                 .catch(err => console.error('加载CPU历史数据失败:', err));
+
+            // 启动CPU数据自动刷新（如果已启用）
+            if (cpuRefreshEnabled) {
+                startCpuRefresh();
+            }
         }
 
         // 加载内存数据
@@ -1680,6 +1771,99 @@
                 });
         }
 
+        // CPU刷新控制函数
+        function toggleCpuRefresh() {
+            cpuRefreshEnabled = !cpuRefreshEnabled;
+            const toggleBtn = document.getElementById('cpuRefreshToggle');
+
+            if (cpuRefreshEnabled) {
+                toggleBtn.textContent = '暂停刷新';
+                toggleBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm';
+                startCpuRefresh();
+            } else {
+                toggleBtn.textContent = '开始刷新';
+                toggleBtn.className = 'bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm';
+                stopCpuRefresh();
+            }
+        }
+
+        function changeCpuRefreshInterval() {
+            cpuRefreshInterval = parseInt(document.getElementById('cpuRefreshInterval').value);
+            if (cpuRefreshEnabled) {
+                stopCpuRefresh();
+                startCpuRefresh();
+            }
+        }
+
+        function startCpuRefresh() {
+            stopCpuRefresh(); // 先清除已有的定时器
+            cpuRefreshTimer = setInterval(() => {
+                updateCpuUsageData();
+            }, cpuRefreshInterval);
+        }
+
+        function stopCpuRefresh() {
+            if (cpuRefreshTimer) {
+                clearInterval(cpuRefreshTimer);
+                cpuRefreshTimer = null;
+            }
+        }
+
+        // 更新CPU使用率数据
+        function updateCpuUsageData() {
+            // 更新当前CPU使用率
+            fetch(`${API_BASE}/cpu/usage`)
+                .then(response => response.json())
+                .then(data => {
+                    const usage = data.usage.toFixed(2);
+                    charts.cpuUsageGauge.setOption({
+                        series: [{
+                            data: [{ value: usage }]
+                        }]
+                    });
+
+                    // 更新状态显示
+                    updateCpuStatus(usage);
+                })
+                .catch(err => console.error('更新CPU使用率失败:', err));
+
+            // 更新历史数据
+            fetch(`${API_BASE}/cpu/history`)
+                .then(response => response.json())
+                .then(data => {
+                    const chartData = data.map(item => [item.timestamp, item.value]);
+                    charts.cpuHistoryChart.setOption({
+                        series: [{
+                            data: chartData
+                        }]
+                    });
+                })
+                .catch(err => console.error('更新CPU历史数据失败:', err));
+        }
+
+        // 更新CPU状态显示
+        function updateCpuStatus(usage) {
+            const statusText = document.getElementById('cpuStatusText');
+            const statusDescription = document.getElementById('cpuStatusDescription');
+
+            if (usage > 95) {
+                statusText.textContent = '危险';
+                statusText.className = 'text-lg font-semibold text-red-600';
+                statusDescription.textContent = 'CPU使用率过高';
+                statusDescription.className = 'text-sm text-red-500';
+            } else if (usage > 80) {
+                statusText.textContent = '警告';
+                statusText.className = 'text-lg font-semibold text-orange-500';
+                statusDescription.textContent = 'CPU使用率较高';
+                statusDescription.className = 'text-sm text-orange-400';
+            } else {
+                statusText.textContent = '良好';
+                statusText.className = 'text-lg font-semibold text-green-600';
+                statusDescription.textContent = 'CPU使用率正常';
+                statusDescription.className = 'text-sm text-gray-500';
+            }
+        }
+
         // 格式化字节大小
         function formatBytes(bytes) {
             if (bytes === 0) return '0 Bytes';
@@ -1696,6 +1880,11 @@
                     charts[chartName].resize();
                 }
             }
+        });
+
+        // 页面卸载时清理定时器
+        window.addEventListener('beforeunload', function () {
+            stopCpuRefresh();
         });
     </script>
 </body>
