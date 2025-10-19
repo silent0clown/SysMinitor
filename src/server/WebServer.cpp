@@ -156,16 +156,19 @@ void HttpServer::SetupRoutes() {
         HandleGetRegistrySnapshot(req, res);
     });
     
-    server_->Post("/api/registry/snapshot/save", [this](const httplib::Request& req, httplib::Response& res) {
-        HandleSaveRegistrySnapshot(req, res);
+    server_->Get("/api/registry/snapshot/save", [this](const httplib::Request& req, httplib::Response& res) {
+        // HandleSaveRegistrySnapshot(req, res);
+        HandleSaveRegistry(req, res);
     });
     
-    server_->Get("/api/registry/snapshots", [this](const httplib::Request& req, httplib::Response& res) {
-        HandleGetSavedSnapshots(req, res);
+    server_->Get("/api/registry/snapshot/Info", [this](const httplib::Request& req, httplib::Response& res) {
+        // HandleGetSavedSnapshots(req, res);
+        HandleGetRegistryInfo(req, res);
     });
     
-    server_->Post("/api/registry/snapshots/compare", [this](const httplib::Request& req, httplib::Response& res) {
-        HandleCompareSnapshots(req, res);
+    server_->Post("/api/registry/snapshot/compare", [this](const httplib::Request& req, httplib::Response& res) {
+        // HandleCompareSnapshots(req, res);
+        HandleCompareFolders(req, res);
     });
     
     server_->Delete("/api/registry/snapshots/delete/([^/]+)", [this](const httplib::Request& req, httplib::Response& res) {
