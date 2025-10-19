@@ -24,13 +24,13 @@ public:
                                   RegistryMonitor& registry,
                                   ProcessMonitor& process) {
         SystemSnapshot s;
+        s.timestamp = GET_LOCAL_TIME_MS();
         try { s.cpu = cpu.GetCurrentUsage(); } catch(...) {}
         try { s.memory = memory.GetCurrentUsage(); } catch(...) {}
         try { s.disk = disk.GetDiskSnapshot(); } catch(...) {}
         try { s.driver = driver.GetDriverSnapshot(); } catch(...) {}
-        try { s.registry = registry.GetRegistrySnapshot(); } catch(...) {}
         try { s.processes = process.GetProcessSnapshot(); } catch(...) {}
-        s.timestamp = GET_LOCAL_TIME_MS();
+        try { s.registry = registry.GetRegistrySnapshot(); } catch(...) {}
         return s;
     }
 };

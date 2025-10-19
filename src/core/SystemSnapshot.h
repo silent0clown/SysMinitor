@@ -170,32 +170,10 @@ struct SystemSnapshot {
 
         // registry
         out["registry"]["timestamp"] = registry.timestamp;
-        out["registry"]["systemInfoKeys"] = json::array();
-        auto pushRegistryList = [&](const std::vector<RegistryKey>& list, const std::string& keyname) {
-            out["registry"][keyname] = json::array();
-            for (const auto& k : list) {
-                json jk;
-                jk["path"] = k.path;
-                jk["lastModified"] = k.lastModified;
-                jk["category"] = k.category;
-                jk["autoStartType"] = k.autoStartType;
-                jk["values"] = json::array();
-                for (const auto& v : k.values) {
-                    json jv;
-                    jv["name"] = v.name;
-                    jv["type"] = v.type;
-                    jv["data"] = v.data;
-                    jv["size"] = v.size;
-                    jk["values"].push_back(jv);
-                }
-                jk["subkeys"] = k.subkeys;
-                out["registry"][keyname].push_back(jk);
-            }
-        };
-        pushRegistryList(registry.systemInfoKeys, "systemInfoKeys");
-        pushRegistryList(registry.softwareKeys, "softwareKeys");
-        pushRegistryList(registry.networkKeys, "networkKeys");
-        pushRegistryList(registry.autoStartKeys, "autoStartKeys");
+        out["registry"]["backupInfo"]["folderName"] = registry.backupInfo.folderName;
+        out["registry"]["backupInfo"]["folderPath"] = registry.backupInfo.folderPath;
+        out["registry"]["backupInfo"]["createTime"] = registry.backupInfo.createTime;
+        out["registry"]["backupInfo"]["totalSize"] = registry.backupInfo.totalSize;
 
         // processes
         out["processes"]["timestamp"] = processes.timestamp;

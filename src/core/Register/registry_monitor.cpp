@@ -31,39 +31,31 @@ RegistryMonitor::RegistryMonitor() {}
 RegistrySnapshot RegistryMonitor::GetRegistrySnapshot() {
     RegistrySnapshot snapshot;
     snapshot.timestamp = GET_LOCAL_TIME_MS();  // 使用系统启动后的毫秒数作为时间戳
+    snapshot.backupInfo = BackupInfo();
+    int result = SaveReg();
+    if (result != 0) {
+        std::cerr << "Failed to save registry backup, error code: " << result << std::endl;
+    }
+    std::map<std::string, BackupInfo> allBackupInfo = GetAllBackupInfo();
     
-    try {
-        // 收集各类注册表信息
-        snapshot.systemInfoKeys = GetSystemInfoKeys();
-        snapshot.softwareKeys = GetInstalledSoftware();
-        snapshot.networkKeys = GetNetworkConfig();
-        snapshot.autoStartKeys = GetAutoStartItems();
-
-        // 将所有注册表键值数据转换为 UTF-8 编码
-        for (auto& key : snapshot.systemInfoKeys) {
-            key.convertToUTF8();
-        }
-        for (auto& key : snapshot.softwareKeys) {
-            key.convertToUTF8();
-        }
-        for (auto& key : snapshot.networkKeys) {
-            key.convertToUTF8();
-        }
-        for (auto& key : snapshot.autoStartKeys) {
-            key.convertToUTF8();
-        }
-        
-        // 输出快照统计信息
-        std::cout << "Registry snapshot retrieved successfully - "
-                  << "System info: " << snapshot.systemInfoKeys.size() << " items, "
-                  << "Software info: " << snapshot.softwareKeys.size() << " items, "
-                  << "Network config: " << snapshot.networkKeys.size() << " items, "
-                  << "Auto-start items: " << snapshot.autoStartKeys.size() << " items" << std::endl;
-                  
-    } catch (const std::exception& e) {
-        std::cerr << "Exception occurred while getting registry snapshot: " << e.what() << std::endl;
+    std::string folderName;
+    std::string fullPath(g_backupDir);
+    size_t lastSlash = fullPath.find_last_of("\\");
+    if (lastSlash != std::string::npos) {
+        folderName = fullPath.substr(lastSlash + 1);
+    } else {
+        folderName = fullPath;  // 如果没有反斜杠，就用整个路径
     }
     
+    if (allBackupInfo.find(folderName) != allBackupInfo.end())
+    {
+        snapshot.backupInfo = allBackupInfo[folderName];
+    }
+    else
+    {
+        std::cerr << "Backup info for directory " << folderName << " not found in map." << std::endl;
+        std::cerr << "Full path was: " << g_backupDir << std::endl;
+    }
     return snapshot;
 }
 

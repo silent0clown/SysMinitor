@@ -735,6 +735,312 @@ GET /api/system/snapshot/get?name=snapshot_20251018_153045
 }
 ```
 
+#### 8.6 比较两个系统快照
+- 接口说明: 对比两个系统快照，返回详细的差异信息（包括 CPU、内存、磁盘、驱动程序、注册表、进程等各方面的变化）
+- 请求URL: `/api/system/snapshot/compare`
+- 请求方法: POST
+- 请求体: JSON，包含要比较的两个快照名称
+
+请求示例:
+```json
+{
+  "snapshot1": "snapshot_20251018_153045",
+  "snapshot2": "snapshot_20251018_160000"
+}
+```
+
+响应示例:
+```json
+{
+  "snapshot1": "snapshot_20251018_153045",
+  "snapshot2": "snapshot_20251018_160000",
+  "timestamp1": 1729238400000,
+  "timestamp2": 1729240800000,
+  
+  "cpu": {
+    "totalUsage1": 25.5,
+    "totalUsage2": 32.8,
+    "totalUsageDiff": 7.3,
+    "coreUsageDiffs": [
+      {
+        "coreIndex": 0,
+        "usage1": 20.5,
+        "usage2": 28.3,
+        "diff": 7.8
+      },
+      {
+        "coreIndex": 1,
+        "usage1": 30.2,
+        "usage2": 37.1,
+        "diff": 6.9
+      }
+    ]
+  },
+  
+  "memory": {
+    "totalPhysical1": 17179869184,
+    "totalPhysical2": 17179869184,
+    "totalPhysicalDiff": 0,
+    "availablePhysical1": 8589934592,
+    "availablePhysical2": 7516192768,
+    "availablePhysicalDiff": -1073741824,
+    "usedPhysical1": 8589934592,
+    "usedPhysical2": 9663676416,
+    "usedPhysicalDiff": 1073741824,
+    "usedPercent1": 50.0,
+    "usedPercent2": 56.25,
+    "usedPercentDiff": 6.25
+  },
+  
+  "disk": {
+    "drives": {
+      "added": [],
+      "removed": [],
+      "modified": [
+        {
+          "deviceId": "\\\\.\\PHYSICALDRIVE0",
+          "model": "Samsung SSD 970 EVO",
+          "statusChanged": true,
+          "status1": "OK",
+          "status2": "Degraded"
+        }
+      ],
+      "addedCount": 0,
+      "removedCount": 0,
+      "modifiedCount": 1
+    },
+    "partitions": {
+      "changes": [
+        {
+          "driveLetter": "C:",
+          "label": "System",
+          "fileSystem": "NTFS",
+          "totalSize1": 536870912000,
+          "totalSize2": 536870912000,
+          "totalSizeDiff": 0,
+          "freeSpace1": 214748364800,
+          "freeSpace2": 193273528320,
+          "freeSpaceDiff": -21474836480,
+          "usedSpace1": 322122547200,
+          "usedSpace2": 343597383680,
+          "usedSpaceDiff": 21474836480,
+          "usagePercentage1": 60.0,
+          "usagePercentage2": 64.0,
+          "usagePercentageDiff": 4.0
+        }
+      ]
+    },
+    "performance": {
+      "changes": [
+        {
+          "driveLetter": "C:",
+          "readSpeed1": 125.5,
+          "readSpeed2": 180.2,
+          "readSpeedDiff": 54.7,
+          "writeSpeed1": 85.3,
+          "writeSpeed2": 120.8,
+          "writeSpeedDiff": 35.5,
+          "queueLength1": 0.5,
+          "queueLength2": 1.2,
+          "queueLengthDiff": 0.7,
+          "usagePercentage1": 15.0,
+          "usagePercentage2": 28.5,
+          "usagePercentageDiff": 13.5,
+          "responseTime1": 5.2,
+          "responseTime2": 8.7,
+          "responseTimeDiff": 3.5
+        }
+      ]
+    },
+    "smart": {
+      "changes": [
+        {
+          "deviceId": "\\\\.\\PHYSICALDRIVE0",
+          "temperature1": 42,
+          "temperature2": 45,
+          "temperatureDiff": 3,
+          "healthStatus1": 100,
+          "healthStatus2": 98,
+          "healthStatusDiff": -2,
+          "powerOnHours1": 5240,
+          "powerOnHours2": 5241,
+          "powerOnHoursDiff": 1,
+          "badSectors1": 0,
+          "badSectors2": 0,
+          "badSectorsDiff": 0,
+          "overallHealth1": "Excellent",
+          "overallHealth2": "Excellent"
+        }
+      ]
+    }
+  },
+  
+  "drivers": {
+    "totalDrivers1": 245,
+    "totalDrivers2": 247,
+    "totalDriversDiff": 2,
+    "runningCount1": 180,
+    "runningCount2": 182,
+    "runningCountDiff": 2,
+    "stoppedCount1": 65,
+    "stoppedCount2": 65,
+    "stoppedCountDiff": 0,
+    "runningDrivers": {
+      "added": [
+        {
+          "name": "NewDriver",
+          "displayName": "New Device Driver",
+          "description": "New hardware driver",
+          "state": "Running",
+          "startType": "Auto",
+          "binaryPath": "C:\\Windows\\System32\\drivers\\newdriver.sys"
+        }
+      ],
+      "removed": [],
+      "addedCount": 1,
+      "removedCount": 0
+    }
+  },
+  
+  "registry": {
+    "systemInfoKeys": {
+      "added": [
+        {
+          "path": "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\NewKey",
+          "category": "System",
+          "valuesCount": 3
+        }
+      ],
+      "removed": [],
+      "modified": [
+        {
+          "path": "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation",
+          "valuesCount1": 5,
+          "valuesCount2": 6,
+          "valuesCountDiff": 1,
+          "lastModified1": 1729238400000,
+          "lastModified2": 1729240800000
+        }
+      ],
+      "addedCount": 1,
+      "removedCount": 0,
+      "modifiedCount": 1
+    },
+    "softwareKeys": {
+      "added": [],
+      "removed": [],
+      "modified": [],
+      "addedCount": 0,
+      "removedCount": 0,
+      "modifiedCount": 0
+    },
+    "networkKeys": {
+      "added": [],
+      "removed": [],
+      "modified": [],
+      "addedCount": 0,
+      "removedCount": 0,
+      "modifiedCount": 0
+    },
+    "autoStartKeys": {
+      "added": [],
+      "removed": [],
+      "modified": [],
+      "addedCount": 0,
+      "removedCount": 0,
+      "modifiedCount": 0
+    }
+  },
+  
+  "processes": {
+    "totalProcesses1": 156,
+    "totalProcesses2": 158,
+    "totalProcessesDiff": 2,
+    "totalThreads1": 2048,
+    "totalThreads2": 2089,
+    "totalThreadsDiff": 41,
+    "totalHandles1": 48576,
+    "totalHandles2": 49120,
+    "totalHandlesDiff": 544,
+    "added": [
+      {
+        "pid": 12345,
+        "name": "chrome.exe",
+        "fullPath": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+        "cpuUsage": 5.2,
+        "memoryUsage": 524288000,
+        "threadCount": 25
+      }
+    ],
+    "removed": [],
+    "changed": [
+      {
+        "pid": 1024,
+        "name": "explorer.exe",
+        "cpuUsage1": 2.5,
+        "cpuUsage2": 8.7,
+        "cpuUsageDiff": 6.2,
+        "memoryUsage1": 104857600,
+        "memoryUsage2": 157286400,
+        "memoryUsageDiff": 52428800,
+        "threadCount1": 42,
+        "threadCount2": 48,
+        "threadCountDiff": 6,
+        "workingSetSize1": 98304000,
+        "workingSetSize2": 145408000,
+        "workingSetSizeDiff": 47104000,
+        "handleCount1": 856,
+        "handleCount2": 923,
+        "handleCountDiff": 67
+      }
+    ],
+    "addedCount": 1,
+    "removedCount": 0,
+    "changedCount": 1
+  }
+}
+```
+
+**比较结果说明**:
+
+1. **CPU 比较**: 
+   - 总体 CPU 使用率变化
+   - 每个核心的使用率详细变化（包含前后值和差值）
+
+2. **内存比较**:
+   - 总物理内存、可用内存、已用内存的前后值和差值
+   - 内存使用百分比的变化
+
+3. **磁盘比较**:
+   - **驱动器 (drives)**: 新增/删除/修改的物理磁盘（包括状态和容量变化）
+   - **分区 (partitions)**: 每个分区的容量、已用空间、剩余空间、使用率变化
+   - **性能 (performance)**: 读写速度、队列长度、磁盘使用率、响应时间的变化
+   - **SMART**: 温度、健康状态、开机时间、坏道数、读写错误数等详细变化
+
+4. **驱动程序比较**:
+   - 驱动总数、运行/停止驱动数量的变化
+   - 新启动的驱动详情（added）
+   - 停止运行的驱动（removed）
+
+5. **注册表比较**:
+   - 按分类（systemInfoKeys, softwareKeys, networkKeys, autoStartKeys）对比
+   - 每个分类中新增、删除、修改的注册表键
+   - 包含键路径、值数量、最后修改时间等详细信息
+
+6. **进程比较**:
+   - 进程总数、线程总数、句柄总数的变化
+   - 新增进程详情（PID、名称、路径、CPU/内存使用情况）
+   - 已终止进程
+   - 进程资源使用变化（CPU、内存、线程、工作集、句柄数等）
+
+错误情况:
+```json
+{
+  "success": false,
+  "error": "Snapshot not found: snapshot_20251018_153045"
+}
+```
+
 ## 测试建议
 
 ### 1. 基础功能测试
