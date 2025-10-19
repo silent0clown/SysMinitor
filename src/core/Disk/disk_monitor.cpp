@@ -12,6 +12,7 @@
 #include <iomanip>
 
 #include "../../utils/encode.h"
+#include "../../utils/util_time.h"
 #pragma comment(lib, "pdh.lib")
 #pragma comment(lib, "setupapi.lib")
 #pragma comment(lib, "wbemuuid.lib")
@@ -207,7 +208,7 @@ void DiskMonitor::Cleanup() {
 
 DiskSnapshot DiskMonitor::GetDiskSnapshot() {
     DiskSnapshot snapshot;
-    snapshot.timestamp = GetTickCount64();
+    snapshot.timestamp = GET_LOCAL_TIME_MS();
     
     snapshot.drives = GetDiskDrives();
     snapshot.partitions = GetPartitions();

@@ -2,7 +2,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <algorithm>
-
+#include "../../utils/util_time.h"
 namespace sysmonitor {
 
 MemoryMonitor::MemoryMonitor() : intervalMs_(1000) {
@@ -77,7 +77,7 @@ bool MemoryMonitor::UpdateUsageData() {
     }
     percent = std::clamp(percent, 0.0, 100.0);
 
-    uint64_t ts = GetTickCount64();
+    uint64_t ts = GET_LOCAL_TIME_MS();
 
     currentUsage_.store(percent, std::memory_order_release);
     {

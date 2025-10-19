@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <sstream>
 #include <cctype>  // Add cctype header
-
+#include "../../utils/util_time.h"
 #pragma comment(lib, "advapi32.lib")
 #pragma comment(lib, "setupapi.lib")
 #pragma comment(lib, "cfgmgr32.lib")
@@ -27,7 +27,7 @@ DriverMonitor::~DriverMonitor() {}
 
 DriverSnapshot DriverMonitor::GetDriverSnapshot() {
     DriverSnapshot snapshot;
-    snapshot.timestamp = GetTickCount64();
+    snapshot.timestamp = GET_LOCAL_TIME_MS();
     
     try {
         // Get service drivers
