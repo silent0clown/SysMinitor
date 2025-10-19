@@ -94,11 +94,21 @@ std::vector<ProcessInfo> ProcessMonitor::GetProcessesViaToolHelp() {
                 }
                 
                 // Get memory information
+                // 修复：安全地获取内存信息
                 PROCESS_MEMORY_COUNTERS pmc;
+                ZeroMemory(&pmc, sizeof(pmc));
+                pmc.cb = sizeof(pmc);
+                
                 if (GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc))) {
                     info.memoryUsage = pmc.WorkingSetSize;
                     info.workingSetSize = pmc.WorkingSetSize;
                     info.pagefileUsage = pmc.PagefileUsage;
+                } else {
+                    // 获取失败时记录日志
+                    DWORD error = GetLastError();
+                    std::cerr << "GetProcessMemoryInfo failed for PID " << info.pid 
+                              << ", error: " << error << std::endl;
+                    // 保持默认值0
                 }
                 
                 // Get username
@@ -107,13 +117,24 @@ std::vector<ProcessInfo> ProcessMonitor::GetProcessesViaToolHelp() {
                 // Get command line
                 info.commandLine = GetProcessCommandLine(processEntry.th32ProcessID);
                 
-                // Get creation time
-                FILETIME createTime, exitTime, kernelTime, userTime;
+                FILETIME createTime = {0}, exitTime = {0}, kernelTime = {0}, userTime = {0};
                 if (GetProcessTimes(hProcess, &createTime, &exitTime, &kernelTime, &userTime)) {
                     ULARGE_INTEGER createTimeValue;
                     createTimeValue.LowPart = createTime.dwLowDateTime;
                     createTimeValue.HighPart = createTime.dwHighDateTime;
                     info.createTime = createTimeValue.QuadPart;
+                } else {
+                    // 无法打开进程时，设置合理的默认值
+                    DWORD error = GetLastError();
+                    std::cerr << "OpenProcess failed for PID " << info.pid 
+                            << ", error: " << error << std::endl;
+                    
+                    info.handleCount = 0;
+                    info.gdiCount = 0;
+                    info.userCount = 0;
+                    info.cpuUsage = 0.0;
+                    info.username = "Access Denied";
+                    info.state = "Running";
                 }
                 
                 // Get handle count and GDI/USER objects
@@ -153,6 +174,12 @@ bool IsCriticalSystemProcess(uint32_t pid) {
     }
     
     // 可以根据需要添加更多系统进程判断
+        // 可以根据需要添加更多系统进程判断
+    static const std::vector<std::string> systemProcesses = {
+        "System", "Registry", "smss.exe", "csrss.exe", 
+        "wininit.exe", "services.exe", "lsass.exe", "winlogon.exe"
+    };
+    
     return false;
 }
 

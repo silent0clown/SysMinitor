@@ -26,6 +26,12 @@ struct ProcessInfo {
     uint32_t handleCount;      // 句柄数
     uint32_t gdiCount;         // GDI对象数
     uint32_t userCount;        // USER对象数
+    
+    ProcessInfo() 
+        : pid(0), parentPid(0), threadCount(0), priority(0),
+          memoryUsage(0), workingSetSize(0), pagefileUsage(0),
+          handleCount(0), gdiCount(0), userCount(0), cpuUsage(0.0),
+          createTime(0) {}
 };
 
 struct ProcessSnapshot {
