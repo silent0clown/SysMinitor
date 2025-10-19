@@ -74,8 +74,8 @@ void HttpServer::Stop() {
 
 void HttpServer::SetupRoutes() {
     // Static file service (for frontend pages)
-    server_->set_mount_point("/", "www");//Test page
-    // server_->set_mount_point("/", "webclient");
+    // server_->set_mount_point("/", "www");//Test page
+    server_->set_mount_point("/", "webclient");
 
     // API routes - CPU related
     server_->Get("/api/cpu/info", [this](const httplib::Request& req, httplib::Response& res) {
@@ -268,7 +268,12 @@ void HttpServer::HandleGetCPUUsage(const httplib::Request& req, httplib::Respons
     json response;
     
     double usage = currentUsage_.load();
-    response["usage"] = usage;
+    // 保留小数点后2位
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << usage;
+    double rounded_usage = std::stod(oss.str());
+    
+    response["usage"] = rounded_usage;
     response["timestamp"] = GET_LOCAL_TIME_MS();
     response["unit"] = "percent";
     
@@ -314,7 +319,12 @@ void HttpServer::HandleGetMemoryUsage(const httplib::Request& req, httplib::Resp
     response["totalPhysical"] = snapshot.totalPhysical;
     response["availablePhysical"] = snapshot.availablePhysical;
     response["usedPhysical"] = snapshot.usedPhysical;
-    response["usedPercent"] = snapshot.usedPercent;
+    
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(2) << snapshot.usedPercent;
+    double rounded_usage = std::stod(oss.str());
+
+    response["usedPercent"] = rounded_usage;
     response["timestamp"] = snapshot.timestamp;
     response["unit"] = "bytes";
 
