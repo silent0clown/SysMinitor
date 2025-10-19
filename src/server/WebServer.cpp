@@ -121,9 +121,9 @@ void HttpServer::SetupRoutes() {
         HandleFindProcesses(req, res);
     });
     
-    server_->Post("/api/process/(\\d+)/terminate", [this](const httplib::Request& req, httplib::Response& res) {
-        HandleTerminateProcess(req, res);
-    });
+    // server_->Post("/api/process/(\\d+)/terminate", [this](const httplib::Request& req, httplib::Response& res) {
+    //     HandleTerminateProcess(req, res);
+    // });
 
 
     // Disk related routes
@@ -1422,7 +1422,7 @@ void HttpServer::HandleGetDriverDetail(const httplib::Request& req, httplib::Res
         std::cerr << "HandleGetDriverDetail exception: " << e.what() << std::endl;
         json error;
         error["error"] = "Failed to get driver details: " + std::string(e.what());
-        res.status = 500;
+        res.status = 404;
         res.set_content(error.dump(), "application/json");
     }
 }
