@@ -65,54 +65,63 @@
   ```json
   {
       "processes": [
-          {
-              "commandLine": "",
-              "cpuUsage": -9.255963134931783e+61,
-              "createTime": -3689348814741910324,
-              "fullPath": "",
-              "memoryUsage": 14757395258967641292,
-              "name": "[System Process]",
-              "pagefileUsage": 14757395258967641292,
-              "parentPid": 0,
-              "pid": 0,
-              "priority": 0,
-              "state": "Running",
-              "threadCount": 48,
-              "username": "",
-              "workingSetSize": 14757395258967641292
-          },
-          {
-              "commandLine": "",
-              "cpuUsage": -9.255963134931783e+61,
-              "createTime": -3689348814741910324,
-              "fullPath": "",
-              "memoryUsage": 14757395258967641292,
-              "name": "System",
-              "pagefileUsage": 14757395258967641292,
-              "parentPid": 0,
-              "pid": 4,
-              "priority": 8,
-              "state": "Running",
-              "threadCount": 442,
-              "username": "",
-              "workingSetSize": 14757395258967641292
-          },
-          {
-              "commandLine": "",
-              "cpuUsage": 0.0,
-              "createTime": 134047266154156169,
-              "fullPath": "",
-              "memoryUsage": 119578624,
-              "name": "svchost.exe",
-              "pagefileUsage": 64622592,
-              "parentPid": 1784,
-              "pid": 44364,
-              "priority": 8,
-              "state": "Running",
-              "threadCount": 6,
-              "username": "",
-              "workingSetSize": 119578624
-          }
+              {
+      "commandLine": "",
+      "cpuUsage": 0,
+      "createTime": -3.6893488147419105e+18,
+      "fullPath": "",
+      "gdiCount": 0,
+      "handleCount": 0,
+      "memoryUsage": 1.4757395258967642e+19,
+      "name": "[System Process]",
+      "pagefileUsage": 1.4757395258967642e+19,
+      "parentPid": 0,
+      "pid": 0,
+      "priority": 0,
+      "state": "Running",
+      "threadCount": 48,
+      "userCount": 0,
+      "username": "Unknown",
+      "workingSetSize": 1.4757395258967642e+19
+    },
+    {
+      "commandLine": "",
+      "cpuUsage": 0,
+      "createTime": -3.6893488147419105e+18,
+      "fullPath": "",
+      "gdiCount": 0,
+      "handleCount": 0,
+      "memoryUsage": 1.4757395258967642e+19,
+      "name": "System",
+      "pagefileUsage": 1.4757395258967642e+19,
+      "parentPid": 0,
+      "pid": 4,
+      "priority": 8,
+      "state": "Running",
+      "threadCount": 394,
+      "userCount": 0,
+      "username": "Unknown",
+      "workingSetSize": 1.4757395258967642e+19
+    },
+    {
+      "commandLine": "",
+      "cpuUsage": 0,
+      "createTime": -3.6893488147419105e+18,
+      "fullPath": "",
+      "gdiCount": 0,
+      "handleCount": 0,
+      "memoryUsage": 1.4757395258967642e+19,
+      "name": "Registry",
+      "pagefileUsage": 1.4757395258967642e+19,
+      "parentPid": 4,
+      "pid": 272,
+      "priority": 8,
+      "state": "Running",
+      "threadCount": 4,
+      "userCount": 0,
+      "username": "Unknown",
+      "workingSetSize": 1.4757395258967642e+19
+    },
       ],
       "timestamp": 1013085171,
       "totalProcesses": 354,
@@ -126,20 +135,23 @@
 - **响应示例**:
   ```json
   {
-      "commandLine": "",
-      "cpuUsage": 0.0,
-      "createTime": 134047266154156169,
-      "fullPath": "",
-      "memoryUsage": 127303680,
-      "name": "svchost.exe",
-      "pagefileUsage": 71913472,
-      "parentPid": 1784,
-      "pid": 44364,
-      "priority": 8,
-      "state": "Running",
-      "threadCount": 6,
-      "username": "",
-      "workingSetSize": 127303680
+  "commandLine": "",
+  "cpuUsage": 0,
+  "createTime": -3.6893488147419105e+18,
+  "fullPath": "",
+  "gdiCount": 0,
+  "handleCount": 0,
+  "memoryUsage": 1.4757395258967642e+19,
+  "name": "Registry",
+  "pagefileUsage": 1.4757395258967642e+19,
+  "parentPid": 4,
+  "pid": 272,
+  "priority": 8,
+  "state": "Running",
+  "threadCount": 4,
+  "userCount": 0,
+  "username": "",
+  "workingSetSize": 1.4757395258967642e+19
   }
   ```
 
@@ -149,30 +161,15 @@
 - **响应示例**:
   ```json
   [
-      {
-          "cpuUsage": -9.255963134931783e+61,
-          "memoryUsage": 14757395258967641292,
-          "name": "svchost.exe",
-          "pid": 1960,
-          "threadCount": 12,
-          "username": ""
-      },
-      {
-          "cpuUsage": -9.255963134931783e+61,
-          "memoryUsage": 14757395258967641292,
-          "name": "svchost.exe",
-          "pid": 1056,
-          "threadCount": 11,
-          "username": ""
-      },
-      {
-          "cpuUsage": 0.0,
-          "memoryUsage": 127385600,
-          "name": "svchost.exe",
-          "pid": 44364,
-          "threadCount": 4,
-          "username": ""
-      }
+    "cpuUsage": 0,
+    "gdiCount": 0,
+    "handleCount": 0,
+    "memoryUsage": 1.4757395258967642e+19,
+    "name": "Registry",
+    "pid": 272,
+    "threadCount": 4,
+    "userCount": 0,
+    "username": ""
   ]
   ```
 

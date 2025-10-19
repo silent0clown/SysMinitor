@@ -457,6 +457,15 @@
                             <div class="text-lg">
                                 总线程数: <span id="totalThreadCount" class="font-semibold">0</span>
                             </div>
+                            <div class="text-lg">
+                                句柄数: <span id="totalHandleCount" class="font-semibold">0</span>
+                            </div>
+                            <div class="text-lg">
+                                GDI对象: <span id="totalGdiCount" class="font-semibold">0</span>
+                            </div>
+                            <div class="text-lg">
+                                USER对象: <span id="totalUserCount" class="font-semibold">0</span>
+                            </div>
                         </div>
 
                         <div class="flex items-center space-x-4">
@@ -505,6 +514,9 @@
                                     <th class="py-2 px-4 text-left sortable" data-sort="cpu">CPU使用率 ↑↓</th>
                                     <th class="py-2 px-4 text-left sortable" data-sort="memory">内存使用 ↑↓</th>
                                     <th class="py-2 px-4 text-left">线程数</th>
+                                    <th class="py-2 px-4 text-left">句柄数</th>
+                                    <th class="py-2 px-4 text-left">GDI对象</th>
+                                    <th class="py-2 px-4 text-left">USER对象</th>
                                     <th class="py-2 px-4 text-left">状态</th>
                                     <th class="py-2 px-4 text-left">操作</th>
                                 </tr>
@@ -1998,6 +2010,22 @@
                     document.getElementById('totalProcessCount').textContent = data.totalProcesses;
                     document.getElementById('totalThreadCount').textContent = data.totalThreads;
 
+                    // 新增统计信息
+                    let totalHandleCount = 0;
+                    let totalGdiCount = 0;
+                    let totalUserCount = 0;
+
+                    data.processes.forEach(process => {
+                        totalHandleCount += process.handleCount || 0;
+                        totalGdiCount += process.gdiCount || 0;
+                        totalUserCount += process.userCount || 0;
+                    });
+
+                    document.getElementById('totalHandleCount').textContent = totalHandleCount;
+                    document.getElementById('totalGdiCount').textContent = totalGdiCount;
+                    document.getElementById('totalUserCount').textContent = totalUserCount;
+
+
                     let processes = data.processes;
 
                     // 应用搜索过滤
@@ -2046,17 +2074,21 @@
 
                     const processListTableBody = document.getElementById('processListTableBody');
                     processListTableBody.innerHTML = processes.map(process => `
-                <tr>
-                    <td class="py-2 px-4 border-b">${process.name}</td>
-                    <td class="py-2 px-4 border-b">${process.pid}</td>
-                    <td class="py-2 px-4 border-b">${process.cpuUsage.toFixed(2)}%</td>
-                    <td class="py-2 px-4 border-b">${formatBytes(process.memoryUsage)}</td>
-                    <td class="py-2 px-4 border-b">${process.threadCount}</td>
-                    <td class="py-2 px-4 border-b">${process.state}</td>
-                    <td class="py-2 px-4 border-b">
-                        <button class="text-blue-500 hover:text-blue-700 process-detail" data-pid="${process.pid}">详情</button>
-                    </td>
-                </tr>
+    <tr>
+        <td class="py-2 px-4 border-b">${process.name}</td>
+        <td class="py-2 px-4 border-b">${process.pid}</td>
+        <td class="py-2 px-4 border-b">${process.cpuUsage.toFixed(2)}%</td>
+        <td class="py-2 px-4 border-b">${formatBytes(process.memoryUsage)}</td>
+        <td class="py-2 px-4 border-b">${process.threadCount}</td>
+        <td class="py-2 px-4 border-b">${process.handleCount || 0}</td>
+        <td class="py-2 px-4 border-b">${process.gdiCount || 0}</td>
+        <td class="py-2 px-4 border-b">${process.userCount || 0}</td>
+        <td class="py-2 px-4 border-b">${process.state}</td>
+        <td class="py-2 px-4 border-b">
+            <button onclick="showProcessDetail(${process.pid})" 
+                    class="text-blue-500 hover:text-blue-700 mr-2">详情</button>
+        </td>
+    </tr>
             `).join('');
 
                     // 绑定详情按钮事件
