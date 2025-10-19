@@ -1,5 +1,6 @@
 #pragma once
 #include "../third_party/nlohmann/json.hpp"
+#include "../utils/util_time.h"
 #include "CPUInfo/system_info.h"
 #include "CPUInfo/cpu_monitor.h"
 #include "Memory/memory_monitor.h"
@@ -29,7 +30,7 @@ public:
         try { s.driver = driver.GetDriverSnapshot(); } catch(...) {}
         try { s.registry = registry.GetRegistrySnapshot(); } catch(...) {}
         try { s.processes = process.GetProcessSnapshot(); } catch(...) {}
-        s.timestamp = GetTickCount64();
+        s.timestamp = GET_LOCAL_TIME_MS();
         return s;
     }
 };

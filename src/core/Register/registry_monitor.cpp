@@ -1,9 +1,9 @@
 #include "registry_monitor.h"
-#include "../../utils/registry_encode.h"
 #define NOMAXMIN  // 防止 Windows.h 定义 min/max 宏，避免与 STL 冲突
 #include <windows.h>
 #include <iostream>
-
+#include "../../utils/registry_encode.h"
+#include "../../utils/util_time.h"
 // 全局变量，保存本次运行创建的备份目录
 char g_backupDir[MAX_PATH] = { 0 };
 
@@ -30,7 +30,7 @@ RegistryMonitor::RegistryMonitor() {}
  */
 RegistrySnapshot RegistryMonitor::GetRegistrySnapshot() {
     RegistrySnapshot snapshot;
-    snapshot.timestamp = GetTickCount64();  // 使用系统启动后的毫秒数作为时间戳
+    snapshot.timestamp = GET_LOCAL_TIME_MS();  // 使用系统启动后的毫秒数作为时间戳
     
     try {
         // 收集各类注册表信息

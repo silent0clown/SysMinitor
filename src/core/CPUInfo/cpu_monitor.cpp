@@ -1,4 +1,3 @@
-#include "cpu_monitor.h"
 #define NOMINMAX
 #include <windows.h>
 #include <iostream>
@@ -7,6 +6,8 @@
 #include <algorithm>
 #include <mutex>
 #include <vector>
+#include "cpu_monitor.h"
+#include "../../utils/util_time.h"
 
 #pragma comment(lib, "pdh.lib")
 
@@ -54,7 +55,7 @@ void CPUMonitor::MonitoringLoop() {
         double usage = CalculateUsage();
         CPUUsage usageData;
         usageData.totalUsage = usage;
-        usageData.timestamp = GetTickCount64();
+        usageData.timestamp = GET_LOCAL_TIME_MS();
 
         if (callback_) {
             callback_(usageData);
@@ -66,7 +67,7 @@ void CPUMonitor::MonitoringLoop() {
 
 CPUUsage CPUMonitor::GetCurrentUsage() {
     CPUUsage usage;
-    usage.timestamp = GetTickCount64();
+    usage.timestamp = GET_LOCAL_TIME_MS();
     if (!UpdateUsageData()) {
         usage.totalUsage = -1.0;
         return usage;
