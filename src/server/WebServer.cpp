@@ -362,55 +362,130 @@ void HttpServer::HandleStreamCPUUsage(const httplib::Request& req, httplib::Resp
     // Note: This is a simplified streaming implementation, production environment requires more complex connection management
 }
 
-
-
-// Add new handler function implementations
 void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Response& res) {
     try {
         auto snapshot = processMonitor_.GetProcessSnapshot();
         json response;
         
+        // 数值字段直接赋值
         response["timestamp"] = snapshot.timestamp;
         response["totalProcesses"] = snapshot.totalProcesses;
         response["totalThreads"] = snapshot.totalThreads;
-        response["totalHandles"] = snapshot.totalHandles;        // 新�??
-        response["totalGdiObjects"] = snapshot.totalGdiObjects;  // 新�??
-        response["totalUserObjects"] = snapshot.totalUserObjects; // 新�??
+        response["totalHandles"] = snapshot.totalHandles;
+        response["totalGdiObjects"] = snapshot.totalGdiObjects;
+        response["totalUserObjects"] = snapshot.totalUserObjects;
         
         json processesJson = json::array();
         for (const auto& process : snapshot.processes) {
-            json processJson;
-            processJson["pid"] = process.pid;
-            processJson["parentPid"] = process.parentPid;
-            processJson["name"] = process.name;
-            processJson["fullPath"] = process.fullPath;
-            processJson["state"] = process.state;
-            processJson["username"] = process.username;
-            processJson["cpuUsage"] = process.cpuUsage;
-            processJson["memoryUsage"] = process.memoryUsage;
-            processJson["workingSetSize"] = process.workingSetSize;
-            processJson["pagefileUsage"] = process.pagefileUsage;
-            processJson["createTime"] = process.createTime;
-            processJson["priority"] = process.priority;
-            processJson["threadCount"] = process.threadCount;
-            processJson["commandLine"] = process.commandLine;
-            processJson["handleCount"] = process.handleCount;    // 新�??
-            processJson["gdiCount"] = process.gdiCount;          // 新�??
-            processJson["userCount"] = process.userCount;        // 新�??
-            
-            processesJson.push_back(processJson);
+            try {
+                json processJson;
+                
+                // 数值字段直接赋值
+                processJson["pid"] = process.pid;
+                processJson["parentPid"] = process.parentPid;
+                processJson["threadCount"] = process.threadCount;
+                processJson["cpuUsage"] = process.cpuUsage;
+                processJson["memoryUsage"] = process.memoryUsage;
+                processJson["workingSetSize"] = process.workingSetSize;
+                processJson["pagefileUsage"] = process.pagefileUsage;
+                processJson["createTime"] = process.createTime;
+                processJson["priority"] = process.priority;
+                processJson["handleCount"] = process.handleCount;
+                processJson["gdiCount"] = process.gdiCount;
+                processJson["userCount"] = process.userCount;
+                
+                // 字符串字段需要 UTF-8 清理
+                processJson["name"] = SanitizeUTF8(process.name);
+                processJson["fullPath"] = SanitizeUTF8(process.fullPath);
+                processJson["state"] = SanitizeUTF8(process.state);
+                processJson["username"] = SanitizeUTF8(process.username);
+                processJson["commandLine"] = SanitizeUTF8(process.commandLine);
+                
+                // 确保没有空值，提供默认值
+                if (processJson["name"].get<std::string>().empty()) {
+                    processJson["name"] = "Unknown";
+                }
+                if (processJson["state"].get<std::string>().empty()) {
+                    processJson["state"] = "Unknown";
+                }
+                if (processJson["username"].get<std::string>().empty()) {
+                    processJson["username"] = "Unknown";
+                }
+                
+                processesJson.push_back(processJson);
+                
+            } catch (const std::exception& e) {
+                std::cerr << "Error serializing process " << process.pid 
+                          << ": " << e.what() << std::endl;
+                // 跳过有问题的进程，继续处理下一个
+                continue;
+            }
         }
         
         response["processes"] = processesJson;
+        
+        // 设置正确的 Content-Type 头部
+        res.set_header("Content-Type", "application/json; charset=utf-8");
         res.set_content(response.dump(), "application/json");
         
     } catch (const std::exception& e) {
+        std::cerr << "HandleGetProcesses exception: " << e.what() << std::endl;
         json error;
-        error["error"] = e.what();
+        error["error"] = SanitizeUTF8("Failed to get process list: " + std::string(e.what()));
+        res.set_header("Content-Type", "application/json; charset=utf-8");
         res.status = 500;
         res.set_content(error.dump(), "application/json");
     }
 }
+
+
+// // Add new handler function implementations
+// void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Response& res) {
+//     try {
+//         auto snapshot = processMonitor_.GetProcessSnapshot();
+//         json response;
+        
+//         response["timestamp"] = snapshot.timestamp;
+//         response["totalProcesses"] = snapshot.totalProcesses;
+//         response["totalThreads"] = snapshot.totalThreads;
+//         response["totalHandles"] = snapshot.totalHandles;        // 新�??
+//         response["totalGdiObjects"] = snapshot.totalGdiObjects;  // 新�??
+//         response["totalUserObjects"] = snapshot.totalUserObjects; // 新�??
+        
+//         json processesJson = json::array();
+//         for (const auto& process : snapshot.processes) {
+//             json processJson;
+//             processJson["pid"] = process.pid;
+//             processJson["parentPid"] = process.parentPid;
+//             processJson["name"] = process.name;
+//             processJson["fullPath"] = process.fullPath;
+//             processJson["state"] = process.state;
+//             processJson["username"] = process.username;
+//             processJson["cpuUsage"] = process.cpuUsage;
+//             processJson["memoryUsage"] = process.memoryUsage;
+//             processJson["workingSetSize"] = process.workingSetSize;
+//             processJson["pagefileUsage"] = process.pagefileUsage;
+//             processJson["createTime"] = process.createTime;
+//             processJson["priority"] = process.priority;
+//             processJson["threadCount"] = process.threadCount;
+//             processJson["commandLine"] = process.commandLine;
+//             processJson["handleCount"] = process.handleCount;    // 新�??
+//             processJson["gdiCount"] = process.gdiCount;          // 新�??
+//             processJson["userCount"] = process.userCount;        // 新�??
+            
+//             processesJson.push_back(processJson);
+//         }
+        
+//         response["processes"] = processesJson;
+//         res.set_content(response.dump(), "application/json");
+        
+//     } catch (const std::exception& e) {
+//         json error;
+//         error["error"] = e.what();
+//         res.status = 500;
+//         res.set_content(error.dump(), "application/json");
+//     }
+// }
 
 void HttpServer::HandleGetProcessInfo(const httplib::Request& req, httplib::Response& res) {
     try {
