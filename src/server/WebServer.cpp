@@ -3,6 +3,7 @@
 
 #include "WebServer.h"
 #include "../utils/AsyncLogger.h"
+#include "../utils/util_time.h"
 #include "../third_party/nlohmann/json.hpp"
 #include <sstream>
 #include <iomanip>
@@ -191,7 +192,7 @@ void HttpServer::StartBackgroundMonitoring() {
     cpuMonitor_.SetUsageCallback([this](const CPUUsage& usage) {
         currentUsage_.store(usage.totalUsage);
 
-        Sample s{GetTickCount64(), usage.totalUsage};
+        Sample s{GET_LOCAL_TIME_MS(), usage.totalUsage};
         {
             std::lock_guard<std::mutex> lk(cpuHistoryMutex_);
             cpuHistory_.push_back(s);
@@ -211,7 +212,7 @@ void HttpServer::StartBackgroundMonitoring() {
             memoryUsage_ = usage;
         }
 
-        Sample s{usage.timestamp ? usage.timestamp : GetTickCount64(), usage.usedPercent};
+        Sample s{usage.timestamp ? usage.timestamp : GET_LOCAL_TIME_MS(), usage.usedPercent};
         {
             std::lock_guard<std::mutex> lk(memoryHistoryMutex_);
             memoryHistory_.push_back(s);
@@ -245,7 +246,7 @@ void HttpServer::HandleGetCPUUsage(const httplib::Request& req, httplib::Respons
     
     double usage = currentUsage_.load();
     response["usage"] = usage;
-    response["timestamp"] = GetTickCount64();
+    response["timestamp"] = GET_LOCAL_TIME_MS();
     response["unit"] = "percent";
     
     res.set_content(response.dump(), "application/json");
@@ -308,7 +309,7 @@ void HttpServer::HandleGetSystemInfo(const httplib::Request& req, httplib::Respo
     };
     
     response["cpu"]["currentUsage"] = currentUsage_.load();
-    response["timestamp"] = GetTickCount64();
+    response["timestamp"] = GET_LOCAL_TIME_MS();
     
     res.set_content(response.dump(), "application/json");
 }
@@ -322,7 +323,7 @@ void HttpServer::HandleStreamCPUUsage(const httplib::Request& req, httplib::Resp
     
     // Send initial data
     std::stringstream initialData;
-    initialData << "data: " << json{{"usage", currentUsage_.load()}, {"timestamp", GetTickCount64()}}.dump() << "\n\n";
+    initialData << "data: " << json{{"usage", currentUsage_.load()}, {"timestamp", GET_LOCAL_TIME_MS()}}.dump() << "\n\n";
     res.set_content(initialData.str(), "text/event-stream");
     
     // Note: This is a simplified streaming implementation, production environment requires more complex connection management
@@ -768,12 +769,12 @@ void HttpServer::HandleSaveRegistrySnapshot(const httplib::Request& req, httplib
             snapshotName = request_json["snapshotName"];
         }
         if (snapshotName.empty()) {
-            snapshotName = "snapshot_" + std::to_string(GetTickCount64());
+            snapshotName = "snapshot_" + std::to_string(GET_LOCAL_TIME_MS());
         }
         
         // Create snapshot object but don't parse detailed content (avoid encoding issues)
         RegistrySnapshot snapshot;
-        snapshot.timestamp = GetTickCount64();
+        snapshot.timestamp = GET_LOCAL_TIME_MS();
         
         // Only record count, don't parse specific content
         if (request_json.contains("systemInfo") && request_json["systemInfo"].is_array()) {
