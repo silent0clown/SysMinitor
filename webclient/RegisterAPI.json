@@ -1,0 +1,136 @@
+1. 注册表保存
+GET
+/api/registry/snapshot/save
+
+响应：
+返回的JSON结构：
+成功：
+{
+    "code": 0,
+    "message": "All registry backups completed successfully!",
+    "status": "success",
+    "backupDir": "C:\\backups\\Backup_20251018_195418",
+    "timestamp": 1697654321000
+}
+部分失败：
+{
+    "code": -1,
+    "message": "Some registry backups failed. Please check permissions or registry paths.",
+    "status": "partial_failure",
+    "backupDir": "C:\\backups\\Backup_20251018_195418",
+    "timestamp": 1697654321000
+}
+完全失败：
+{
+    "code": 1,
+    "message": "Registry backup failed to start. Unable to create backup directory!",
+    "status": "failed",
+    "backupDir": "",
+    "timestamp": 1697654321000
+}
+异常：
+{
+    "code": -2,
+    "error": "Failed to execute registry backup: [exception message]",
+    "status": "exception"
+}
+
+2. 注册表查询
+GET
+/api/registry/snapshot/Info
+响应：
+返回的JSON结构如下：
+{
+    "timestamp": 1697654321000,
+    "backups": [
+        {
+            "folderName": "Backup_20251018_195418",
+            "folderPath": "C:\\backups\\Backup_20251018_195418",
+            "createTime": 1697655258,
+            "totalSize": 1048576,
+            "fileCount": 5,
+            "regFiles": [
+                {
+                    "fileName": "2_System_20251018_201955.reg",
+                    "fileSize": 204800
+                },
+                {
+                    "fileName": "7_RunOnce_20251018_201955.reg",
+                    "fileSize": 153600
+                }
+            ]
+        },
+        {
+            "folderName": "Backup_20251018_194506",
+            "folderPath": "C:\\backups\\Backup_20251018_194506",
+            "createTime": 1697654706,
+            "totalSize": 983040,
+            "fileCount": 4,
+            "regFiles": [
+                {
+                    "fileName": "2_System_20251018_194506.reg",
+                    "fileSize": 196608
+                },
+                {
+                    "fileName": "7_RunOnce_20251018_194506.reg",
+                    "fileSize": 131072
+                }
+            ]
+        }
+    ],
+    "totalBackups": 2
+}
+
+3. 注册表对比
+POST 
+/api/registry/snapshot/compare
+这个接口需要接收一个JSON格式的请求体，包含两个参数{
+    "folder1": "Backup_20251018_195418",
+    "folder2": "Backup_20251018_194506"
+}
+返回的JSON结构如下：
+{
+    "folder1": "C:\\program\\Backup_20251018_195418",
+    "folder2": "C:\\program\\Backup_20251018_194506",
+    "totalComparedFiles": 5,
+    "totalAddedKeys": 12,
+    "totalRemovedKeys": 8,
+    "totalModifiedKeys": 15,
+    "filesOnlyInFolder1": [
+        "9_Services_20251018_195418.reg"
+    ],
+    "filesOnlyInFolder2": [
+        "8_Network_20251018_194506.reg"
+    ],
+    "comparedFiles": [
+        {
+            "prefix": "2",
+            "file1": "2_System_20251018_195418.reg",
+            "file2": "2_System_20251018_194506.reg",
+            "addedKeys": 3,
+            "removedKeys": 2,
+            "modifiedKeys": 5,
+            "addedKeysDetails": [
+                "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\NewService",
+                "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\NewSetting"
+            ],
+            "removedKeysDetails": [
+                "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Services\\OldService"
+            ],
+            "modifiedKeysDetails": [
+                "HKEY_LOCAL_MACHINE\\SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation"
+            ]
+        }
+    ],
+    "timestamp": 1697654321000
+}
+
+4. 注册表删除
+DELETE
+参数：快照名称
+响应：
+json:
+{
+    "success": true,
+    "message": "Snapshot deleted successfully"
+}

@@ -54,6 +54,20 @@
             background-color: #e2e8f0 !important;
             cursor: pointer;
         }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
@@ -158,14 +172,43 @@
 
             <!-- 快照信息 -->
             <div id="snapshot" class="tab-content p-6">
-                <h2 class="text-2xl font-bold mb-6 text-gray-800">快照信息</h2>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">系统快照信息</h2>
 
+                <!-- 创建系统快照 -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">创建系统快照</h3>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <input type="text" id="snapshotNameInput" placeholder="输入快照名称（可选）"
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="createSystemSnapshotBtn"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+                            创建快照
+                        </button>
+                    </div>
+                    <div id="snapshotStatus" class="mt-4 hidden">
+                        <div class="p-4 rounded-lg bg-green-100 border border-green-300">
+                            <div class="flex items-center">
+                                <svg class="h-5 w-5 text-green-400 mr-2" xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <span id="snapshotNameDisplay"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快照列表 -->
                 <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">快照列表</h3>
-                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-                            id="createSnapshotBtn">
-                            新增快照
+                        <button id="refreshSnapshotBtn"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+                            刷新
                         </button>
                     </div>
                     <div class="overflow-x-auto">
@@ -174,92 +217,199 @@
                                 <tr>
                                     <th class="py-2 px-4 text-left">快照名称</th>
                                     <th class="py-2 px-4 text-left">时间戳</th>
-                                    <th class="py-2 px-4 text-left">系统信息</th>
-                                    <th class="py-2 px-4 text-left">软件</th>
-                                    <th class="py-2 px-4 text-left">网络</th>
                                     <th class="py-2 px-4 text-left">操作</th>
                                 </tr>
                             </thead>
-                            <tbody id="snapshotTableBody">
+                            <tbody id="systemSnapshotTableBody">
                                 <tr>
-                                    <td colspan="6" class="py-4 text-center text-gray-500">
-                                        加载中...
-                                    </td>
+                                    <td colspan="3" class="py-4 text-center text-gray-500">加载中...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
+                <!-- 系统快照对比 -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">快照对比</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <h3 class="text-lg font-semibold mb-4">系统快照对比</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label class="block mb-2">快照1</label>
-                            <select class="w-full p-2 border rounded-lg" id="snapshot1Select">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">选择快照1</label>
+                            <select id="snapshot1Select"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">请选择快照</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block mb-2">快照2</label>
-                            <select class="w-full p-2 border rounded-lg" id="snapshot2Select">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">选择快照2</label>
+                            <select id="snapshot2Select"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">请选择快照</option>
                             </select>
                         </div>
                     </div>
-                    <div class="mt-4">
-                        <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
-                            id="compareBtn">对比快照</button>
-                    </div>
-                    <div class="mt-6" id="comparisonResult" style="display: none;">
-                        <h4 class="font-medium mb-2">对比结果</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="p-4 bg-blue-50 rounded-lg">
-                                <h5 class="font-medium text-blue-700">新增项</h5>
-                                <ul class="mt-2 text-sm" id="addedItems"></ul>
-                            </div>
-                            <div class="p-4 bg-yellow-50 rounded-lg">
-                                <h5 class="font-medium text-yellow-700">修改项</h5>
-                                <ul class="mt-2 text-sm" id="modifiedItems"></ul>
-                            </div>
-                            <div class="p-4 bg-red-50 rounded-lg">
-                                <h5 class="font-medium text-red-700">删除项</h5>
-                                <ul class="mt-2 text-sm" id="removedItems"></ul>
-                            </div>
+                    <button id="compareSystemSnapshotsBtn"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+                        对比快照
+                    </button>
+
+                    <!-- 对比结果区域 -->
+                    <div id="systemComparisonResult" class="mt-6 hidden">
+                        <h4 class="text-lg font-semibold mb-3">对比结果</h4>
+                        <div id="systemComparisonContent" class="bg-gray-50 rounded-lg p-4">
+                            <!-- 对比结果将在这里显示 -->
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- 注册表 -->
+            <!-- 替换原有的注册表部分 -->
             <div id="registry" class="tab-content p-6">
                 <h2 class="text-2xl font-bold mb-6 text-gray-800">注册表信息</h2>
-                <div class="bg-white rounded-lg shadow p-6">
+
+                <!-- 保存注册表快照区域 -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">当前注册表快照</h3>
+                        <h3 class="text-lg font-semibold">注册表快照管理</h3>
+                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
+                            id="saveRegistryBtn">
+                            保存注册表快照
+                        </button>
+                    </div>
+
+                    <!-- 状态显示区域 -->
+                    <div id="registryStatus" class="hidden p-4 rounded-lg mb-4">
+                        <div class="flex items-center">
+                            <span id="statusIcon" class="mr-2"></span>
+                            <span id="statusText" class="font-medium"></span>
+                            <span id="backupDir" class="ml-2 text-gray-600"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 注册表快照列表 -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">注册表快照列表</h3>
                         <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
                             id="refreshRegistryBtn">
                             刷新
                         </button>
                     </div>
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full process-table">
                             <thead>
                                 <tr>
-                                    <th class="py-2 px-4 text-left">类型</th>
-                                    <th class="py-2 px-4 text-left">路径</th>
-                                    <th class="py-2 px-4 text-left">子项数量</th>
-                                    <th class="py-2 px-4 text-left">值数量</th>
+                                    <th class="py-2 px-4 text-left">文件夹名称</th>
+                                    <th class="py-2 px-4 text-left">创建时间</th>
+                                    <th class="py-2 px-4 text-left">总大小</th>
+                                    <th class="py-2 px-4 text-left">文件数量</th>
+                                    <th class="py-2 px-4 text-left">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="registryTableBody">
                                 <tr>
-                                    <td colspan="4" class="py-4 text-center text-gray-500">
+                                    <td colspan="5" class="py-4 text-center text-gray-500">
                                         加载中...
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+
+                <!-- 注册表快照对比 -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">注册表快照对比</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block mb-2">快照1</label>
+                            <select class="w-full p-2 border rounded-lg" id="registrySnapshot1">
+                                <option value="">请选择快照</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block mb-2">快照2</label>
+                            <select class="w-full p-2 border rounded-lg" id="registrySnapshot2">
+                                <option value="">请选择快照</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
+                            id="compareRegistryBtn">
+                            对比注册表快照
+                        </button>
+                    </div>
+
+                    <!-- 对比结果 -->
+                    <div id="registryComparisonResult" class="hidden mt-6">
+                        <h4 class="font-medium mb-4">对比结果</h4>
+
+                        <!-- 总览统计 -->
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+                            <div class="p-4 bg-blue-50 rounded-lg text-center">
+                                <p class="text-2xl font-bold text-blue-700" id="totalComparedFiles">0</p>
+                                <p class="text-sm text-gray-600">对比文件数</p>
+                            </div>
+                            <div class="p-4 bg-green-50 rounded-lg text-center">
+                                <p class="text-2xl font-bold text-green-700" id="totalAddedKeys">0</p>
+                                <p class="text-sm text-gray-600">新增键数</p>
+                            </div>
+                            <div class="p-4 bg-red-50 rounded-lg text-center">
+                                <p class="text-2xl font-bold text-red-700" id="totalRemovedKeys">0</p>
+                                <p class="text-sm text-gray-600">删除键数</p>
+                            </div>
+                            <div class="p-4 bg-yellow-50 rounded-lg text-center">
+                                <p class="text-2xl font-bold text-yellow-700" id="totalModifiedKeys">0</p>
+                                <p class="text-sm text-gray-600">修改键数</p>
+                            </div>
+                            <div class="p-4 bg-purple-50 rounded-lg text-center">
+                                <p class="text-2xl font-bold text-purple-700" id="uniqueFiles">0</p>
+                                <p class="text-sm text-gray-600">独有文件</p>
+                            </div>
+                        </div>
+
+                        <!-- 文件对比详情 -->
+                        <div class="mb-6">
+                            <h5 class="font-medium mb-2">文件对比详情</h5>
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full process-table">
+                                    <thead>
+                                        <tr>
+                                            <th class="py-2 px-4 text-left sortable" data-sort="prefix">前缀</th>
+                                            <th class="py-2 px-4 text-left">文件1</th>
+                                            <th class="py-2 px-4 text-left">文件2</th>
+                                            <th class="py-2 px-4 text-left">新增键</th>
+                                            <th class="py-2 px-4 text-left">删除键</th>
+                                            <th class="py-2 px-4 text-left">修改键</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="comparisonFilesTable">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- 详细变更信息 -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="p-4 bg-green-50 rounded-lg">
+                                <h5 class="font-medium text-green-700 mb-2">新增键详情</h5>
+                                <ul class="text-sm max-h-40 overflow-y-auto" id="addedKeysDetails"></ul>
+                            </div>
+                            <div class="p-4 bg-red-50 rounded-lg">
+                                <h5 class="font-medium text-red-700 mb-2">删除键详情</h5>
+                                <ul class="text-sm max-h-40 overflow-y-auto" id="removedKeysDetails"></ul>
+                            </div>
+                            <div class="p-4 bg-yellow-50 rounded-lg">
+                                <h5 class="font-medium text-yellow-700 mb-2">修改键详情</h5>
+                                <ul class="text-sm max-h-40 overflow-y-auto" id="modifiedKeysDetails"></ul>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -672,6 +822,9 @@
         // 初始化图表
         let charts = {};
 
+        // 快照相关变量
+        let systemSnapshots = [];
+
         // 进程排序状态
         let processSort = {
             field: 'pid',
@@ -732,6 +885,9 @@
             // 加载首页数据
             loadDashboardData();
 
+
+            initSnapshotFunctionality();
+
             // 初始化进程相关事件
             bindProcessEvents();
 
@@ -763,13 +919,20 @@
                 loadDriverData();
             });
 
+
+            // 注册表相关事件绑定
+            document.getElementById('saveRegistryBtn').addEventListener('click', saveRegistrySnapshot);
+            document.getElementById('refreshRegistryBtn').addEventListener('click', loadRegistryData);
+            document.getElementById('compareRegistryBtn').addEventListener('click', compareRegistrySnapshots);
+
+
         });
 
         // 绑定事件
         function bindEvents() {
             // 快照相关事件
-            document.getElementById('createSnapshotBtn').addEventListener('click', createSnapshot);
-            document.getElementById('compareBtn').addEventListener('click', compareSnapshots);
+            // document.getElementById('createSnapshotBtn').addEventListener('click', createSnapshot);
+            //document.getElementById('compareBtn').addEventListener('click', compareSnapshots);
 
             // 注册表相关事件
             document.getElementById('refreshRegistryBtn').addEventListener('click', loadRegistryData);
@@ -849,7 +1012,8 @@
                     loadDriverData();
                     break;
                 case 'snapshot':
-                    loadSnapshotData();
+                    // loadSnapshotData();
+                    loadSystemSnapshotData();
                     break;
                 case 'registry':
                     loadRegistryData();
@@ -2508,52 +2672,318 @@
 
         // 加载注册表数据
         function loadRegistryData() {
-            fetch(`${API_BASE}/registry/snapshot`)
+            fetch(`${API_BASE}/registry/snapshot/Info`)
                 .then(response => response.json())
                 .then(data => {
                     // 更新注册表表格
                     const registryTableBody = document.getElementById('registryTableBody');
 
-                    const allRegistryItems = [
-                        ...data.systemInfo.map(item => ({ ...item, type: '系统信息' })),
-                        ...data.software.map(item => ({ ...item, type: '软件' })),
-                        ...data.network.map(item => ({ ...item, type: '网络' })),
-                        ...data.autoStart.map(item => ({ ...item, type: '自启动' }))
-                    ];
+                    if (data.backups && data.backups.length > 0) {
+                        registryTableBody.innerHTML = data.backups.map(backup => `
+                    <tr>
+                        <td class="py-2 px-4 border-b">${backup.folderName}</td>
+                        <td class="py-2 px-4 border-b">${new Date(backup.createTime * 1000).toLocaleString()}</td>
+                        <td class="py-2 px-4 border-b">${formatBytes(backup.totalSize)}</td>
+                        <td class="py-2 px-4 border-b">${backup.fileCount}</td>
+                        <td class="py-2 px-4 border-b">
+                            <button class="text-red-500 hover:text-red-700 delete-registry-snapshot" 
+                                    data-folder="${backup.folderName}">
+                                删除
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
 
-                    registryTableBody.innerHTML = allRegistryItems.map(item => `
-                        <tr>
-                            <td class="py-2 px-4 border-b">${item.type}</td>
-                            <td class="py-2 px-4 border-b">${item.path}</td>
-                            <td class="py-2 px-4 border-b">${item.subkeys ? item.subkeys.length : 0}</td>
-                            <td class="py-2 px-4 border-b">${item.values ? item.values.length : 0}</td>
-                        </tr>
-                    `).join('');
+                        // 绑定删除事件
+                        document.querySelectorAll('.delete-registry-snapshot').forEach(btn => {
+                            btn.addEventListener('click', function () {
+                                const folderName = this.getAttribute('data-folder');
+                                deleteRegistrySnapshot(folderName);
+                            });
+                        });
 
-                    // 更新注册表图表
-                    charts.registryChart.setOption({
-                        series: [{
-                            data: [
-                                { value: data.systemInfo.length, name: '系统信息' },
-                                { value: data.software.length, name: '软件' },
-                                { value: data.network.length, name: '网络' },
-                                { value: data.autoStart.length, name: '自启动' }
-                            ]
-                        }]
-                    });
+                        // 更新对比下拉框
+                        updateRegistryComparisonDropdowns(data.backups);
+                    } else {
+                        registryTableBody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-gray-500">暂无数据</td></tr>';
+                    }
                 })
                 .catch(err => {
                     console.error('加载注册表数据失败:', err);
-                    document.getElementById('registryTableBody').innerHTML = `
-                        <tr>
-                            <td colspan="4" class="py-4 text-center text-red-500">
-                                加载失败: ${err.message}
-                            </td>
-                        </tr>
-                    `;
+                    document.getElementById('registryTableBody').innerHTML =
+                        '<tr><td colspan="5" class="py-4 text-center text-red-500">加载失败</td></tr>';
                 });
         }
 
+        // 保存注册表快照
+        function saveRegistrySnapshot() {
+            const statusDiv = document.getElementById('registryStatus');
+            const statusText = document.getElementById('statusText');
+            const statusIcon = document.getElementById('statusIcon');
+            const backupDir = document.getElementById('backupDir');
+
+            // 显示加载状态
+            statusDiv.className = 'p-4 rounded-lg mb-4 bg-blue-100 border border-blue-300';
+            statusIcon.innerHTML = 'ℹ️';
+            statusText.textContent = '正在保存注册表快照...';
+            backupDir.textContent = '';
+            statusDiv.classList.remove('hidden');
+
+            fetch(`${API_BASE}/registry/snapshot/save`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'success' || data.status === 'partial_failure') {
+                        statusDiv.className = 'p-4 rounded-lg mb-4 bg-green-100 border border-green-300';
+                        statusIcon.innerHTML = '✅';
+                        statusText.textContent = data.message;
+                        if (data.backupDir) {
+                            const dirParts = data.backupDir.split('\\');
+                            backupDir.textContent = `(${dirParts[dirParts.length - 1]})`;
+                        }
+                    } else {
+                        statusDiv.className = 'p-4 rounded-lg mb-4 bg-red-100 border border-red-300';
+                        statusIcon.innerHTML = '❌';
+                        statusText.textContent = data.message || '保存失败';
+                        backupDir.textContent = '';
+                    }
+                    loadRegistryData(); // 刷新列表
+                })
+                .catch(err => {
+                    statusDiv.className = 'p-4 rounded-lg mb-4 bg-red-100 border border-red-300';
+                    statusIcon.innerHTML = '❌';
+                    statusText.textContent = '请求失败: ' + err.message;
+                    backupDir.textContent = '';
+                });
+        }
+
+        // 删除注册表快照
+        function deleteRegistrySnapshot(folderName) {
+            if (!confirm(`确定要删除注册表快照 "${folderName}" 吗？`)) return;
+
+            fetch(`${API_BASE}/registry/snapshot/delete/${folderName}`, {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('删除成功');
+                        loadRegistryData();
+                    } else {
+                        alert(`删除失败: ${data.error}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('删除注册表快照失败:', err);
+                    alert(`删除失败: ${err.message}`);
+                });
+        }
+
+        // 更新注册表对比下拉框
+        function updateRegistryComparisonDropdowns(backups) {
+            const select1 = document.getElementById('registrySnapshot1');
+            const select2 = document.getElementById('registrySnapshot2');
+
+            let options = '<option value="">请选择快照</option>';
+            backups.forEach(backup => {
+                options += `<option value="${backup.folderName}">${backup.folderName}</option>`;
+            });
+
+            select1.innerHTML = options;
+            select2.innerHTML = options;
+        }
+
+        // 对比注册表快照
+        // 修改 compareRegistrySnapshots 函数，添加加载状态提示
+        function compareRegistrySnapshots() {
+            const folder1 = document.getElementById('registrySnapshot1').value;
+            const folder2 = document.getElementById('registrySnapshot2').value;
+
+            if (!folder1 || !folder2) {
+                alert('请选择两个快照进行对比');
+                return;
+            }
+
+            if (folder1 === folder2) {
+                alert('请选择不同的快照进行对比');
+                return;
+            }
+
+            // 显示加载状态
+            let compareBtn = document.getElementById('compareRegistryBtn');
+            const originalBtnText = compareBtn.innerHTML;
+            compareBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>对比中...';
+            compareBtn.disabled = true;
+
+            // 显示对比结果区域并添加加载提示
+            const comparisonResult = document.getElementById('registryComparisonResult');
+            comparisonResult.classList.remove('hidden');
+            comparisonResult.innerHTML = `
+        <div class="flex justify-center items-center p-8">
+            <div class="text-center">
+                <svg class="animate-spin h-12 w-12 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-4 text-gray-600">正在对比注册表快照，请稍候...</p>
+                <p class="text-sm text-gray-500 mt-2">这可能需要一些时间</p>
+            </div>
+        </div>
+    `;
+
+            fetch(`${API_BASE}/registry/snapshot/compare`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    folder1: folder1,
+                    folder2: folder2
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // 恢复按钮状态
+                    compareBtn.innerHTML = originalBtnText;
+                    compareBtn.disabled = false;
+
+                    if (data.error) {
+                        // 显示错误信息
+                        comparisonResult.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 text-red-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                        <h4 class="text-lg font-medium text-red-800">对比失败</h4>
+                    </div>
+                    <p class="mt-2 text-red-700">${data.error}</p>
+                    <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">关闭</button>
+                </div>
+            `;
+                        return;
+                    }
+
+                    // 显示对比结果
+                    displayRegistryComparisonResult(data);
+                })
+                .catch(err => {
+                    // 恢复按钮状态
+                    compareBtn.innerHTML = originalBtnText;
+                    compareBtn.disabled = false;
+
+                    // 显示错误信息
+                    comparisonResult.innerHTML = `
+            <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                <div class="flex items-center">
+                    <svg class="h-5 w-5 text-red-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                    <h4 class="text-lg font-medium text-red-800">请求失败</h4>
+                </div>
+                <p class="mt-2 text-red-700">对比注册表快照时发生错误: ${err.message}</p>
+                <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">关闭</button>
+            </div>
+        `;
+                });
+        }
+
+
+        // 添加显示对比结果的函数
+        function displayRegistryComparisonResult(data) {
+            const comparisonResult = document.getElementById('registryComparisonResult');
+
+            // 计算独有文件数
+            const uniqueFiles = (data.filesOnlyInFolder1?.length || 0) + (data.filesOnlyInFolder2?.length || 0);
+
+            comparisonResult.innerHTML = `
+        <h4 class="font-medium mb-4">对比结果</h4>
+        
+        <!-- 总览统计 -->
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div class="p-4 bg-blue-50 rounded-lg text-center">
+                <p class="text-2xl font-bold text-blue-700" id="totalComparedFiles">${data.totalComparedFiles || 0}</p>
+                <p class="text-sm text-gray-600">对比文件数</p>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg text-center">
+                <p class="text-2xl font-bold text-green-700" id="totalAddedKeys">${data.totalAddedKeys || 0}</p>
+                <p class="text-sm text-gray-600">新增键数</p>
+            </div>
+            <div class="p-4 bg-red-50 rounded-lg text-center">
+                <p class="text-2xl font-bold text-red-700" id="totalRemovedKeys">${data.totalRemovedKeys || 0}</p>
+                <p class="text-sm text-gray-600">删除键数</p>
+            </div>
+            <div class="p-4 bg-yellow-50 rounded-lg text-center">
+                <p class="text-2xl font-bold text-yellow-700" id="totalModifiedKeys">${data.totalModifiedKeys || 0}</p>
+                <p class="text-sm text-gray-600">修改键数</p>
+            </div>
+            <div class="p-4 bg-purple-50 rounded-lg text-center">
+                <p class="text-2xl font-bold text-purple-700" id="uniqueFiles">${uniqueFiles}</p>
+                <p class="text-sm text-gray-600">独有文件</p>
+            </div>
+        </div>
+        
+        <!-- 文件对比详情 -->
+        <div class="mb-6">
+            <h5 class="font-medium mb-2">文件对比详情</h5>
+            <div class="overflow-x-auto">
+                <table class="min-w-full process-table">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-4 text-left sortable" data-sort="prefix">前缀</th>
+                            <th class="py-2 px-4 text-left">文件1</th>
+                            <th class="py-2 px-4 text-left">文件2</th>
+                            <th class="py-2 px-4 text-left">新增键</th>
+                            <th class="py-2 px-4 text-left">删除键</th>
+                            <th class="py-2 px-4 text-left">修改键</th>
+                        </tr>
+                    </thead>
+                    <tbody id="comparisonFilesTable">
+                        ${data.comparedFiles && data.comparedFiles.length > 0 ?
+                    data.comparedFiles.map(file => `
+                            <tr>
+                                <td class="py-2 px-4 border-b">${file.prefix}</td>
+                                <td class="py-2 px-4 border-b">${file.file1}</td>
+                                <td class="py-2 px-4 border-b">${file.file2}</td>
+                                <td class="py-2 px-4 border-b">${file.addedKeys || 0}</td>
+                                <td class="py-2 px-4 border-b">${file.removedKeys || 0}</td>
+                                <td class="py-2 px-4 border-b">${file.modifiedKeys || 0}</td>
+                            </tr>
+                        `).join('') :
+                    '<tr><td colspan="6" class="py-4 text-center text-gray-500">无文件对比数据</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- 详细变更信息 -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="p-4 bg-green-50 rounded-lg">
+                <h5 class="font-medium text-green-700 mb-2">新增键详情</h5>
+                <ul class="text-sm max-h-40 overflow-y-auto" id="addedKeysDetails">
+                    ${data.comparedFiles && data.comparedFiles.some(f => f.addedKeysDetails && f.addedKeysDetails.length > 0) ?
+                    data.comparedFiles.flatMap(f => f.addedKeysDetails || []).map(key => `<li class="py-1">${key}</li>`).join('') :
+                    '<li class="py-1 text-gray-500">无新增键</li>'}
+                </ul>
+            </div>
+            <div class="p-4 bg-red-50 rounded-lg">
+                <h5 class="font-medium text-red-700 mb-2">删除键详情</h5>
+                <ul class="text-sm max-h-40 overflow-y-auto" id="removedKeysDetails">
+                    ${data.comparedFiles && data.comparedFiles.some(f => f.removedKeysDetails && f.removedKeysDetails.length > 0) ?
+                    data.comparedFiles.flatMap(f => f.removedKeysDetails || []).map(key => `<li class="py-1">${key}</li>`).join('') :
+                    '<li class="py-1 text-gray-500">无删除键</li>'}
+                </ul>
+            </div>
+            <div class="p-4 bg-yellow-50 rounded-lg">
+                <h5 class="font-medium text-yellow-700 mb-2">修改键详情</h5>
+                <ul class="text-sm max-h-40 overflow-y-auto" id="modifiedKeysDetails">
+                    ${data.comparedFiles && data.comparedFiles.some(f => f.modifiedKeysDetails && f.modifiedKeysDetails.length > 0) ?
+                    data.comparedFiles.flatMap(f => f.modifiedKeysDetails || []).map(key => `<li class="py-1">${key}</li>`).join('') :
+                    '<li class="py-1 text-gray-500">无修改键</li>'}
+                </ul>
+            </div>
+        </div>
+    `;
+        }
         // CPU刷新控制函数
         function toggleCpuRefresh() {
             cpuRefreshEnabled = !cpuRefreshEnabled;
@@ -2722,6 +3152,811 @@
             }
         }
 
+        // 初始化快照功能
+        function initSnapshotFunctionality() {
+            // 创建快照
+            document.getElementById('createSystemSnapshotBtn').addEventListener('click', createSystemSnapshot);
+
+            // 刷新快照列表
+            document.getElementById('refreshSnapshotBtn').addEventListener('click', loadSystemSnapshotData);
+
+            // 对比快照
+            document.getElementById('compareSystemSnapshotsBtn').addEventListener('click', compareSystemSnapshots);
+
+            // 页面加载时加载数据
+            loadSystemSnapshotData();
+        }
+
+        // 加载系统快照数据
+        function loadSystemSnapshotData() {
+            fetch(`${API_BASE}/system/snapshot/list`)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('systemSnapshotTableBody');
+                    if (data && data.length > 0) {
+                        tbody.innerHTML = data.map(snapshot => `
+                    <tr>
+                        <td class="py-2 px-4 border-b">${snapshot.name}</td>
+                        <td class="py-2 px-4 border-b">${new Date(snapshot.timestamp).toLocaleString()}</td>
+                        <td class="py-2 px-4 border-b">
+                                <button onclick="exportSystemSnapshot('${snapshot.name}')" 
+            class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2">
+        导出
+    </button>
+                            <button onclick="saveSystemSnapshot('${snapshot.name}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm mr-2">保存</button>
+                            <button onclick="deleteSystemSnapshot('${snapshot.name}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                        updateSystemSnapshotDropdowns(data);
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-gray-500">暂无快照数据</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    console.error('加载快照失败:', err);
+                    document.getElementById('systemSnapshotTableBody').innerHTML = `
+                <tr>
+                    <td colspan="3" class="py-4 text-center text-red-500">加载失败: ${err.message}</td>
+                </tr>
+            `;
+                });
+        }
+        // 刷新快照列表
+        document.getElementById('refreshSnapshotBtn').addEventListener('click', loadSystemSnapshotData);
+
+        // 创建系统快照
+        document.getElementById('createSystemSnapshotBtn').addEventListener('click', createSystemSnapshot);
+
+
+        // 更新快照表格
+        function updateSystemSnapshotTable() {
+            const tbody = document.getElementById('systemSnapshotTableBody');
+
+            if (systemSnapshots.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-gray-500">暂无快照</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = systemSnapshots.map(snapshot => `
+        <tr>
+            <td class="py-2 px-4 border-b">${snapshot.name}</td>
+            <td class="py-2 px-4 border-b">${new Date(snapshot.timestamp).toLocaleString()}</td>
+            <td class="py-2 px-4 border-b">
+                <button class="text-blue-500 hover:text-blue-700 mr-2 view-snapshot" data-name="${snapshot.name}">
+                    查看
+                </button>
+                <button class="text-green-500 hover:text-green-700 mr-2 save-snapshot" data-name="${snapshot.name}">
+                    保存
+                </button>
+                <button class="text-red-500 hover:text-red-700 delete-snapshot" data-name="${snapshot.name}">
+                    删除
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+            // 绑定事件
+            document.querySelectorAll('.view-snapshot').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const name = this.getAttribute('data-name');
+                    viewSystemSnapshot(name);
+                });
+            });
+
+            document.querySelectorAll('.save-snapshot').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const name = this.getAttribute('data-name');
+                    saveSystemSnapshot(name);
+                });
+            });
+
+            document.querySelectorAll('.delete-snapshot').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const name = this.getAttribute('data-name');
+                    deleteSystemSnapshot(name);
+                });
+            });
+        }
+
+        function updateSystemSnapshotDropdowns(snapshots) {
+            const snapshot1Select = document.getElementById('snapshot1Select');
+            const snapshot2Select = document.getElementById('snapshot2Select');
+
+            let options = '<option value="">请选择快照</option>';
+            snapshots.forEach(snapshot => {
+                options += `<option value="${snapshot.name}">${snapshot.name}</option>`;
+            });
+
+            snapshot1Select.innerHTML = options;
+            snapshot2Select.innerHTML = options;
+        }
+
+        // 对比系统快照
+        document.getElementById('compareSystemSnapshotsBtn').addEventListener('click', compareSystemSnapshots);
+
+
+        function createSystemSnapshot() {
+            const nameInput = document.getElementById('snapshotNameInput');
+            const snapshotName = nameInput.value.trim() || `snapshot_${new Date().toISOString().replace(/[:.-]/g, '').slice(0, 15)}`;
+
+            fetch(`${API_BASE}/system/snapshot/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: snapshotName })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 显示成功状态
+                        document.getElementById('snapshotNameDisplay').textContent = data.name;
+                        document.getElementById('snapshotStatus').classList.remove('hidden');
+
+                        // 清空输入框
+                        nameInput.value = '';
+
+                        // 重新加载快照列表
+                        loadSystemSnapshotData();
+
+                        // 3秒后隐藏状态信息
+                        setTimeout(() => {
+                            document.getElementById('snapshotStatus').classList.add('hidden');
+                        }, 3000);
+                    } else {
+                        alert(`快照创建失败: ${data.error}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('创建系统快照失败:', err);
+                    alert(`创建系统快照失败: ${err.message}`);
+                });
+        }
+
+        // 添加一个辅助函数来安全地格式化数字
+        function safeToFixed(value, decimals = 2) {
+            if (typeof value !== 'number' || isNaN(value)) {
+                return 'N/A';
+            }
+            return value.toFixed(decimals);
+        }
+
+        // 查看系统快照详情
+        function viewSystemSnapshot(name) {
+            fetch(`${API_BASE}/system/snapshot/get?name=${encodeURIComponent(name)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 添加一个辅助函数来安全地格式化数字
+                    function safeToFixed(value, decimals = 2) {
+                        if (typeof value !== 'number' || isNaN(value)) {
+                            return 'N/A';
+                        }
+                        return value.toFixed(decimals);
+                    }
+
+                    const content = document.getElementById('snapshotDetailContent');
+                    content.innerHTML = `
+                <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-lg mb-2">快照信息</h4>
+                    <p><span class="font-medium">名称:</span> ${name}</p>
+                    <p><span class="font-medium">时间:</span> ${new Date(data.cpu.timestamp).toLocaleString()}</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="font-semibold mb-2">CPU信息</h4>
+                        <p><span class="font-medium">使用率:</span> ${safeToFixed(data.cpu.usage)}%</p>
+                        <p><span class="font-medium">核心数:</span> ${data.cpu.coreCount || 'N/A'}</p>
+                    </div>
+                    
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <h4 class="font-semibold mb-2">内存信息</h4>
+                        <p><span class="font-medium">已使用:</span> ${safeToFixed(data.memory.usedPhysical / (1024 ** 3))} GB</p>
+                        <p><span class="font-medium">总计:</span> ${safeToFixed(data.memory.totalPhysical / (1024 ** 3))} GB</p>
+                        <p><span class="font-medium">使用率:</span> ${safeToFixed(data.memory.usedPhysicalPercent)}%</p>
+                    </div>
+                </div>
+                
+                <div class="bg-yellow-50 rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold mb-2">磁盘信息</h4>
+                    <div class="grid grid-cols-1 gap-2">
+                        ${data.partitions && data.partitions.length > 0 ?
+                            data.partitions.map(partition => `
+                            <div class="bg-white rounded p-2 mb-1">
+                                <p><span class="font-medium">${partition.driveLetter}:</span> 
+                                ${safeToFixed(partition.usedSpace / (1024 ** 3))} GB / ${safeToFixed(partition.totalSize / (1024 ** 3))} GB 
+                                (${safeToFixed(partition.usagePercentage)}%)</p>
+                            </div>
+                        `).join('') :
+                            '<p>无分区信息</p>'}
+                    </div>
+                </div>
+                
+                <div class="bg-purple-50 rounded-lg p-4">
+                    <h4 class="font-semibold mb-2">驱动信息</h4>
+                    <p><span class="font-medium">总驱动数:</span> ${data.driver.stats.totalDrivers || 'N/A'}</p>
+                    <p><span class="font-medium">运行中:</span> ${data.driver.stats.runningCount || 'N/A'}</p>
+                    <p><span class="font-medium">已停止:</span> ${data.driver.stats.stoppedCount || 'N/A'}</p>
+                </div>
+            `;
+
+                    document.getElementById('snapshotDetailModal').classList.remove('hidden');
+                })
+                .catch(err => {
+                    console.error('获取快照详情失败:', err);
+                    alert(`获取快照详情失败: ${err.message}`);
+                });
+        }
+        // 关闭快照详情模态框
+        function closeSnapshotDetailModal() {
+            document.getElementById('snapshotDetailModal').classList.add('hidden');
+        }
+
+        // 保存系统快照
+        function saveSystemSnapshot(name) {
+            if (!confirm(`确定要保存快照 "${name}" 到磁盘吗？`)) return;
+
+            fetch(`${API_BASE}/system/snapshot/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`快照 "${name}" 保存成功`);
+                    } else {
+                        alert(`快照保存失败: ${data.error}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('保存系统快照失败:', err);
+                    alert(`保存系统快照失败: ${err.message}`);
+                });
+        }
+        // 删除系统快照
+        function deleteSystemSnapshot(name) {
+            if (!confirm(`确定要删除系统快照 "${name}" 吗？`)) return;
+
+            fetch(`${API_BASE}/system/snapshot/delete/${name}`, {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('系统快照删除成功');
+                        loadSystemSnapshotData();
+                    } else {
+                        alert(`系统快照删除失败: ${data.error}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('删除系统快照失败:', err);
+                    alert(`删除系统快照失败: ${err.message}`);
+                });
+        }
+
+        // 对比系统快照
+        function compareSystemSnapshots() {
+            const snapshot1 = document.getElementById('snapshot1Select').value;
+            const snapshot2 = document.getElementById('snapshot2Select').value;
+
+            if (!snapshot1 || !snapshot2) {
+                alert('请选择两个快照进行对比');
+                return;
+            }
+
+            const compareBtn = document.getElementById('compareSystemSnapshotsBtn');
+            const originalBtnText = compareBtn.innerHTML;
+            compareBtn.innerHTML = '<span class="flex items-center"><svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>正在对比...</span>';
+            compareBtn.disabled = true;
+
+            fetch(`${API_BASE}/system/snapshot/compare`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ snapshot1, snapshot2 })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        const resultElement = document.getElementById('systemComparisonResult');
+                        resultElement.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 text-red-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                            <h4 class="text-lg font-medium text-red-800">请求失败</h4>
+                        </div>
+                        <p class="mt-2 text-red-700">对比系统快照时发生错误: ${data.error}</p>
+                        <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">关闭</button>
+                    </div>
+                `;
+                        resultElement.classList.remove('hidden');
+                        return;
+                    }
+
+                    displaySystemComparisonResult(data);
+                })
+                .catch(err => {
+                    const resultElement = document.getElementById('systemComparisonResult');
+                    resultElement.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 text-red-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        <h4 class="text-lg font-medium text-red-800">网络错误</h4>
+                    </div>
+                    <p class="mt-2 text-red-700">无法连接服务器: ${err.message}</p>
+                    <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">关闭</button>
+                </div>
+            `;
+                    resultElement.classList.remove('hidden');
+                })
+                .finally(() => {
+                    compareBtn.innerHTML = originalBtnText;
+                    compareBtn.disabled = false;
+                });
+        }
+
+
+        function exportSystemSnapshot(name) {
+            fetch(`${API_BASE}/system/snapshot/get?name=${encodeURIComponent(name)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 创建要下载的数据
+                    const jsonData = JSON.stringify(data, null, 2);
+                    const blob = new Blob([jsonData], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+
+                    // 创建下载链接
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `system_snapshot_${name}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // 清理
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                })
+                .catch(err => {
+                    console.error('导出快照失败:', err);
+                    alert(`导出快照失败: ${err.message}`);
+                });
+        }
+
+
+
+        // 替换 displaySystemComparisonResult 函数
+        // 显示系统快照对比结果
+        function displaySystemComparisonResult(data) {
+            const resultElement = document.getElementById('systemComparisonResult');
+            let contentContainer = document.getElementById('systemComparisonContent');
+
+            // 检查元素是否存在
+            if (!resultElement) {
+                console.error('无法找到 systemComparisonResult 元素');
+                return;
+            }
+
+            // 检查元素是否存在
+            if (!contentContainer) {
+                resultElement.innerHTML = `
+            <h4 class="text-lg font-semibold mb-3">对比结果</h4>
+            <div class="bg-gray-50 rounded-lg p-4" id="systemComparisonContent">
+                <!-- 对比结果内容 -->
+            </div>
+        `;
+                contentContainer = document.getElementById('systemComparisonContent');
+
+                if (!contentContainer) {
+                    console.error('无法创建 systemComparisonContent 元素');
+                    return;
+                }
+            }
+
+            resultElement.classList.remove('hidden');
+
+            // 构建详细对比结果
+            let htmlContent = `
+        <div class="bg-blue-50 rounded-lg p-4 mb-6">
+            <h4 class="font-semibold text-lg mb-2">快照信息</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p><span class="font-medium">快照1:</span> ${data.snapshot1 || 'N/A'}</p>
+                </div>
+                <div>
+                    <p><span class="font-medium">快照2:</span> ${data.snapshot2 || 'N/A'}</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+            // CPU信息变化
+            htmlContent += `
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="border-b p-4">
+                <h5 class="font-semibold text-lg flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                    </svg>
+                    CPU信息变化
+                </h5>
+            </div>
+            <div class="p-4">
+    `;
+
+            if (data.cpu && data.cpu.coreUsageDiffs && Array.isArray(data.cpu.coreUsageDiffs)) {
+                htmlContent += `
+                <div class="mb-4">
+                    <h6 class="font-medium mb-2">核心使用率变化</h6>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        `;
+
+                data.cpu.coreUsageDiffs.forEach(core => {
+                    const diffClass = core.diff > 0 ? 'text-red-500' : core.diff < 0 ? 'text-green-500' : 'text-gray-500';
+                    htmlContent += `
+                <div class="bg-gray-50 p-3 rounded">
+                    <div class="flex justify-between">
+                        <span class="font-medium">核心 ${core.coreIndex}</span>
+                        <span class="${diffClass}">${core.diff !== undefined ? (core.diff > 0 ? '+' : '') + core.diff.toFixed(2) : 'N/A'}%</span>
+                    </div>
+                    <div class="mt-1 text-sm">
+                        <span class="inline-block w-24">快照1:</span>
+                        <span>${core.usage1 !== undefined ? core.usage1.toFixed(2) : 'N/A'}%</span>
+                    </div>
+                    <div class="text-sm">
+                        <span class="inline-block w-24">快照2:</span>
+                        <span>${core.usage2 !== undefined ? core.usage2.toFixed(2) : 'N/A'}%</span>
+                    </div>
+                </div>
+            `;
+                });
+
+                htmlContent += `
+                    </div>
+                </div>
+        `;
+
+                if (data.cpu.totalUsageDiff !== undefined) {
+                    const totalDiffClass = data.cpu.totalUsageDiff > 0 ? 'text-red-500' : data.cpu.totalUsageDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                    htmlContent += `
+                <div class="border-t pt-4">
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium">总体CPU使用率变化:</span>
+                        <span class="${totalDiffClass}">${data.cpu.totalUsageDiff > 0 ? '+' : ''}${data.cpu.totalUsageDiff.toFixed(2)}%</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                        <div>
+                            <span class="inline-block w-24">快照1:</span>
+                            <span>${data.cpu.totalUsage1 !== undefined ? data.cpu.totalUsage1.toFixed(2) : 'N/A'}%</span>
+                        </div>
+                        <div>
+                            <span class="inline-block w-24">快照2:</span>
+                            <span>${data.cpu.totalUsage2 !== undefined ? data.cpu.totalUsage2.toFixed(2) : 'N/A'}%</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+                }
+            } else {
+                htmlContent += '<p class="text-gray-500 text-center">无CPU变化数据</p>';
+            }
+
+            htmlContent += `
+            </div>
+        </div>
+    `;
+
+            // 内存信息变化
+            if (data.memory) {
+                const memoryDiffClass = data.memory.usedPercentDiff > 0 ? 'text-red-500' : data.memory.usedPercentDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                htmlContent += `
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b p-4">
+                    <h5 class="font-semibold text-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                        </svg>
+                        内存信息变化
+                    </h5>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-medium mb-2">使用率变化</div>
+                            <div class="text-2xl ${memoryDiffClass}">
+                                ${data.memory.usedPercentDiff !== undefined ? (data.memory.usedPercentDiff > 0 ? '+' : '') + data.memory.usedPercentDiff.toFixed(2) : 'N/A'}%
+                            </div>
+                            <div class="text-sm mt-1">
+                                <div>
+                                    <span class="inline-block w-20">快照1:</span>
+                                    <span>${data.memory.usedPercent1 !== undefined ? data.memory.usedPercent1.toFixed(2) : 'N/A'}%</span>
+                                </div>
+                                <div>
+                                    <span class="inline-block w-20">快照2:</span>
+                                    <span>${data.memory.usedPercent2 !== undefined ? data.memory.usedPercent2.toFixed(2) : 'N/A'}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-medium mb-2">可用物理内存</div>
+                            <div class="text-2xl">
+                                ${data.memory.availablePhysicalDiff !== undefined ? (data.memory.availablePhysicalDiff / (1024 * 1024)).toFixed(2) : 'N/A'} MB
+                            </div>
+                            <div class="text-sm mt-1">
+                                <div>
+                                    <span class="inline-block w-20">快照1:</span>
+                                    <span>${data.memory.availablePhysical1 !== undefined ? (data.memory.availablePhysical1 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
+                                </div>
+                                <div>
+                                    <span class="inline-block w-20">快照2:</span>
+                                    <span>${data.memory.availablePhysical2 !== undefined ? (data.memory.availablePhysical2 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-medium mb-2">已用物理内存</div>
+                            <div class="text-2xl">
+                                ${data.memory.usedPhysicalDiff !== undefined ? (data.memory.usedPhysicalDiff / (1024 * 1024)).toFixed(2) : 'N/A'} MB
+                            </div>
+                            <div class="text-sm mt-1">
+                                <div>
+                                    <span class="inline-block w-20">快照1:</span>
+                                    <span>${data.memory.usedPhysical1 !== undefined ? (data.memory.usedPhysical1 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
+                                </div>
+                                <div>
+                                    <span class="inline-block w-20">快照2:</span>
+                                    <span>${data.memory.usedPhysical2 !== undefined ? (data.memory.usedPhysical2 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+            }
+
+            // 磁盘信息变化
+            if (data.disk && data.disk.drives && data.disk.drives.modified && Array.isArray(data.disk.drives.modified)) {
+                htmlContent += `
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b p-4">
+                    <h5 class="font-semibold text-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                        </svg>
+                        磁盘信息变化
+                    </h5>
+                </div>
+                <div class="p-4">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">驱动器</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用率变化</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">读取速度变化</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">写入速度变化</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+        `;
+
+                data.disk.drives.modified.forEach(drive => {
+                    const usageDiffClass = drive.usagePercentageDiff > 0 ? 'text-red-500' : drive.usagePercentageDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                    const readDiffClass = drive.readSpeedDiff > 0 ? 'text-red-500' : drive.readSpeedDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                    const writeDiffClass = drive.writeSpeedDiff > 0 ? 'text-red-500' : drive.writeSpeedDiff < 0 ? 'text-green-500' : 'text-gray-500';
+
+                    htmlContent += `
+                <tr>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="font-medium">${drive.driveLetter || 'N/A'}</div>
+                        <div class="text-sm text-gray-500">${drive.model || '-'}</div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap ${usageDiffClass}">
+                        ${drive.usagePercentageDiff !== undefined ? (drive.usagePercentageDiff > 0 ? '+' : '') + drive.usagePercentageDiff.toFixed(2) : 'N/A'}%
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap ${readDiffClass}">
+                        ${drive.readSpeedDiff !== undefined ? (drive.readSpeedDiff > 0 ? '+' : '') + drive.readSpeedDiff.toFixed(2) : 'N/A'} MB/s
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap ${writeDiffClass}">
+                        ${drive.writeSpeedDiff !== undefined ? (drive.writeSpeedDiff > 0 ? '+' : '') + drive.writeSpeedDiff.toFixed(2) : 'N/A'} MB/s
+                    </td>
+                </tr>
+            `;
+                });
+
+                htmlContent += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+            }
+
+            // 进程信息变化
+            if (data.processes) {
+                htmlContent += `
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b p-4">
+                    <h5 class="font-semibold text-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        进程信息变化
+                    </h5>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        `;
+
+                // 新增进程统计
+                htmlContent += `
+            <div class="bg-blue-50 p-3 rounded">
+                <div class="font-medium mb-1">新增进程</div>
+                <div class="text-2xl">${data.processes.added && Array.isArray(data.processes.added) ? data.processes.added.length : 0}</div>
+            </div>
+        `;
+
+                // 移除进程统计
+                htmlContent += `
+            <div class="bg-red-50 p-3 rounded">
+                <div class="font-medium mb-1">移除进程</div>
+                <div class="text-2xl">${data.processes.removed && Array.isArray(data.processes.removed) ? data.processes.removed.length : 0}</div>
+            </div>
+        `;
+
+                // 修改进程统计
+                htmlContent += `
+            <div class="bg-yellow-50 p-3 rounded">
+                <div class="font-medium mb-1">修改进程</div>
+                <div class="text-2xl">${data.processes.modified && Array.isArray(data.processes.modified) ? data.processes.modified.length : 0}</div>
+            </div>
+        `;
+
+                htmlContent += `
+                    </div>
+        `;
+
+                // 显示修改的进程详情（只显示前5个）
+                if (data.processes.modified && Array.isArray(data.processes.modified) && data.processes.modified.length > 0) {
+                    htmlContent += `
+                <div class="mt-4">
+                    <h6 class="font-medium mb-2">主要进程变化</h6>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">进程名</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPU变化</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">内存变化</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+            `;
+
+                    data.processes.modified.slice(0, 5).forEach(process => {
+                        const cpuDiffClass = process.cpuUsageDiff > 0 ? 'text-red-500' : process.cpuUsageDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                        const memDiffClass = process.memoryUsageDiff > 0 ? 'text-red-500' : process.memoryUsageDiff < 0 ? 'text-green-500' : 'text-gray-500';
+
+                        htmlContent += `
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="font-medium">${process.name || 'N/A'}</div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">${process.pid || 'N/A'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap ${cpuDiffClass}">
+                            ${process.cpuUsageDiff !== undefined ? (process.cpuUsageDiff > 0 ? '+' : '') + process.cpuUsageDiff.toFixed(2) : 'N/A'}%
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap ${memDiffClass}">
+                            ${process.memoryUsageDiff !== undefined ? (process.memoryUsageDiff / (1024 * 1024)).toFixed(2) : 'N/A'} MB
+                        </td>
+                    </tr>
+                `;
+                    });
+
+                    htmlContent += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+                }
+
+                htmlContent += `
+                </div>
+            </div>
+        `;
+            }
+
+            // 驱动信息变化
+            if (data.drivers) {
+                htmlContent += `
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b p-4">
+                    <h5 class="font-semibold text-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        驱动信息变化
+                    </h5>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        `;
+
+                // 运行中驱动变化
+                htmlContent += `
+            <div class="bg-gray-50 p-3 rounded">
+                <div class="font-medium mb-1">运行中驱动</div>
+                <div class="text-2xl">${data.drivers.runningCountDiff !== undefined ? (data.drivers.runningCountDiff > 0 ? '+' : '') + data.drivers.runningCountDiff : 'N/A'}</div>
+                <div class="text-sm mt-1">
+                    <div>
+                        <span class="inline-block w-16">快照1:</span>
+                        <span>${data.drivers.runningCount1 !== undefined ? data.drivers.runningCount1 : 'N/A'}</span>
+                    </div>
+                    <div>
+                        <span class="inline-block w-16">快照2:</span>
+                        <span>${data.drivers.runningCount2 !== undefined ? data.drivers.runningCount2 : 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+                // 停止驱动变化
+                htmlContent += `
+            <div class="bg-gray-50 p-3 rounded">
+                <div class="font-medium mb-1">停止驱动</div>
+                <div class="text-2xl">${data.drivers.stoppedCountDiff !== undefined ? (data.drivers.stoppedCountDiff > 0 ? '+' : '') + data.drivers.stoppedCountDiff : 'N/A'}</div>
+                <div class="text-sm mt-1">
+                    <div>
+                        <span class="inline-block w-16">快照1:</span>
+                        <span>${data.drivers.stoppedCount1 !== undefined ? data.drivers.stoppedCount1 : 'N/A'}</span>
+                    </div>
+                    <div>
+                        <span class="inline-block w-16">快照2:</span>
+                        <span>${data.drivers.stoppedCount2 !== undefined ? data.drivers.stoppedCount2 : 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+                // 新增驱动
+                htmlContent += `
+            <div class="bg-blue-50 p-3 rounded">
+                <div class="font-medium mb-1">新增驱动</div>
+                <div class="text-2xl">${data.drivers.runningDrivers && data.drivers.runningDrivers.addedCount !== undefined ? data.drivers.runningDrivers.addedCount : 'N/A'}</div>
+            </div>
+        `;
+
+                // 移除驱动
+                htmlContent += `
+            <div class="bg-red-50 p-3 rounded">
+                <div class="font-medium mb-1">移除驱动</div>
+                <div class="text-2xl">${data.drivers.runningDrivers && data.drivers.runningDrivers.removedCount !== undefined ? data.drivers.runningDrivers.removedCount : 'N/A'}</div>
+            </div>
+        `;
+
+                htmlContent += `
+                    </div>
+                </div>
+            </div>
+        `;
+            }
+
+            contentContainer.innerHTML = htmlContent;
+        }
         // 格式化字节大小
         function formatBytes(bytes) {
             if (bytes === 0) return '0 Bytes';
