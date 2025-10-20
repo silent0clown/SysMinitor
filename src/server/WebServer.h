@@ -53,10 +53,10 @@ private:
     void HandleGetDiskInfo(const httplib::Request& req, httplib::Response& res);
     void HandleGetDiskPerformance(const httplib::Request& req, httplib::Response& res);
 
-    void HandleGetRegistrySnapshot(const httplib::Request& req, httplib::Response& res);
-    void HandleSaveRegistrySnapshot(const httplib::Request& req, httplib::Response& res);
-    void HandleGetSavedSnapshots(const httplib::Request& req, httplib::Response& res);
-    void HandleCompareSnapshots(const httplib::Request& req, httplib::Response& res);
+    // void HandleGetRegistrySnapshot(const httplib::Request& req, httplib::Response& res);
+    // void HandleSaveRegistrySnapshot(const httplib::Request& req, httplib::Response& res);
+    // void HandleGetSavedSnapshots(const httplib::Request& req, httplib::Response& res);
+    // void HandleCompareSnapshots(const httplib::Request& req, httplib::Response& res);
     void HandleDeleteSnapshot(const httplib::Request& req, httplib::Response& res);
 
     void HandleSaveRegistry(const httplib::Request& req, httplib::Response& res);
@@ -70,10 +70,12 @@ private:
     void HandleListSystemSnapshots(const httplib::Request& req, httplib::Response& res);
     void HandleSaveSystemSnapshot(const httplib::Request& req, httplib::Response& res);
     void HandleGetSystemSnapshot(const httplib::Request& req, httplib::Response& res);
+    void HandleCompareSystemSnapshots(const httplib::Request& req, httplib::Response& res);
     void LoadSnapshotsFromDisk();
     void HandleDeleteSystemSnapshot(const httplib::Request& req, httplib::Response& res);
-
+    json CompareSystemSnapshotsJson(const json& snap1, const json& snap2, const std::string& name1, const std::string& name2);
     json CompareRegistrySnapshots(const std::vector<RegistryKey>& keys1, const std::vector<RegistryKey>& keys2);
+    
     std::string GetCurrentTimeString();
     std::vector<RegistryKey> ParseRegistryKeysFromJson(const json& json_array);
     std::string SafeJsonToString(const json& json_value);

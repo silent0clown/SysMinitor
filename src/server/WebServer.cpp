@@ -153,7 +153,7 @@ void HttpServer::SetupRoutes() {
 
     // Registry related APIs
     server_->Get("/api/registry/snapshot", [this](const httplib::Request& req, httplib::Response& res) {
-        HandleGetRegistrySnapshot(req, res);
+        // HandleGetRegistrySnapshot(req, res);
     });
     
     server_->Get("/api/registry/snapshot/save", [this](const httplib::Request& req, httplib::Response& res) {
@@ -202,6 +202,9 @@ void HttpServer::SetupRoutes() {
         HandleSaveSystemSnapshot(req, res);
     });
 
+    server_->Post("/api/system/snapshot/compare", [this](const httplib::Request& req, httplib::Response& res) {
+        HandleCompareSystemSnapshots(req, res);
+    });
 
     server_->Delete("/api/system/snapshot/delete/([^/]+)", [this](const httplib::Request& req, httplib::Response& res) {
         HandleDeleteSystemSnapshot(req, res);
@@ -732,129 +735,129 @@ std::string HttpServer::GetCurrentTimeString() {
     return ss.str();
 }
 
-void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib::Response& res) {
-    try {
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+// void HttpServer::HandleGetRegistrySnapshot(const httplib::Request& req, httplib::Response& res) {
+//     try {
+//         res.set_header("Access-Control-Allow-Origin", "*");
+//         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+//         res.set_header("Access-Control-Allow-Headers", "Content-Type");
         
-        auto snapshot = registryMonitor_.GetRegistrySnapshot();
-        json response;
+//         auto snapshot = registryMonitor_.GetRegistrySnapshot();
+//         json response;
         
-        response["timestamp"] = snapshot.timestamp;
+//         response["timestamp"] = snapshot.timestamp;
         
-        // System information keys
-        json systemInfoJson = json::array();
-        for (const auto& key : snapshot.systemInfoKeys) {
-            json keyJson;
-            keyJson["path"] = key.path;
+//         // System information keys
+//         json systemInfoJson = json::array();
+//         for (const auto& key : snapshot.systemInfoKeys) {
+//             json keyJson;
+//             keyJson["path"] = key.path;
             
-            json valuesJson = json::array();
-            for (const auto& value : key.values) {
-                json valueJson;
-                valueJson["name"] = value.name;
-                valueJson["type"] = value.type;
-                valueJson["data"] = value.data;
-                valueJson["size"] = value.size;
-                valuesJson.push_back(valueJson);
-            }
-            keyJson["values"] = valuesJson;
-            keyJson["subkeys"] = key.subkeys;
+//             json valuesJson = json::array();
+//             for (const auto& value : key.values) {
+//                 json valueJson;
+//                 valueJson["name"] = value.name;
+//                 valueJson["type"] = value.type;
+//                 valueJson["data"] = value.data;
+//                 valueJson["size"] = value.size;
+//                 valuesJson.push_back(valueJson);
+//             }
+//             keyJson["values"] = valuesJson;
+//             keyJson["subkeys"] = key.subkeys;
             
-            systemInfoJson.push_back(keyJson);
-        }
-        response["systemInfo"] = systemInfoJson;
+//             systemInfoJson.push_back(keyJson);
+//         }
+//         response["systemInfo"] = systemInfoJson;
         
-        // Software information keys
-        json softwareJson = json::array();
-        for (const auto& key : snapshot.softwareKeys) {
-            json keyJson;
-            keyJson["path"] = key.path;
+//         // Software information keys
+//         json softwareJson = json::array();
+//         for (const auto& key : snapshot.softwareKeys) {
+//             json keyJson;
+//             keyJson["path"] = key.path;
             
-            json valuesJson = json::array();
-            for (const auto& value : key.values) {
-                json valueJson;
-                valueJson["name"] = value.name;
-                valueJson["type"] = value.type;
-                valueJson["data"] = value.data;
-                valueJson["size"] = value.size;
-                valuesJson.push_back(valueJson);
-            }
-            keyJson["values"] = valuesJson;
-            keyJson["subkeys"] = key.subkeys;
+//             json valuesJson = json::array();
+//             for (const auto& value : key.values) {
+//                 json valueJson;
+//                 valueJson["name"] = value.name;
+//                 valueJson["type"] = value.type;
+//                 valueJson["data"] = value.data;
+//                 valueJson["size"] = value.size;
+//                 valuesJson.push_back(valueJson);
+//             }
+//             keyJson["values"] = valuesJson;
+//             keyJson["subkeys"] = key.subkeys;
             
-            softwareJson.push_back(keyJson);
-        }
-        response["software"] = softwareJson;
+//             softwareJson.push_back(keyJson);
+//         }
+//         response["software"] = softwareJson;
         
-        // Network configuration keys
-        json networkJson = json::array();
-        for (const auto& key : snapshot.networkKeys) {
-            json keyJson;
-            keyJson["path"] = key.path;
+//         // Network configuration keys
+//         json networkJson = json::array();
+//         for (const auto& key : snapshot.networkKeys) {
+//             json keyJson;
+//             keyJson["path"] = key.path;
             
-            json valuesJson = json::array();
-            for (const auto& value : key.values) {
-                json valueJson;
-                valueJson["name"] = value.name;
-                valueJson["type"] = value.type;
-                valueJson["data"] = value.data;
-                valueJson["size"] = value.size;
-                valuesJson.push_back(valueJson);
-            }
-            keyJson["values"] = valuesJson;
-            keyJson["subkeys"] = key.subkeys;
+//             json valuesJson = json::array();
+//             for (const auto& value : key.values) {
+//                 json valueJson;
+//                 valueJson["name"] = value.name;
+//                 valueJson["type"] = value.type;
+//                 valueJson["data"] = value.data;
+//                 valueJson["size"] = value.size;
+//                 valuesJson.push_back(valueJson);
+//             }
+//             keyJson["values"] = valuesJson;
+//             keyJson["subkeys"] = key.subkeys;
             
-            networkJson.push_back(keyJson);
-        }
-        response["network"] = networkJson;
+//             networkJson.push_back(keyJson);
+//         }
+//         response["network"] = networkJson;
         
-        // New: Auto-start items
-        json autoStartJson = json::array();
-        for (const auto& key : snapshot.autoStartKeys) {
-            json keyJson;
-            keyJson["path"] = key.path;
+//         // New: Auto-start items
+//         json autoStartJson = json::array();
+//         for (const auto& key : snapshot.autoStartKeys) {
+//             json keyJson;
+//             keyJson["path"] = key.path;
             
-            json valuesJson = json::array();
-            for (const auto& value : key.values) {
-                json valueJson;
-                valueJson["name"] = value.name;
-                valueJson["type"] = value.type;
-                valueJson["data"] = value.data;
-                valueJson["size"] = value.size;
-                valuesJson.push_back(valueJson);
-            }
-            keyJson["values"] = valuesJson;
-            keyJson["subkeys"] = key.subkeys;
+//             json valuesJson = json::array();
+//             for (const auto& value : key.values) {
+//                 json valueJson;
+//                 valueJson["name"] = value.name;
+//                 valueJson["type"] = value.type;
+//                 valueJson["data"] = value.data;
+//                 valueJson["size"] = value.size;
+//                 valuesJson.push_back(valueJson);
+//             }
+//             keyJson["values"] = valuesJson;
+//             keyJson["subkeys"] = key.subkeys;
             
-            // Add auto-start specific fields
-            if (!key.autoStartType.empty()) {
-                keyJson["autoStartType"] = key.autoStartType;
-            }
-            if (!key.category.empty()) {
-                keyJson["category"] = key.category;
-            }
+//             // Add auto-start specific fields
+//             if (!key.autoStartType.empty()) {
+//                 keyJson["autoStartType"] = key.autoStartType;
+//             }
+//             if (!key.category.empty()) {
+//                 keyJson["category"] = key.category;
+//             }
             
-            autoStartJson.push_back(keyJson);
-        }
-        response["autoStart"] = autoStartJson;
+//             autoStartJson.push_back(keyJson);
+//         }
+//         response["autoStart"] = autoStartJson;
         
-        std::string responseStr = response.dump();
-        std::cout << "Returning registry snapshot, system info keys: " << snapshot.systemInfoKeys.size()
-                  << ", software keys: " << snapshot.softwareKeys.size()
-                  << ", network keys: " << snapshot.networkKeys.size()
-                  << ", auto-start items: " << snapshot.autoStartKeys.size() << std::endl;
+//         std::string responseStr = response.dump();
+//         std::cout << "Returning registry snapshot, system info keys: " << snapshot.systemInfoKeys.size()
+//                   << ", software keys: " << snapshot.softwareKeys.size()
+//                   << ", network keys: " << snapshot.networkKeys.size()
+//                   << ", auto-start items: " << snapshot.autoStartKeys.size() << std::endl;
         
-        res.set_content(responseStr, "application/json");
+//         res.set_content(responseStr, "application/json");
         
-    } catch (const std::exception& e) {
-        std::cerr << "HandleGetRegistrySnapshot exception: " << e.what() << std::endl;
-        json error;
-        error["error"] = "Failed to get registry snapshot: " + std::string(e.what());
-        res.status = 500;
-        res.set_content(error.dump(), "application/json");
-    }
-}
+//     } catch (const std::exception& e) {
+//         std::cerr << "HandleGetRegistrySnapshot exception: " << e.what() << std::endl;
+//         json error;
+//         error["error"] = "Failed to get registry snapshot: " + std::string(e.what());
+//         res.status = 500;
+//         res.set_content(error.dump(), "application/json");
+//     }
+// }
 
 void HttpServer::HandleSaveRegistry(const httplib::Request& req, httplib::Response& res) {
     try {
@@ -1084,92 +1087,92 @@ void HttpServer::HandleCompareFolders(const httplib::Request& req, httplib::Resp
     }
 }
 
-void HttpServer::HandleSaveRegistrySnapshot(const httplib::Request& req, httplib::Response& res) {
-    try {
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+// void HttpServer::HandleSaveRegistrySnapshot(const httplib::Request& req, httplib::Response& res) {
+//     try {
+//         res.set_header("Access-Control-Allow-Origin", "*");
+//         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+//         res.set_header("Access-Control-Allow-Headers", "Content-Type");
         
-        std::cout << "Received save registry snapshot request" << std::endl;
-        std::cout << "Request body size: " << req.body.size() << " bytes" << std::endl;
+//         std::cout << "Received save registry snapshot request" << std::endl;
+//         std::cout << "Request body size: " << req.body.size() << " bytes" << std::endl;
         
-        // Parse JSON data
-        json request_json;
-        try {
-            request_json = json::parse(req.body);
-            std::cout << "JSON parsing successful" << std::endl;
-        } catch (const json::exception& e) {
-            std::cerr << "JSON parsing failed: " << e.what() << std::endl;
-            json error;
-            error["success"] = false;
-            error["error"] = "Invalid JSON format";
-            res.status = 400;
-            res.set_content(error.dump(), "application/json");
-            return;
-        }
+//         // Parse JSON data
+//         json request_json;
+//         try {
+//             request_json = json::parse(req.body);
+//             std::cout << "JSON parsing successful" << std::endl;
+//         } catch (const json::exception& e) {
+//             std::cerr << "JSON parsing failed: " << e.what() << std::endl;
+//             json error;
+//             error["success"] = false;
+//             error["error"] = "Invalid JSON format";
+//             res.status = 400;
+//             res.set_content(error.dump(), "application/json");
+//             return;
+//         }
         
-        // Get snapshot name
-        std::string snapshotName;
-        if (request_json.contains("snapshotName") && request_json["snapshotName"].is_string()) {
-            snapshotName = request_json["snapshotName"];
-        }
-        if (snapshotName.empty()) {
-            snapshotName = "snapshot_" + std::to_string(GET_LOCAL_TIME_MS());
-        }
+//         // Get snapshot name
+//         std::string snapshotName;
+//         if (request_json.contains("snapshotName") && request_json["snapshotName"].is_string()) {
+//             snapshotName = request_json["snapshotName"];
+//         }
+//         if (snapshotName.empty()) {
+//             snapshotName = "snapshot_" + std::to_string(GET_LOCAL_TIME_MS());
+//         }
         
-        // Create snapshot object but don't parse detailed content (avoid encoding issues)
-        RegistrySnapshot snapshot;
-        snapshot.timestamp = GET_LOCAL_TIME_MS();
+//         // Create snapshot object but don't parse detailed content (avoid encoding issues)
+//         RegistrySnapshot snapshot;
+//         snapshot.timestamp = GET_LOCAL_TIME_MS();
         
-        // Only record count, don't parse specific content
-        if (request_json.contains("systemInfo") && request_json["systemInfo"].is_array()) {
-            snapshot.systemInfoKeys.resize(request_json["systemInfo"].size());
-        }
+//         // Only record count, don't parse specific content
+//         if (request_json.contains("systemInfo") && request_json["systemInfo"].is_array()) {
+//             snapshot.systemInfoKeys.resize(request_json["systemInfo"].size());
+//         }
         
-        if (request_json.contains("software") && request_json["software"].is_array()) {
-            snapshot.softwareKeys.resize(request_json["software"].size());
-        }
+//         if (request_json.contains("software") && request_json["software"].is_array()) {
+//             snapshot.softwareKeys.resize(request_json["software"].size());
+//         }
         
-        if (request_json.contains("network") && request_json["network"].is_array()) {
-            snapshot.networkKeys.resize(request_json["network"].size());
-        }
+//         if (request_json.contains("network") && request_json["network"].is_array()) {
+//             snapshot.networkKeys.resize(request_json["network"].size());
+//         }
         
-        // Save snapshot
-        registrySnapshots_[snapshotName] = snapshot;
+//         // Save snapshot
+//         registrySnapshots_[snapshotName] = snapshot;
         
-        // Build response - ensure all strings are safe
-        json response;
-        response["success"] = true;
-        response["snapshotName"] = snapshotName; // snapshotName should be safe
-        response["timestamp"] = snapshot.timestamp;
-        response["systemInfoCount"] = snapshot.systemInfoKeys.size();
-        response["softwareCount"] = snapshot.softwareKeys.size();
-        response["networkCount"] = snapshot.networkKeys.size();
-        response["message"] = "Snapshot saved successfully";
+//         // Build response - ensure all strings are safe
+//         json response;
+//         response["success"] = true;
+//         response["snapshotName"] = snapshotName; // snapshotName should be safe
+//         response["timestamp"] = snapshot.timestamp;
+//         response["systemInfoCount"] = snapshot.systemInfoKeys.size();
+//         response["softwareCount"] = snapshot.softwareKeys.size();
+//         response["networkCount"] = snapshot.networkKeys.size();
+//         response["message"] = "Snapshot saved successfully";
         
-        std::cout << "Registry snapshot saved successfully: " << snapshotName 
-                  << " (System: " << snapshot.systemInfoKeys.size()
-                  << ", Software: " << snapshot.softwareKeys.size() 
-                  << ", Network: " << snapshot.networkKeys.size() << ")" << std::endl;
+//         std::cout << "Registry snapshot saved successfully: " << snapshotName 
+//                   << " (System: " << snapshot.systemInfoKeys.size()
+//                   << ", Software: " << snapshot.softwareKeys.size() 
+//                   << ", Network: " << snapshot.networkKeys.size() << ")" << std::endl;
         
-        // Safely set response content
-        std::string response_str;
-        try {
-            response_str = response.dump();
-            res.set_content(response_str, "application/json");
-        } catch (const json::exception& e) {
-            std::cerr << "JSON serialization failed: " << e.what() << std::endl;
-            // Fallback: build a simple response
-            res.set_content("{\"success\":true,\"message\":\"Snapshot saved successfully\"}", "application/json");
-        }
+//         // Safely set response content
+//         std::string response_str;
+//         try {
+//             response_str = response.dump();
+//             res.set_content(response_str, "application/json");
+//         } catch (const json::exception& e) {
+//             std::cerr << "JSON serialization failed: " << e.what() << std::endl;
+//             // Fallback: build a simple response
+//             res.set_content("{\"success\":true,\"message\":\"Snapshot saved successfully\"}", "application/json");
+//         }
         
-    } catch (const std::exception& e) {
-        std::cerr << "HandleSaveRegistrySnapshot exception: " << e.what() << std::endl;
-        // Use simple error response to avoid JSON issues
-        res.status = 500;
-        res.set_content("{\"success\":false,\"error\":\"Internal server error\"}", "application/json");
-    }
-}
+//     } catch (const std::exception& e) {
+//         std::cerr << "HandleSaveRegistrySnapshot exception: " << e.what() << std::endl;
+//         // Use simple error response to avoid JSON issues
+//         res.status = 500;
+//         res.set_content("{\"success\":false,\"error\":\"Internal server error\"}", "application/json");
+//     }
+// }
 
 // Add safe JSON parsing method
 std::vector<RegistryKey> HttpServer::ParseRegistryKeysFromJson(const json& json_array) {
@@ -1307,35 +1310,35 @@ std::string HttpServer::SanitizeUTF8(const std::string& str) {
     return result;
 }
 
-void HttpServer::HandleGetSavedSnapshots(const httplib::Request& req, httplib::Response& res) {
-    try {
-        res.set_header("Access-Control-Allow-Origin", "*");
+// void HttpServer::HandleGetSavedSnapshots(const httplib::Request& req, httplib::Response& res) {
+//     try {
+//         res.set_header("Access-Control-Allow-Origin", "*");
         
-        json response = json::array();
+//         json response = json::array();
         
-        for (const auto& [name, snapshot] : registrySnapshots_) {
-            json snapshotJson;
-            snapshotJson["name"] = name;
-            snapshotJson["timestamp"] = snapshot.timestamp;
-            snapshotJson["systemInfoCount"] = snapshot.systemInfoKeys.size();
-            snapshotJson["softwareCount"] = snapshot.softwareKeys.size();
-            snapshotJson["networkCount"] = snapshot.networkKeys.size();
+//         for (const auto& [name, snapshot] : registrySnapshots_) {
+//             json snapshotJson;
+//             snapshotJson["name"] = name;
+//             snapshotJson["timestamp"] = snapshot.timestamp;
+//             snapshotJson["systemInfoCount"] = snapshot.systemInfoKeys.size();
+//             snapshotJson["softwareCount"] = snapshot.softwareKeys.size();
+//             snapshotJson["networkCount"] = snapshot.networkKeys.size();
             
-            response.push_back(snapshotJson);
-        }
+//             response.push_back(snapshotJson);
+//         }
         
-        std::cout << "Returning saved snapshot list, count: " << registrySnapshots_.size() << std::endl;
+//         std::cout << "Returning saved snapshot list, count: " << registrySnapshots_.size() << std::endl;
         
-        res.set_content(response.dump(), "application/json");
+//         res.set_content(response.dump(), "application/json");
         
-    } catch (const std::exception& e) {
-        std::cerr << "HandleGetSavedSnapshots exception: " << e.what() << std::endl;
-        json error;
-        error["error"] = "Failed to get snapshot list";
-        res.status = 500;
-        res.set_content(error.dump(), "application/json");
-    }
-}
+//     } catch (const std::exception& e) {
+//         std::cerr << "HandleGetSavedSnapshots exception: " << e.what() << std::endl;
+//         json error;
+//         error["error"] = "Failed to get snapshot list";
+//         res.status = 500;
+//         res.set_content(error.dump(), "application/json");
+//     }
+// }
 
 
 // Helper function: Compare two registry key lists
@@ -1381,95 +1384,94 @@ json HttpServer::CompareRegistrySnapshots(const std::vector<RegistryKey>& keys1,
     
     return changes;
 }
-
-void HttpServer::HandleCompareSnapshots(const httplib::Request& req, httplib::Response& res) {
-    try {
-        res.set_header("Access-Control-Allow-Origin", "*");
-        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-        res.set_header("Access-Control-Allow-Headers", "Content-Type");
-        res.set_header("Content-Type", "application/json; charset=utf-8");
+// void HttpServer::HandleCompareSnapshots(const httplib::Request& req, httplib::Response& res) {
+//     try {
+//         res.set_header("Access-Control-Allow-Origin", "*");
+//         res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+//         res.set_header("Access-Control-Allow-Headers", "Content-Type");
+//         res.set_header("Content-Type", "application/json; charset=utf-8");
         
-        // Parse JSON request body
-        json request_json;
-        try {
-            request_json = json::parse(req.body);
-        } catch (const json::exception& e) {
-            json error;
-            error["success"] = false;
-            error["error"] = "Invalid JSON format: " + std::string(e.what());
-            res.status = 400;
-            res.set_content(error.dump(), "application/json");
-            return;
-        }
+//         // Parse JSON request body
+//         json request_json;
+//         try {
+//             request_json = json::parse(req.body);
+//         } catch (const json::exception& e) {
+//             json error;
+//             error["success"] = false;
+//             error["error"] = "Invalid JSON format: " + std::string(e.what());
+//             res.status = 400;
+//             res.set_content(error.dump(), "application/json");
+//             return;
+//         }
         
-        // Get parameters from JSON
-        std::string snapshot1, snapshot2;
-        if (request_json.contains("snapshot1") && request_json["snapshot1"].is_string()) {
-            snapshot1 = request_json["snapshot1"];
-        }
-        if (request_json.contains("snapshot2") && request_json["snapshot2"].is_string()) {
-            snapshot2 = request_json["snapshot2"];
-        }
+//         // Get parameters from JSON
+//         std::string snapshot1, snapshot2;
+//         if (request_json.contains("snapshot1") && request_json["snapshot1"].is_string()) {
+//             snapshot1 = request_json["snapshot1"];
+//         }
+//         if (request_json.contains("snapshot2") && request_json["snapshot2"].is_string()) {
+//             snapshot2 = request_json["snapshot2"];
+//         }
         
-        std::cout << "Received compare snapshots request: " << snapshot1 << " vs " << snapshot2 << std::endl;
+//         std::cout << "Received compare snapshots request: " << snapshot1 << " vs " << snapshot2 << std::endl;
         
-        if (snapshot1.empty() || snapshot2.empty()) {
-            json error;
-            error["success"] = false;
-            error["error"] = "Two snapshot names are required";
-            res.status = 400;
-            res.set_content(error.dump(), "application/json");
-            return;
-        }
+//         if (snapshot1.empty() || snapshot2.empty()) {
+//             json error;
+//             error["success"] = false;
+//             error["error"] = "Two snapshot names are required";
+//             res.status = 400;
+//             res.set_content(error.dump(), "application/json");
+//             return;
+//         }
         
-        // Check if snapshots exist
-        if (registrySnapshots_.find(snapshot1) == registrySnapshots_.end()) {
-            json error;
-            error["success"] = false;
-            error["error"] = "Snapshot does not exist: " + snapshot1;
-            res.status = 404;
-            res.set_content(error.dump(), "application/json");
-            return;
-        }
+//         // Check if snapshots exist
+//         if (registrySnapshots_.find(snapshot1) == registrySnapshots_.end()) {
+//             json error;
+//             error["success"] = false;
+//             error["error"] = "Snapshot does not exist: " + snapshot1;
+//             res.status = 404;
+//             res.set_content(error.dump(), "application/json");
+//             return;
+//         }
         
-        if (registrySnapshots_.find(snapshot2) == registrySnapshots_.end()) {
-            json error;
-            error["success"] = false;
-            error["error"] = "Snapshot does not exist: " + snapshot2;
-            res.status = 404;
-            res.set_content(error.dump(), "application/json");
-            return;
-        }
+//         if (registrySnapshots_.find(snapshot2) == registrySnapshots_.end()) {
+//             json error;
+//             error["success"] = false;
+//             error["error"] = "Snapshot does not exist: " + snapshot2;
+//             res.status = 404;
+//             res.set_content(error.dump(), "application/json");
+//             return;
+//         }
         
-        // Get snapshots
-        const auto& snap1 = registrySnapshots_[snapshot1];
-        const auto& snap2 = registrySnapshots_[snapshot2];
+//         // Get snapshots
+//         const auto& snap1 = registrySnapshots_[snapshot1];
+//         const auto& snap2 = registrySnapshots_[snapshot2];
         
-        json response;
-        response["snapshot1"] = snapshot1;
-        response["snapshot2"] = snapshot2;
-        response["timestamp1"] = snap1.timestamp;
-        response["timestamp2"] = snap2.timestamp;
+//         json response;
+//         response["snapshot1"] = snapshot1;
+//         response["snapshot2"] = snapshot2;
+//         response["timestamp1"] = snap1.timestamp;
+//         response["timestamp2"] = snap2.timestamp;
         
-        // Compare system information
-        response["systemInfoChanges"] = CompareRegistrySnapshots(snap1.systemInfoKeys, snap2.systemInfoKeys);
-        // Compare software information
-        response["softwareChanges"] = CompareRegistrySnapshots(snap1.softwareKeys, snap2.softwareKeys);
-        // Compare network configuration
-        response["networkChanges"] = CompareRegistrySnapshots(snap1.networkKeys, snap2.networkKeys);
+//         // Compare system information
+//         response["systemInfoChanges"] = CompareRegistrySnapshots(snap1.systemInfoKeys, snap2.systemInfoKeys);
+//         // Compare software information
+//         response["softwareChanges"] = CompareRegistrySnapshots(snap1.softwareKeys, snap2.softwareKeys);
+//         // Compare network configuration
+//         response["networkChanges"] = CompareRegistrySnapshots(snap1.networkKeys, snap2.networkKeys);
         
-        std::cout << "Snapshot comparison completed: " << snapshot1 << " vs " << snapshot2 << std::endl;
+//         std::cout << "Snapshot comparison completed: " << snapshot1 << " vs " << snapshot2 << std::endl;
         
-        res.set_content(response.dump(), "application/json");
+//         res.set_content(response.dump(), "application/json");
         
-    } catch (const std::exception& e) {
-        std::cerr << "HandleCompareSnapshots exception: " << e.what() << std::endl;
-        json error;
-        error["error"] = e.what();
-        res.status = 500;
-        res.set_content(error.dump(), "application/json");
-    }
-}
+//     } catch (const std::exception& e) {
+//         std::cerr << "HandleCompareSnapshots exception: " << e.what() << std::endl;
+//         json error;
+//         error["error"] = e.what();
+//         res.status = 500;
+//         res.set_content(error.dump(), "application/json");
+//     }
+// }
 
 void HttpServer::HandleDeleteSnapshot(const httplib::Request& req, httplib::Response& res) {
     try {
@@ -1993,4 +1995,685 @@ void HttpServer::HandleDeleteSystemSnapshot(const httplib::Request& req, httplib
         res.set_content(R"({"success":false,"error":"Internal server error"})", "application/json");
     }
 }
+
+// 详细比较两个系统快照JSON
+json HttpServer::CompareSystemSnapshotsJson(const json& snap1, const json& snap2, const std::string& name1, const std::string& name2) {
+    json result;
+    result["snapshot1"] = name1;
+    result["snapshot2"] = name2;
+    result["timestamp1"] = snap1.value("timestamp", 0);
+    result["timestamp2"] = snap2.value("timestamp", 0);
+
+    // ============ CPU 比较 ============
+    result["cpu"] = json::object();
+    if (snap1.contains("cpu") && snap2.contains("cpu")) {
+        auto cpu1 = snap1["cpu"];
+        auto cpu2 = snap2["cpu"];
+        
+        result["cpu"]["totalUsageDiff"] = cpu2.value("totalUsage", 0.0) - cpu1.value("totalUsage", 0.0);
+        result["cpu"]["totalUsage1"] = cpu1.value("totalUsage", 0.0);
+        result["cpu"]["totalUsage2"] = cpu2.value("totalUsage", 0.0);
+        
+        if (cpu1.contains("coreUsages") && cpu2.contains("coreUsages") &&
+            cpu1["coreUsages"].is_array() && cpu2["coreUsages"].is_array()) {
+            auto cores1 = cpu1["coreUsages"];
+            auto cores2 = cpu2["coreUsages"];
+            size_t minSize = (cores1.size() < cores2.size()) ? cores1.size() : cores2.size();
+            
+            json coreDiffs = json::array();
+            for (size_t i = 0; i < minSize; ++i) {
+                json coreDiff;
+                coreDiff["coreIndex"] = i;
+                coreDiff["usage1"] = cores1[i].get<double>();
+                coreDiff["usage2"] = cores2[i].get<double>();
+                coreDiff["diff"] = cores2[i].get<double>() - cores1[i].get<double>();
+                coreDiffs.push_back(coreDiff);
+            }
+            result["cpu"]["coreUsageDiffs"] = coreDiffs;
+        }
+    }
+
+    // ============ 内存比较 ============
+    result["memory"] = json::object();
+    if (snap1.contains("memory") && snap2.contains("memory")) {
+        auto mem1 = snap1["memory"];
+        auto mem2 = snap2["memory"];
+        
+        result["memory"]["totalPhysical1"] = mem1.value("totalPhysical", 0);
+        result["memory"]["totalPhysical2"] = mem2.value("totalPhysical", 0);
+        result["memory"]["totalPhysicalDiff"] = mem2.value("totalPhysical", 0) - mem1.value("totalPhysical", 0);
+        
+        result["memory"]["availablePhysical1"] = mem1.value("availablePhysical", 0);
+        result["memory"]["availablePhysical2"] = mem2.value("availablePhysical", 0);
+        result["memory"]["availablePhysicalDiff"] = mem2.value("availablePhysical", 0) - mem1.value("availablePhysical", 0);
+        
+        result["memory"]["usedPhysical1"] = mem1.value("usedPhysical", 0);
+        result["memory"]["usedPhysical2"] = mem2.value("usedPhysical", 0);
+        result["memory"]["usedPhysicalDiff"] = mem2.value("usedPhysical", 0) - mem1.value("usedPhysical", 0);
+        
+        result["memory"]["usedPercent1"] = mem1.value("usedPercent", 0.0);
+        result["memory"]["usedPercent2"] = mem2.value("usedPercent", 0.0);
+        result["memory"]["usedPercentDiff"] = mem2.value("usedPercent", 0.0) - mem1.value("usedPercent", 0.0);
+    }
+
+    // ============ 磁盘比较 ============
+    result["disk"] = json::object();
+    if (snap1.contains("disk") && snap2.contains("disk")) {
+        auto disk1 = snap1["disk"];
+        auto disk2 = snap2["disk"];
+        
+        // 比较驱动器 (drives)
+        result["disk"]["drives"] = json::object();
+        if (disk1.contains("drives") && disk2.contains("drives")) {
+            std::map<std::string, json> drives1Map, drives2Map;
+            for (const auto& d : disk1["drives"]) {
+                if (d.contains("deviceId")) {
+                    drives1Map[d["deviceId"]] = d;
+                }
+            }
+            for (const auto& d : disk2["drives"]) {
+                if (d.contains("deviceId")) {
+                    drives2Map[d["deviceId"]] = d;
+                }
+            }
+            
+            json driveChanges = json::array();
+            json added = json::array();
+            json removed = json::array();
+            json modified = json::array();
+            
+            // 检查添加和修改的驱动器
+            for (const auto& [deviceId, d2] : drives2Map) {
+                if (drives1Map.find(deviceId) == drives1Map.end()) {
+                    // 新增驱动器
+                    json add;
+                    add["deviceId"] = deviceId;
+                    add["model"] = d2.value("model", "");
+                    add["serialNumber"] = d2.value("serialNumber", "");
+                    add["interfaceType"] = d2.value("interfaceType", "");
+                    add["mediaType"] = d2.value("mediaType", "");
+                    add["totalSize"] = d2.value("totalSize", 0);
+                    add["status"] = d2.value("status", "");
+                    added.push_back(add);
+                } else {
+                    // 比较变化
+                    const auto& d1 = drives1Map[deviceId];
+                    json change;
+                    change["deviceId"] = deviceId;
+                    change["model"] = d2.value("model", "");
+                    
+                    bool hasChange = false;
+                    if (d1.value("status", "") != d2.value("status", "")) {
+                        change["statusChanged"] = true;
+                        change["status1"] = d1.value("status", "");
+                        change["status2"] = d2.value("status", "");
+                        hasChange = true;
+                    }
+                    if (d1.value("totalSize", 0) != d2.value("totalSize", 0)) {
+                        change["totalSizeChanged"] = true;
+                        change["totalSize1"] = d1.value("totalSize", 0);
+                        change["totalSize2"] = d2.value("totalSize", 0);
+                        hasChange = true;
+                    }
+                    
+                    if (hasChange) {
+                        modified.push_back(change);
+                    }
+                }
+            }
+            
+            // 检查删除的驱动器
+            for (const auto& [deviceId, d1] : drives1Map) {
+                if (drives2Map.find(deviceId) == drives2Map.end()) {
+                    json rem;
+                    rem["deviceId"] = deviceId;
+                    rem["model"] = d1.value("model", "");
+                    removed.push_back(rem);
+                }
+            }
+            
+            result["disk"]["drives"]["added"] = added;
+            result["disk"]["drives"]["removed"] = removed;
+            result["disk"]["drives"]["modified"] = modified;
+            result["disk"]["drives"]["addedCount"] = added.size();
+            result["disk"]["drives"]["removedCount"] = removed.size();
+            result["disk"]["drives"]["modifiedCount"] = modified.size();
+        }
+        
+        // 比较分区 (partitions)
+        result["disk"]["partitions"] = json::object();
+        if (disk1.contains("partitions") && disk2.contains("partitions")) {
+            std::map<std::string, json> parts1Map, parts2Map;
+            for (const auto& p : disk1["partitions"]) {
+                if (p.contains("driveLetter")) {
+                    parts1Map[p["driveLetter"]] = p;
+                }
+            }
+            for (const auto& p : disk2["partitions"]) {
+                if (p.contains("driveLetter")) {
+                    parts2Map[p["driveLetter"]] = p;
+                }
+            }
+            
+            json partitionChanges = json::array();
+            for (const auto& [letter, p1] : parts1Map) {
+                if (parts2Map.find(letter) != parts2Map.end()) {
+                    const auto& p2 = parts2Map[letter];
+                    json change;
+                    change["driveLetter"] = letter;
+                    change["label"] = p2.value("label", "");
+                    change["fileSystem"] = p2.value("fileSystem", "");
+                    
+                    change["totalSize1"] = p1.value("totalSize", 0);
+                    change["totalSize2"] = p2.value("totalSize", 0);
+                    change["totalSizeDiff"] = p2.value("totalSize", 0) - p1.value("totalSize", 0);
+                    
+                    change["freeSpace1"] = p1.value("freeSpace", 0);
+                    change["freeSpace2"] = p2.value("freeSpace", 0);
+                    change["freeSpaceDiff"] = p2.value("freeSpace", 0) - p1.value("freeSpace", 0);
+                    
+                    change["usedSpace1"] = p1.value("usedSpace", 0);
+                    change["usedSpace2"] = p2.value("usedSpace", 0);
+                    change["usedSpaceDiff"] = p2.value("usedSpace", 0) - p1.value("usedSpace", 0);
+                    
+                    change["usagePercentage1"] = p1.value("usagePercentage", 0.0);
+                    change["usagePercentage2"] = p2.value("usagePercentage", 0.0);
+                    change["usagePercentageDiff"] = p2.value("usagePercentage", 0.0) - p1.value("usagePercentage", 0.0);
+                    
+                    partitionChanges.push_back(change);
+                }
+            }
+            
+            result["disk"]["partitions"]["changes"] = partitionChanges;
+        }
+        
+        // 比较性能数据 (performance)
+        result["disk"]["performance"] = json::object();
+        if (disk1.contains("performance") && disk2.contains("performance")) {
+            std::map<std::string, json> perf1Map, perf2Map;
+            for (const auto& p : disk1["performance"]) {
+                if (p.contains("driveLetter")) {
+                    perf1Map[p["driveLetter"]] = p;
+                }
+            }
+            for (const auto& p : disk2["performance"]) {
+                if (p.contains("driveLetter")) {
+                    perf2Map[p["driveLetter"]] = p;
+                }
+            }
+            
+            json perfChanges = json::array();
+            for (const auto& [letter, p1] : perf1Map) {
+                if (perf2Map.find(letter) != perf2Map.end()) {
+                    const auto& p2 = perf2Map[letter];
+                    json change;
+                    change["driveLetter"] = letter;
+                    
+                    change["readSpeed1"] = p1.value("readSpeed", 0.0);
+                    change["readSpeed2"] = p2.value("readSpeed", 0.0);
+                    change["readSpeedDiff"] = p2.value("readSpeed", 0.0) - p1.value("readSpeed", 0.0);
+                    
+                    change["writeSpeed1"] = p1.value("writeSpeed", 0.0);
+                    change["writeSpeed2"] = p2.value("writeSpeed", 0.0);
+                    change["writeSpeedDiff"] = p2.value("writeSpeed", 0.0) - p1.value("writeSpeed", 0.0);
+                    
+                    change["readBytesPerSec1"] = p1.value("readBytesPerSec", 0);
+                    change["readBytesPerSec2"] = p2.value("readBytesPerSec", 0);
+                    change["readBytesPerSecDiff"] = p2.value("readBytesPerSec", 0) - p1.value("readBytesPerSec", 0);
+                    
+                    change["writeBytesPerSec1"] = p1.value("writeBytesPerSec", 0);
+                    change["writeBytesPerSec2"] = p2.value("writeBytesPerSec", 0);
+                    change["writeBytesPerSecDiff"] = p2.value("writeBytesPerSec", 0) - p1.value("writeBytesPerSec", 0);
+                    
+                    change["queueLength1"] = p1.value("queueLength", 0.0);
+                    change["queueLength2"] = p2.value("queueLength", 0.0);
+                    change["queueLengthDiff"] = p2.value("queueLength", 0.0) - p1.value("queueLength", 0.0);
+                    
+                    change["usagePercentage1"] = p1.value("usagePercentage", 0.0);
+                    change["usagePercentage2"] = p2.value("usagePercentage", 0.0);
+                    change["usagePercentageDiff"] = p2.value("usagePercentage", 0.0) - p1.value("usagePercentage", 0.0);
+                    
+                    change["responseTime1"] = p1.value("responseTime", 0.0);
+                    change["responseTime2"] = p2.value("responseTime", 0.0);
+                    change["responseTimeDiff"] = p2.value("responseTime", 0.0) - p1.value("responseTime", 0.0);
+                    
+                    perfChanges.push_back(change);
+                }
+            }
+            
+            result["disk"]["performance"]["changes"] = perfChanges;
+        }
+        
+        // 比较SMART数据 (smart)
+        result["disk"]["smart"] = json::object();
+        if (disk1.contains("smart") && disk2.contains("smart")) {
+            std::map<std::string, json> smart1Map, smart2Map;
+            for (const auto& s : disk1["smart"]) {
+                if (s.contains("deviceId")) {
+                    smart1Map[s["deviceId"]] = s;
+                }
+            }
+            for (const auto& s : disk2["smart"]) {
+                if (s.contains("deviceId")) {
+                    smart2Map[s["deviceId"]] = s;
+                }
+            }
+            
+            json smartChanges = json::array();
+            for (const auto& [deviceId, s1] : smart1Map) {
+                if (smart2Map.find(deviceId) != smart2Map.end()) {
+                    const auto& s2 = smart2Map[deviceId];
+                    json change;
+                    change["deviceId"] = deviceId;
+                    
+                    change["temperature1"] = s1.value("temperature", 0);
+                    change["temperature2"] = s2.value("temperature", 0);
+                    change["temperatureDiff"] = s2.value("temperature", 0) - s1.value("temperature", 0);
+                    
+                    change["healthStatus1"] = s1.value("healthStatus", 0);
+                    change["healthStatus2"] = s2.value("healthStatus", 0);
+                    change["healthStatusDiff"] = s2.value("healthStatus", 0) - s1.value("healthStatus", 0);
+                    
+                    change["powerOnHours1"] = s1.value("powerOnHours", 0);
+                    change["powerOnHours2"] = s2.value("powerOnHours", 0);
+                    change["powerOnHoursDiff"] = s2.value("powerOnHours", 0) - s1.value("powerOnHours", 0);
+                    
+                    change["badSectors1"] = s1.value("badSectors", 0);
+                    change["badSectors2"] = s2.value("badSectors", 0);
+                    change["badSectorsDiff"] = s2.value("badSectors", 0) - s1.value("badSectors", 0);
+                    
+                    change["readErrorCount1"] = s1.value("readErrorCount", 0);
+                    change["readErrorCount2"] = s2.value("readErrorCount", 0);
+                    change["readErrorCountDiff"] = s2.value("readErrorCount", 0) - s1.value("readErrorCount", 0);
+                    
+                    change["writeErrorCount1"] = s1.value("writeErrorCount", 0);
+                    change["writeErrorCount2"] = s2.value("writeErrorCount", 0);
+                    change["writeErrorCountDiff"] = s2.value("writeErrorCount", 0) - s1.value("writeErrorCount", 0);
+                    
+                    change["overallHealth1"] = s1.value("overallHealth", "");
+                    change["overallHealth2"] = s2.value("overallHealth", "");
+                    
+                    smartChanges.push_back(change);
+                }
+            }
+            
+            result["disk"]["smart"]["changes"] = smartChanges;
+        }
+    }
+
+    // ============ 驱动程序比较 ============
+    result["drivers"] = json::object();
+    if (snap1.contains("driver") && snap2.contains("driver")) {
+        auto drv1 = snap1["driver"];
+        auto drv2 = snap2["driver"];
+        
+        // 比较统计数据
+        if (drv1.contains("stats") && drv2.contains("stats")) {
+            auto stats1 = drv1["stats"];
+            auto stats2 = drv2["stats"];
+            
+            result["drivers"]["totalDrivers1"] = stats1.value("totalDrivers", 0);
+            result["drivers"]["totalDrivers2"] = stats2.value("totalDrivers", 0);
+            result["drivers"]["totalDriversDiff"] = stats2.value("totalDrivers", 0) - stats1.value("totalDrivers", 0);
+            
+            result["drivers"]["runningCount1"] = stats1.value("runningCount", 0);
+            result["drivers"]["runningCount2"] = stats2.value("runningCount", 0);
+            result["drivers"]["runningCountDiff"] = stats2.value("runningCount", 0) - stats1.value("runningCount", 0);
+            
+            result["drivers"]["stoppedCount1"] = stats1.value("stoppedCount", 0);
+            result["drivers"]["stoppedCount2"] = stats2.value("stoppedCount", 0);
+            result["drivers"]["stoppedCountDiff"] = stats2.value("stoppedCount", 0) - stats1.value("stoppedCount", 0);
+        }
+        
+        // 比较运行中的驱动程序详情
+        if (drv1.contains("runningDrivers") && drv2.contains("runningDrivers")) {
+            std::map<std::string, json> running1Map, running2Map;
+            for (const auto& d : drv1["runningDrivers"]) {
+                if (d.contains("name")) {
+                    running1Map[d["name"]] = d;
+                }
+            }
+            for (const auto& d : drv2["runningDrivers"]) {
+                if (d.contains("name")) {
+                    running2Map[d["name"]] = d;
+                }
+            }
+            
+            json added = json::array();
+            json removed = json::array();
+            
+            // 新启动的驱动
+            for (const auto& [name, d2] : running2Map) {
+                if (running1Map.find(name) == running1Map.end()) {
+                    json add;
+                    add["name"] = name;
+                    add["displayName"] = d2.value("displayName", "");
+                    add["description"] = d2.value("description", "");
+                    add["state"] = d2.value("state", "");
+                    add["startType"] = d2.value("startType", "");
+                    add["binaryPath"] = d2.value("binaryPath", "");
+                    added.push_back(add);
+                }
+            }
+            
+            // 停止的驱动
+            for (const auto& [name, d1] : running1Map) {
+                if (running2Map.find(name) == running2Map.end()) {
+                    json rem;
+                    rem["name"] = name;
+                    rem["displayName"] = d1.value("displayName", "");
+                    removed.push_back(rem);
+                }
+            }
+            
+            result["drivers"]["runningDrivers"] = json::object();
+            result["drivers"]["runningDrivers"]["added"] = added;
+            result["drivers"]["runningDrivers"]["removed"] = removed;
+            result["drivers"]["runningDrivers"]["addedCount"] = added.size();
+            result["drivers"]["runningDrivers"]["removedCount"] = removed.size();
+        }
+    }
+
+    // ============ 注册表比较 ============
+    result["registry"] = json::object();
+    if (snap1.contains("registry") && snap2.contains("registry")) {
+        auto reg1 = snap1["registry"];
+        auto reg2 = snap2["registry"];
+        
+        std::string folder1, folder2;
+        if (reg1.contains("backupInfo") && reg1["backupInfo"].contains("folderName")) {
+            folder1 = reg1["backupInfo"]["folderName"].get<std::string>();
+        }
+        if (reg2.contains("backupInfo") && reg2["backupInfo"].contains("folderName")) {
+            folder2 = reg2["backupInfo"]["folderName"].get<std::string>();
+        }
+        
+        result["registry"]["folderName1"] = folder1;
+        result["registry"]["folderName2"] = folder2;
+        
+        if (!folder1.empty() || !folder2.empty())
+        {
+            auto diff = registryMonitor_.compareFolders(folder1, folder2);
+            result["registry"]["totalComparedFiles"] = diff.totalComparedFiles;
+            result["registry"]["totalAddedKeys"] = diff.totalAddedKeys;
+            result["registry"]["totalRemovedKeys"] = diff.totalRemovedKeys;
+            result["registry"]["totalModifiedKeys"] = diff.totalModifiedKeys;
+
+            json filesOnlyInFolder1Json = json::array();
+            for (const auto& file : diff.filesOnlyInFolder1) {
+                filesOnlyInFolder1Json.push_back(file);
+            }
+            result["registry"]["filesOnlyInFolder1"] = filesOnlyInFolder1Json;
+
+            json filesOnlyInFolder2Json = json::array();
+            for (const auto& file : diff.filesOnlyInFolder2) {
+                filesOnlyInFolder2Json.push_back(file);
+            }
+            result["registry"]["filesOnlyInFolder2"] = filesOnlyInFolder2Json;
+
+            json comparedFilesJson = json::array();
+            for (const auto& [prefix, fileResult] : diff.comparedFiles) {
+                json fileComparisonJson;
+                fileComparisonJson["prefix"] = prefix;
+                fileComparisonJson["file1"] = fileResult.file1;
+                fileComparisonJson["file2"] = fileResult.file2;
+                fileComparisonJson["addedKeys"] = fileResult.addedKeys.size();
+                fileComparisonJson["removedKeys"] = fileResult.removedKeys.size();
+                fileComparisonJson["modifiedKeys"] = fileResult.modifiedKeys.size();
+                
+                json addedKeysJson = json::array();
+                for (const auto& key : fileResult.addedKeys) {
+                    addedKeysJson.push_back(key);
+                }
+                fileComparisonJson["addedKeysDetails"] = addedKeysJson;
+                
+                json removedKeysJson = json::array();
+                for (const auto& key : fileResult.removedKeys) {
+                    removedKeysJson.push_back(key);
+                }
+                fileComparisonJson["removedKeysDetails"] = removedKeysJson;
+                
+                json modifiedKeysJson = json::array();
+                for (const auto& key : fileResult.modifiedKeys) {
+                    modifiedKeysJson.push_back(key);
+                }
+                fileComparisonJson["modifiedKeysDetails"] = modifiedKeysJson;
+                
+                comparedFilesJson.push_back(fileComparisonJson);
+            }
+            result["registry"]["comparedFiles"] = comparedFilesJson;
+        }
+    }
+
+    // ============ 进程比较 ============
+    result["processes"] = json::object();
+    if (snap1.contains("processes") && snap2.contains("processes")) {
+        auto proc1 = snap1["processes"];
+        auto proc2 = snap2["processes"];
+        
+        result["processes"]["totalProcesses1"] = proc1.value("totalProcesses", 0);
+        result["processes"]["totalProcesses2"] = proc2.value("totalProcesses", 0);
+        result["processes"]["totalProcessesDiff"] = proc2.value("totalProcesses", 0) - proc1.value("totalProcesses", 0);
+        
+        result["processes"]["totalThreads1"] = proc1.value("totalThreads", 0);
+        result["processes"]["totalThreads2"] = proc2.value("totalThreads", 0);
+        result["processes"]["totalThreadsDiff"] = proc2.value("totalThreads", 0) - proc1.value("totalThreads", 0);
+        
+        result["processes"]["totalHandles1"] = proc1.value("totalHandles", 0);
+        result["processes"]["totalHandles2"] = proc2.value("totalHandles", 0);
+        result["processes"]["totalHandlesDiff"] = proc2.value("totalHandles", 0) - proc1.value("totalHandles", 0);
+        
+        if (proc1.contains("processes") && proc2.contains("processes") &&
+            proc1["processes"].is_array() && proc2["processes"].is_array()) {
+            
+            std::map<int, json> procs1Map, procs2Map;
+            for (const auto& p : proc1["processes"]) {
+                if (p.contains("pid")) {
+                    procs1Map[p["pid"]] = p;
+                }
+            }
+            for (const auto& p : proc2["processes"]) {
+                if (p.contains("pid")) {
+                    procs2Map[p["pid"]] = p;
+                }
+            }
+            
+            json added = json::array();
+            json removed = json::array();
+            json changed = json::array();
+            
+            // 新增的进程
+            for (const auto& [pid, proc] : procs2Map) {
+                if (procs1Map.find(pid) == procs1Map.end()) {
+                    json p;
+                    p["pid"] = pid;
+                    p["name"] = proc.value("name", "");
+                    p["fullPath"] = proc.value("fullPath", "");
+                    p["cpuUsage"] = proc.value("cpuUsage", 0.0);
+                    p["memoryUsage"] = proc.value("memoryUsage", 0);
+                    p["threadCount"] = proc.value("threadCount", 0);
+                    added.push_back(p);
+                }
+            }
+            
+            // 删除和变化的进程
+            for (const auto& [pid, proc1] : procs1Map) {
+                if (procs2Map.find(pid) == procs2Map.end()) {
+                    // 已删除
+                    json p;
+                    p["pid"] = pid;
+                    p["name"] = proc1.value("name", "");
+                    removed.push_back(p);
+                } else {
+                    // 比较变化
+                    const auto& proc2 = procs2Map[pid];
+                    json change;
+                    change["pid"] = pid;
+                    change["name"] = proc2.value("name", "");
+                    
+                    bool hasChange = false;
+                    
+                    double cpu1 = proc1.value("cpuUsage", 0.0);
+                    double cpu2 = proc2.value("cpuUsage", 0.0);
+                    if (std::abs(cpu2 - cpu1) > 0.01) { // 只记录有意义的变化
+                        change["cpuUsage1"] = cpu1;
+                        change["cpuUsage2"] = cpu2;
+                        change["cpuUsageDiff"] = cpu2 - cpu1;
+                        hasChange = true;
+                    }
+                    
+                    uint64_t mem1 = proc1.value("memoryUsage", 0);
+                    uint64_t mem2 = proc2.value("memoryUsage", 0);
+                    if (mem1 != mem2) {
+                        change["memoryUsage1"] = mem1;
+                        change["memoryUsage2"] = mem2;
+                        change["memoryUsageDiff"] = static_cast<int64_t>(mem2) - static_cast<int64_t>(mem1);
+                        hasChange = true;
+                    }
+                    
+                    int threads1 = proc1.value("threadCount", 0);
+                    int threads2 = proc2.value("threadCount", 0);
+                    if (threads1 != threads2) {
+                        change["threadCount1"] = threads1;
+                        change["threadCount2"] = threads2;
+                        change["threadCountDiff"] = threads2 - threads1;
+                        hasChange = true;
+                    }
+                    
+                    uint64_t workingSet1 = proc1.value("workingSetSize", 0);
+                    uint64_t workingSet2 = proc2.value("workingSetSize", 0);
+                    if (workingSet1 != workingSet2) {
+                        change["workingSetSize1"] = workingSet1;
+                        change["workingSetSize2"] = workingSet2;
+                        change["workingSetSizeDiff"] = static_cast<int64_t>(workingSet2) - static_cast<int64_t>(workingSet1);
+                        hasChange = true;
+                    }
+                    
+                    int handles1 = proc1.value("handleCount", 0);
+                    int handles2 = proc2.value("handleCount", 0);
+                    if (handles1 != handles2) {
+                        change["handleCount1"] = handles1;
+                        change["handleCount2"] = handles2;
+                        change["handleCountDiff"] = handles2 - handles1;
+                        hasChange = true;
+                    }
+                    
+                    if (hasChange) {
+                        changed.push_back(change);
+                    }
+                }
+            }
+            
+            result["processes"]["added"] = added;
+            result["processes"]["removed"] = removed;
+            result["processes"]["changed"] = changed;
+            result["processes"]["addedCount"] = added.size();
+            result["processes"]["removedCount"] = removed.size();
+            result["processes"]["changedCount"] = changed.size();
+        }
+    }
+
+    return result;
+}
+
+void HttpServer::HandleCompareSystemSnapshots(const httplib::Request& req, httplib::Response& res) {
+    try {
+        res.set_header("Access-Control-Allow-Origin", "*");
+        res.set_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+        res.set_header("Access-Control-Allow-Headers", "Content-Type");
+        
+        json request_json;
+        try {
+            request_json = json::parse(req.body);
+        } catch (const json::exception& e) {
+            json error;
+            error["success"] = false;
+            error["error"] = "Invalid JSON format: " + std::string(e.what());
+            res.status = 400;
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        
+        std::string snapshot1, snapshot2;
+        if (request_json.contains("snapshot1") && request_json["snapshot1"].is_string()) {
+            snapshot1 = request_json["snapshot1"];
+        }
+        if (request_json.contains("snapshot2") && request_json["snapshot2"].is_string()) {
+            snapshot2 = request_json["snapshot2"];
+        }
+        
+        if (snapshot1.empty() || snapshot2.empty()) {
+            json error;
+            error["success"] = false;
+            error["error"] = "Both snapshot1 and snapshot2 are required";
+            res.status = 400;
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        
+        // Lambda 函数：从内存或磁盘获取快照JSON
+        auto getSnapshotJson = [this](const std::string& name) -> std::optional<std::string> {
+            {
+                std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
+                auto it = systemSnapshotsJson_.find(name);
+                if (it != systemSnapshotsJson_.end()) {
+                    return it->second;
+                }
+            }
+            
+            if (!snapshotStore_) {
+                const_cast<HttpServer*>(this)->snapshotStore_ = std::make_unique<snapshot::SnapshotManager>();
+            }
+            return snapshotStore_->Load(name);
+        };
+        
+        auto json1Opt = getSnapshotJson(snapshot1);
+        auto json2Opt = getSnapshotJson(snapshot2);
+        
+        if (!json1Opt) {
+            json error;
+            error["success"] = false;
+            error["error"] = "Snapshot not found: " + snapshot1;
+            res.status = 404;
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        
+        if (!json2Opt) {
+            json error;
+            error["success"] = false;
+            error["error"] = "Snapshot not found: " + snapshot2;
+            res.status = 404;
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        
+        json snap1, snap2;
+        try {
+            snap1 = json::parse(*json1Opt);
+            snap2 = json::parse(*json2Opt);
+        } catch (const json::exception& e) {
+            json error;
+            error["success"] = false;
+            error["error"] = "Failed to parse snapshot JSON: " + std::string(e.what());
+            res.status = 500;
+            res.set_content(error.dump(), "application/json");
+            return;
+        }
+        
+        // 使用提取的比较函数
+        json result = CompareSystemSnapshotsJson(snap1, snap2, snapshot1, snapshot2);
+        
+        res.set_content(result.dump(), "application/json");
+        
+    } catch (const std::exception& e) {
+        std::cerr << "HandleCompareSystemSnapshots exception: " << e.what() << std::endl;
+        json error;
+        error["success"] = false;
+        error["error"] = "Internal server error";
+        res.status = 500;
+        res.set_content(error.dump(), "application/json");
+    }
+}
+
 } // namespace snapshot

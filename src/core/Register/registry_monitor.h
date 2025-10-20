@@ -79,14 +79,6 @@ struct RegistryKey {
     }
 };
 
-struct RegistrySnapshot {
-    std::vector<RegistryKey> systemInfoKeys;
-    std::vector<RegistryKey> softwareKeys;
-    std::vector<RegistryKey> networkKeys;
-    std::vector<RegistryKey> autoStartKeys;
-    uint64_t timestamp;
-};
-
 //added by Li Yongheng 20251017
 // 注册表文件信息结构
 struct RegFileInfo {
@@ -103,6 +95,14 @@ struct BackupInfo {
     long long totalSize;                  // 文件夹中所有注册表文件的总大小
 };
 
+struct RegistrySnapshot {
+    // std::vector<RegistryKey> systemInfoKeys;
+    // std::vector<RegistryKey> softwareKeys;
+    // std::vector<RegistryKey> networkKeys;
+    // std::vector<RegistryKey> autoStartKeys;
+    BackupInfo backupInfo;
+    uint64_t timestamp;
+};
 struct RegistryVal {
     std::string name;
     std::string type;
