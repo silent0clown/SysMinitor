@@ -112,10 +112,167 @@
         <!-- 主内容区 -->
         <div class="flex-1 overflow-auto">
             <!-- 首页 -->
+            <!-- 首页 -->
             <div id="home" class="tab-content active p-6">
                 <h2 class="text-2xl font-bold mb-6 text-gray-800">系统概览</h2>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- 新增的概览卡片网格 -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                    <!-- CPU使用率卡片 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-blue-300 border border-gray-100"
+                        onclick="switchTab('cpu')">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-blue-100 mr-4">
+                                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">CPU使用率</p>
+                                <p class="text-2xl font-bold text-gray-800 mt-1"><span id="cpuUsageValue">--</span>%</p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="cpuUsageBar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 内存使用率卡片 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-green-300 border border-gray-100"
+                        onclick="switchTab('memory')">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-green-100 mr-4">
+                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">内存使用率</p>
+                                <p class="text-2xl font-bold text-gray-800 mt-1"><span id="memoryUsageValue">--</span>%
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="memoryUsageBar" class="bg-green-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 磁盘使用率卡片 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-purple-300 border border-gray-100"
+                        onclick="switchTab('disk')">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-purple-100 mr-4">
+                                <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">磁盘使用率</p>
+                                <p class="text-2xl font-bold text-gray-800 mt-1"><span id="diskUsageValue">--</span>%
+                                </p>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div id="diskUsageBar" class="bg-purple-600 h-2 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 运行进程总数卡片 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-yellow-300 border border-gray-100"
+                        onclick="switchTab('process')">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-yellow-100 mr-4">
+                                <svg class="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">运行进程数</p>
+                                <p class="text-2xl font-bold text-gray-800 mt-1"><span id="processCountValue">--</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 系统快照数量卡片 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-red-300 border border-gray-100"
+                        onclick="switchTab('snapshot')">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-red-100 mr-4">
+                                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">系统快照数量</p>
+                                <p class="text-2xl font-bold text-gray-800 mt-1"><span
+                                        id="systemSnapshotCount">--</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 注册表快照数量卡片 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-indigo-300 border border-gray-100"
+                        onclick="switchTab('registry')">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-indigo-100 mr-4">
+                                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">注册表快照数量</p>
+                                <p class="text-2xl font-bold text-gray-800 mt-1"><span
+                                        id="registrySnapshotCount">--</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 新增驱动总数卡片 -->
+                    <div class="bg-white rounded-xl shadow-md p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-teal-300 border border-gray-100"
+                        onclick="switchTab('driver')">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-teal-100 mr-4">
+                                <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01">
+                                    </path>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-gray-500 text-sm">驱动总数</p>
+                                <p class="text-2xl font-bold text-gray-800 mt-1"><span id="driverCountValue">--</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 原有的图表区域 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-white rounded-lg shadow p-6">
                         <h3 class="text-lg font-semibold mb-4">注册表信息</h3>
                         <div class="h-64" id="registryChart"></div>
@@ -127,45 +284,6 @@
                                 <p>暂无变化信息</p>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-semibold mb-4">CPU使用率</h3>
-                        <div class="h-48" id="cpuGauge"></div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-semibold mb-4">内存使用率</h3>
-                        <div class="h-48" id="memoryGauge"></div>
-                    </div>
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <h3 class="text-lg font-semibold mb-4">硬盘占用</h3>
-                        <div class="h-48" id="diskBar"></div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">进程信息</h3>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full process-table">
-                            <thead>
-                                <tr>
-                                    <th class="py-2 px-4 text-left">进程名</th>
-                                    <th class="py-2 px-4 text-left">PID</th>
-                                    <th class="py-2 px-4 text-left">CPU使用率</th>
-                                    <th class="py-2 px-4 text-left">内存使用</th>
-                                    <th class="py-2 px-4 text-left">线程数</th>
-                                </tr>
-                            </thead>
-                            <tbody id="processTableBody">
-                                <tr>
-                                    <td colspan="5" class="py-4 text-center text-gray-500">
-                                        加载中...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
@@ -884,7 +1002,7 @@
 
             // 加载首页数据
             loadDashboardData();
-
+            loadOverviewData();
 
             initSnapshotFunctionality();
 
@@ -1553,6 +1671,76 @@
                     ]
                 });
             }
+        }
+
+
+        function loadOverviewData() {
+            // 获取CPU使用率
+            fetch(`${API_BASE}/cpu/usage`)
+                .then(response => response.json())
+                .then(data => {
+                    const usage = data.usage.toFixed(2);
+                    document.getElementById('cpuUsageValue').textContent = usage;
+                    document.getElementById('cpuUsageBar').style.width = `${usage}%`;
+                })
+                .catch(err => console.error('加载CPU使用率失败:', err));
+
+            // 获取内存使用率
+            fetch(`${API_BASE}/memory/usage`)
+                .then(response => response.json())
+                .then(data => {
+                    const usage = data.usedPercent.toFixed(2);
+                    document.getElementById('memoryUsageValue').textContent = usage;
+                    document.getElementById('memoryUsageBar').style.width = `${usage}%`;
+                })
+                .catch(err => console.error('加载内存使用率失败:', err));
+
+            // 获取磁盘使用率 (这里简化处理，实际应计算所有磁盘平均值)
+            fetch(`${API_BASE}/disk/info`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.partitions && data.partitions.length > 0) {
+                        // 计算所有分区的平均使用率
+                        const totalUsage = data.partitions.reduce((sum, partition) => sum + partition.usagePercentage, 0);
+                        const avgUsage = (totalUsage / data.partitions.length).toFixed(2);
+                        document.getElementById('diskUsageValue').textContent = avgUsage;
+                        document.getElementById('diskUsageBar').style.width = `${avgUsage}%`;
+                    }
+                })
+                .catch(err => console.error('加载磁盘信息失败:', err));
+
+            // 获取运行进程数
+            fetch(`${API_BASE}/processes`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('processCountValue').textContent = data.totalProcesses;
+                })
+                .catch(err => console.error('加载进程数失败:', err));
+
+            // 获取系统快照数量
+            fetch(`${API_BASE}/system/snapshot/list`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('systemSnapshotCount').textContent = data.length;
+                })
+                .catch(err => console.error('加载系统快照数量失败:', err));
+
+            // 获取注册表快照数量
+            fetch(`${API_BASE}/registry/snapshot/Info`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('registrySnapshotCount').textContent = data.totalBackups;
+                })
+                .catch(err => console.error('加载注册表快照数量失败:', err));
+
+            // 获取驱动总数
+            fetch(`${API_BASE}/drivers/snapshot`)
+                .then(response => response.json())
+                .then(data => {
+                    const stats = data.statistics;
+                    document.getElementById('driverCountValue').textContent = stats.totalDrivers;
+                })
+                .catch(err => console.error('加载驱动总数失败:', err));
         }
 
         // 加载仪表板数据
@@ -4030,6 +4218,9 @@
             stopMemoryRefresh();
             stopDiskRefresh();
         });
+
+        setInterval(loadOverviewData, 2000);
+
     </script>
 </body>
 
