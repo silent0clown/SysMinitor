@@ -273,6 +273,56 @@
 
                 </div>
 
+
+                <div class="bg-white rounded-xl shadow-md p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                            <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z">
+                                </path>
+                            </svg>
+                            CPU & 内存历史使用率趋势
+                        </h3>
+                        <!-- 实时指示器 -->
+                        <div class="flex items-center space-x-4">
+                            <div class="flex items-center">
+                                <div id="cpuLiveIndicator" class="w-3 h-3 bg-green-400 rounded-full mr-2 animate-pulse">
+                                </div>
+                                <span class="text-sm text-gray-600">CPU 实时</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div id="memoryLiveIndicator"
+                                    class="w-3 h-3 bg-purple-400 rounded-full mr-2 animate-pulse"></div>
+                                <span class="text-sm text-gray-600">内存 实时</span>
+                            </div>
+                            <div class="text-xs text-gray-500">
+                                更新间隔: <span id="updateInterval">2秒</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 图表容器 -->
+                    <div class="h-80" id="historyUsageChart"></div>
+
+                    <!-- 底部图例和信息 -->
+                    <div class="mt-4 flex justify-between items-center text-sm text-gray-600">
+                        <div class="flex items-center space-x-6">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                <span>CPU 使用率 (%)</span>
+                            </div>
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                <span>内存 使用率 (%)</span>
+                            </div>
+                        </div>
+                        <div class="text-xs text-gray-400">
+                            数据范围: 最近30分钟 | 时间格式: HH:MM:SS
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- 快照信息 -->
@@ -1029,7 +1079,7 @@
             document.getElementById('saveRegistryBtn').addEventListener('click', saveRegistrySnapshot);
             document.getElementById('refreshRegistryBtn').addEventListener('click', loadRegistryData);
             document.getElementById('compareRegistryBtn').addEventListener('click', compareRegistrySnapshots);
-
+            startHistoryRefresh();
 
         });
 
@@ -1130,198 +1180,246 @@
 
         // 初始化首页图表
         function initHomeCharts() {
-            // 注册表图表
-            charts.registryChart = echarts.init(document.getElementById('registryChart'));
-            charts.registryChart.setOption({
-                tooltip: {
-                    trigger: 'item'
-                },
-                legend: {
-                    top: '5%',
-                    left: 'center'
-                },
-                series: [
-                    {
-                        name: '注册表项',
-                        type: 'pie',
-                        radius: ['40%', '70%'],
-                        avoidLabelOverlap: false,
-                        itemStyle: {
-                            borderRadius: 10,
-                            borderColor: '#fff',
-                            borderWidth: 2
-                        },
-                        label: {
-                            show: false,
-                            position: 'center'
-                        },
-                        emphasis: {
+
+            if (!charts.historyUsageChart) {
+                charts.historyUsageChart = echarts.init(document.getElementById('historyUsageChart'));
+                charts.historyUsageChart.setOption({
+                    backgroundColor: 'transparent',
+                    title: {
+                        show: false
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross',
+                            animation: false,
                             label: {
-                                show: true,
-                                fontSize: '18',
-                                fontWeight: 'bold'
+                                backgroundColor: '#6a7985'
                             }
                         },
-                        labelLine: {
-                            show: false
+                        formatter: function (params) {
+                            let result = '<div class="text-sm font-medium mb-2">' +
+                                new Date(params[0].value[0]).toLocaleTimeString() + '</div>';
+                            params.forEach(function (item) {
+                                const color = item.seriesName === 'CPU使用率' ? '#3b82f6' : '#10b981';
+                                result += `<div class="flex items-center mb-1">
+                        <span class="w-3 h-3 rounded-full mr-2" style="background-color: ${color}"></span>
+                        <span class="font-medium">${item.seriesName}:</span>
+                        <span class="ml-2">${item.value[1].toFixed(2)}%</span>
+                    </div>`;
+                            });
+                            return result;
                         },
-                        data: [
-                            { value: 0, name: '系统信息' },
-                            { value: 0, name: '软件' },
-                            { value: 0, name: '网络' },
-                            { value: 0, name: '自启动' }
-                        ]
-                    }
-                ]
-            });
-
-            // CPU仪表盘
-            charts.cpuGauge = echarts.init(document.getElementById('cpuGauge'));
-            charts.cpuGauge.setOption({
-                series: [
-                    {
-                        type: 'gauge',
-                        progress: {
-                            show: true,
-                            width: 18
+                        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                        borderColor: '#e5e7eb',
+                        borderWidth: 1,
+                        textStyle: {
+                            color: '#374151'
                         },
+                        extraCssText: 'box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); border-radius: 0.5rem;'
+                    },
+                    legend: {
+                        data: ['CPU使用率', '内存使用率'],
+                        top: 10,
+                        right: 20,
+                        textStyle: {
+                            fontSize: 12,
+                            color: '#6b7280'
+                        },
+                        itemWidth: 12,
+                        itemHeight: 12,
+                        itemGap: 20
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        top: '15%',
+                        containLabel: true,
+                        backgroundColor: 'transparent'
+                    },
+                    xAxis: {
+                        type: 'time',
+                        boundaryGap: false,
                         axisLine: {
                             lineStyle: {
-                                width: 18
+                                color: '#e5e7eb'
                             }
                         },
                         axisTick: {
                             show: false
                         },
-                        splitLine: {
-                            length: 15,
-                            lineStyle: {
-                                width: 2,
-                                color: '#999'
-                            }
-                        },
                         axisLabel: {
-                            distance: 25,
-                            color: '#999',
-                            fontSize: 10
-                        },
-                        anchor: {
-                            show: true,
-                            showAbove: true,
-                            size: 25,
-                            itemStyle: {
-                                borderWidth: 10
+                            color: '#6b7280',
+                            fontSize: 11,
+                            formatter: function (value) {
+                                return new Date(value).toLocaleTimeString();
                             }
                         },
-                        title: {
-                            show: false
-                        },
-                        detail: {
-                            valueAnimation: true,
-                            fontSize: 20,
-                            formatter: '{value}%'
-                        },
-                        data: [
-                            {
-                                value: 0
-                            }
-                        ]
-                    }
-                ]
-            });
-
-            // 内存仪表盘
-            charts.memoryGauge = echarts.init(document.getElementById('memoryGauge'));
-            charts.memoryGauge.setOption({
-                series: [
-                    {
-                        type: 'gauge',
-                        progress: {
+                        splitLine: {
                             show: true,
-                            width: 18
+                            lineStyle: {
+                                color: '#f3f4f6',
+                                type: 'dashed'
+                            }
+                        }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        name: '使用率 (%)',
+                        nameTextStyle: {
+                            color: '#6b7280',
+                            fontSize: 12
                         },
                         axisLine: {
-                            lineStyle: {
-                                width: 18,
-                                color: [
-                                    [0.3, '#67e0e3'],
-                                    [0.7, '#37a2da'],
-                                    [1, '#fd666d']
-                                ]
-                            }
+                            show: false
                         },
                         axisTick: {
                             show: false
                         },
-                        splitLine: {
-                            length: 15,
-                            lineStyle: {
-                                width: 2,
-                                color: '#999'
-                            }
-                        },
                         axisLabel: {
-                            distance: 25,
-                            color: '#999',
-                            fontSize: 10
-                        },
-                        anchor: {
-                            show: true,
-                            showAbove: true,
-                            size: 25,
-                            itemStyle: {
-                                borderWidth: 10
-                            }
-                        },
-                        title: {
-                            show: false
-                        },
-                        detail: {
-                            valueAnimation: true,
-                            fontSize: 20,
+                            color: '#6b7280',
+                            fontSize: 11,
                             formatter: '{value}%'
                         },
-                        data: [
-                            {
-                                value: 0
+                        splitLine: {
+                            lineStyle: {
+                                color: '#f3f4f6',
+                                type: 'dashed'
                             }
-                        ]
-                    }
-                ]
-            });
+                        },
+                        min: 0,
+                        max: 100
+                    },
+                    series: [
+                        {
+                            name: 'CPU使用率',
+                            type: 'line',
+                            smooth: true,
+                            symbol: 'circle',
+                            symbolSize: 6,
+                            sampling: 'average',
+                            itemStyle: {
+                                color: '#3b82f6'
+                            },
+                            lineStyle: {
+                                width: 3,
+                                color: '#3b82f6'
+                            },
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: 'rgba(59, 130, 246, 0.3)' },
+                                    { offset: 1, color: 'rgba(59, 130, 246, 0.05)' }
+                                ])
+                            },
+                            data: []
+                        },
+                        {
+                            name: '内存使用率',
+                            type: 'line',
+                            smooth: true,
+                            symbol: 'circle',
+                            symbolSize: 6,
+                            sampling: 'average',
+                            itemStyle: {
+                                color: '#10b981'
+                            },
+                            lineStyle: {
+                                width: 3,
+                                color: '#10b981'
+                            },
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: 'rgba(16, 185, 129, 0.3)' },
+                                    { offset: 1, color: 'rgba(16, 185, 129, 0.05)' }
+                                ])
+                            },
+                            data: []
+                        }
+                    ],
+                    animationDuration: 1000,
+                    animationEasing: 'cubicOut'
+                });
+            }
 
-            // 硬盘条状图
-            charts.diskBar = echarts.init(document.getElementById('diskBar'));
-            charts.diskBar.setOption({
-                tooltip: {
-                    trigger: 'axis',
-                    axisPointer: {
-                        type: 'shadow'
-                    }
-                },
-                grid: {
-                    left: '3%',
-                    right: '4%',
-                    bottom: '3%',
-                    containLabel: true
-                },
-                xAxis: {
-                    type: 'value',
-                    boundaryGap: [0, 0.01]
-                },
-                yAxis: {
-                    type: 'category',
-                    data: []
-                },
-                series: [
-                    {
-                        name: '使用率',
-                        type: 'bar',
-                        data: []
-                    }
-                ]
+
+        }
+
+        function loadHistoryUsageData() {
+            Promise.all([
+                fetch(`${API_BASE}/cpu/history`).then(res => res.json()),
+                fetch(`${API_BASE}/memory/history`).then(res => res.json())
+            ]).then(([cpuData, memoryData]) => {
+                // 转换数据格式
+                const cpuSeriesData = cpuData.map(item => [item.timestamp, item.value]);
+                const memorySeriesData = memoryData.map(item => [item.timestamp, item.value]);
+
+                // 更新图表
+                charts.historyUsageChart.setOption({
+                    series: [
+                        {
+                            data: cpuSeriesData
+                        },
+                        {
+                            data: memorySeriesData
+                        }
+                    ]
+                });
+
+                // 更新实时指示器
+                updateLiveIndicators();
+            }).catch(err => {
+                console.error('加载历史使用率数据失败:', err);
+                // 显示错误状态
+                document.getElementById('historyUsageChart').innerHTML = `
+            <div class="flex items-center justify-center h-full">
+                <div class="text-center">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6-4h6m2 5.291A7.962 7.962 0 0118 12M6 20.291A7.962 7.962 0 016 12m0 8.291A7.962 7.962 0 016 12m0-8.291A7.962 7.962 0 016 12m0 8.291A7.962 7.962 0 016 12m0-8.291A7.962 7.962 0 016 12" />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">数据加载失败</h3>
+                    <p class="mt-1 text-sm text-gray-500">请检查网络连接或稍后重试</p>
+                    <button onclick="loadHistoryUsageData()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        重新加载
+                    </button>
+                </div>
+            </div>
+        `;
             });
         }
+
+        // 新增：更新实时指示器状态
+        function updateLiveIndicators() {
+            const cpuIndicator = document.getElementById('cpuLiveIndicator');
+            const memoryIndicator = document.getElementById('memoryLiveIndicator');
+
+            // 模拟实时状态（可以根据实际数据更新）
+            const cpuStatus = Math.random() > 0.7 ? 'bg-red-400' : 'bg-green-400';
+            const memoryStatus = Math.random() > 0.8 ? 'bg-red-400' : 'bg-green-400';
+
+            cpuIndicator.className = `w-3 h-3 ${cpuStatus} rounded-full mr-2 animate-pulse`;
+            memoryIndicator.className = `w-3 h-3 ${memoryStatus} rounded-full mr-2 animate-pulse`;
+        }
+
+        // 新增：自动刷新历史数据
+        let historyRefreshTimer = null;
+
+        function startHistoryRefresh() {
+            stopHistoryRefresh();
+            historyRefreshTimer = setInterval(() => {
+                if (activeTab === 'home') {
+                    loadHistoryUsageData();
+                }
+            }, 2000); // 2秒刷新一次
+        }
+
+        function stopHistoryRefresh() {
+            if (historyRefreshTimer) {
+                clearInterval(historyRefreshTimer);
+                historyRefreshTimer = null;
+            }
+        }
+
 
         // 初始化CPU图表
         function initCpuCharts() {
