@@ -172,14 +172,43 @@
 
             <!-- 快照信息 -->
             <div id="snapshot" class="tab-content p-6">
-                <h2 class="text-2xl font-bold mb-6 text-gray-800">快照信息</h2>
+                <h2 class="text-2xl font-bold mb-6 text-gray-800">系统快照信息</h2>
 
+                <!-- 创建系统快照 -->
+                <div class="bg-white rounded-lg shadow p-6 mb-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">创建系统快照</h3>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <input type="text" id="snapshotNameInput" placeholder="输入快照名称（可选）"
+                            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="createSystemSnapshotBtn"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+                            创建快照
+                        </button>
+                    </div>
+                    <div id="snapshotStatus" class="mt-4 hidden">
+                        <div class="p-4 rounded-lg bg-green-100 border border-green-300">
+                            <div class="flex items-center">
+                                <svg class="h-5 w-5 text-green-400 mr-2" xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd"
+                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                <span id="snapshotNameDisplay"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 快照列表 -->
                 <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">快照列表</h3>
-                        <button class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg"
-                            id="createSnapshotBtn">
-                            新增快照
+                        <button id="refreshSnapshotBtn"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+                            刷新
                         </button>
                     </div>
                     <div class="overflow-x-auto">
@@ -188,58 +217,47 @@
                                 <tr>
                                     <th class="py-2 px-4 text-left">快照名称</th>
                                     <th class="py-2 px-4 text-left">时间戳</th>
-                                    <th class="py-2 px-4 text-left">系统信息</th>
-                                    <th class="py-2 px-4 text-left">软件</th>
-                                    <th class="py-2 px-4 text-left">网络</th>
                                     <th class="py-2 px-4 text-left">操作</th>
                                 </tr>
                             </thead>
-                            <tbody id="snapshotTableBody">
+                            <tbody id="systemSnapshotTableBody">
                                 <tr>
-                                    <td colspan="6" class="py-4 text-center text-gray-500">
-                                        加载中...
-                                    </td>
+                                    <td colspan="3" class="py-4 text-center text-gray-500">加载中...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
+                <!-- 系统快照对比 -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">快照对比</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <h3 class="text-lg font-semibold mb-4">系统快照对比</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div>
-                            <label class="block mb-2">快照1</label>
-                            <select class="w-full p-2 border rounded-lg" id="snapshot1Select">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">选择快照1</label>
+                            <select id="snapshot1Select"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">请选择快照</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block mb-2">快照2</label>
-                            <select class="w-full p-2 border rounded-lg" id="snapshot2Select">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">选择快照2</label>
+                            <select id="snapshot2Select"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">请选择快照</option>
                             </select>
                         </div>
                     </div>
-                    <div class="mt-4">
-                        <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
-                            id="compareBtn">对比快照</button>
-                    </div>
-                    <div class="mt-6" id="comparisonResult" style="display: none;">
-                        <h4 class="font-medium mb-2">对比结果</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="p-4 bg-blue-50 rounded-lg">
-                                <h5 class="font-medium text-blue-700">新增项</h5>
-                                <ul class="mt-2 text-sm" id="addedItems"></ul>
-                            </div>
-                            <div class="p-4 bg-yellow-50 rounded-lg">
-                                <h5 class="font-medium text-yellow-700">修改项</h5>
-                                <ul class="mt-2 text-sm" id="modifiedItems"></ul>
-                            </div>
-                            <div class="p-4 bg-red-50 rounded-lg">
-                                <h5 class="font-medium text-red-700">删除项</h5>
-                                <ul class="mt-2 text-sm" id="removedItems"></ul>
-                            </div>
+                    <button id="compareSystemSnapshotsBtn"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+                        对比快照
+                    </button>
+
+                    <!-- 对比结果区域 -->
+                    <div id="systemComparisonResult" class="mt-6 hidden">
+                        <h4 class="text-lg font-semibold mb-3">对比结果</h4>
+                        <div id="systemComparisonContent" class="bg-gray-50 rounded-lg p-4">
+                            <!-- 对比结果将在这里显示 -->
                         </div>
                     </div>
                 </div>
@@ -324,7 +342,7 @@
                     <div class="mt-4">
                         <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg"
                             id="compareRegistryBtn">
-                            对比快照
+                            对比注册表快照
                         </button>
                     </div>
 
@@ -804,6 +822,9 @@
         // 初始化图表
         let charts = {};
 
+        // 快照相关变量
+        let systemSnapshots = [];
+
         // 进程排序状态
         let processSort = {
             field: 'pid',
@@ -864,6 +885,9 @@
             // 加载首页数据
             loadDashboardData();
 
+
+            initSnapshotFunctionality();
+
             // 初始化进程相关事件
             bindProcessEvents();
 
@@ -907,8 +931,8 @@
         // 绑定事件
         function bindEvents() {
             // 快照相关事件
-            document.getElementById('createSnapshotBtn').addEventListener('click', createSnapshot);
-            document.getElementById('compareBtn').addEventListener('click', compareSnapshots);
+            // document.getElementById('createSnapshotBtn').addEventListener('click', createSnapshot);
+            //document.getElementById('compareBtn').addEventListener('click', compareSnapshots);
 
             // 注册表相关事件
             document.getElementById('refreshRegistryBtn').addEventListener('click', loadRegistryData);
@@ -988,7 +1012,8 @@
                     loadDriverData();
                     break;
                 case 'snapshot':
-                    loadSnapshotData();
+                    // loadSnapshotData();
+                    loadSystemSnapshotData();
                     break;
                 case 'registry':
                     loadRegistryData();
@@ -2784,7 +2809,7 @@
             }
 
             // 显示加载状态
-            const compareBtn = document.getElementById('compareRegistryBtn');
+            let compareBtn = document.getElementById('compareRegistryBtn');
             const originalBtnText = compareBtn.innerHTML;
             compareBtn.innerHTML = '<svg class="animate-spin -ml-1 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>对比中...';
             compareBtn.disabled = true;
@@ -3127,6 +3152,484 @@
             }
         }
 
+        // 初始化快照功能
+        function initSnapshotFunctionality() {
+            // 创建快照
+            document.getElementById('createSystemSnapshotBtn').addEventListener('click', createSystemSnapshot);
+
+            // 刷新快照列表
+            document.getElementById('refreshSnapshotBtn').addEventListener('click', loadSystemSnapshotData);
+
+            // 对比快照
+            document.getElementById('compareSystemSnapshotsBtn').addEventListener('click', compareSystemSnapshots);
+
+            // 页面加载时加载数据
+            loadSystemSnapshotData();
+        }
+
+        // 加载系统快照数据
+        function loadSystemSnapshotData() {
+            fetch(`${API_BASE}/system/snapshot/list`)
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('systemSnapshotTableBody');
+                    if (data && data.length > 0) {
+                        tbody.innerHTML = data.map(snapshot => `
+                    <tr>
+                        <td class="py-2 px-4 border-b">${snapshot.name}</td>
+                        <td class="py-2 px-4 border-b">${new Date(snapshot.timestamp).toLocaleString()}</td>
+                        <td class="py-2 px-4 border-b">
+                                <button onclick="exportSystemSnapshot('${snapshot.name}')" 
+            class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2">
+        导出
+    </button>
+                            <button onclick="saveSystemSnapshot('${snapshot.name}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm mr-2">保存</button>
+                            <button onclick="deleteSystemSnapshot('${snapshot.name}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">删除</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                        updateSystemSnapshotDropdowns(data);
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-gray-500">暂无快照数据</td></tr>';
+                    }
+                })
+                .catch(err => {
+                    console.error('加载快照失败:', err);
+                    document.getElementById('systemSnapshotTableBody').innerHTML = `
+                <tr>
+                    <td colspan="3" class="py-4 text-center text-red-500">加载失败: ${err.message}</td>
+                </tr>
+            `;
+                });
+        }
+        // 刷新快照列表
+        document.getElementById('refreshSnapshotBtn').addEventListener('click', loadSystemSnapshotData);
+
+        // 创建系统快照
+        document.getElementById('createSystemSnapshotBtn').addEventListener('click', createSystemSnapshot);
+
+
+        // 更新快照表格
+        function updateSystemSnapshotTable() {
+            const tbody = document.getElementById('systemSnapshotTableBody');
+
+            if (systemSnapshots.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-gray-500">暂无快照</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = systemSnapshots.map(snapshot => `
+        <tr>
+            <td class="py-2 px-4 border-b">${snapshot.name}</td>
+            <td class="py-2 px-4 border-b">${new Date(snapshot.timestamp).toLocaleString()}</td>
+            <td class="py-2 px-4 border-b">
+                <button class="text-blue-500 hover:text-blue-700 mr-2 view-snapshot" data-name="${snapshot.name}">
+                    查看
+                </button>
+                <button class="text-green-500 hover:text-green-700 mr-2 save-snapshot" data-name="${snapshot.name}">
+                    保存
+                </button>
+                <button class="text-red-500 hover:text-red-700 delete-snapshot" data-name="${snapshot.name}">
+                    删除
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+            // 绑定事件
+            document.querySelectorAll('.view-snapshot').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const name = this.getAttribute('data-name');
+                    viewSystemSnapshot(name);
+                });
+            });
+
+            document.querySelectorAll('.save-snapshot').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const name = this.getAttribute('data-name');
+                    saveSystemSnapshot(name);
+                });
+            });
+
+            document.querySelectorAll('.delete-snapshot').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const name = this.getAttribute('data-name');
+                    deleteSystemSnapshot(name);
+                });
+            });
+        }
+
+        function updateSystemSnapshotDropdowns(snapshots) {
+            const snapshot1Select = document.getElementById('snapshot1Select');
+            const snapshot2Select = document.getElementById('snapshot2Select');
+
+            let options = '<option value="">请选择快照</option>';
+            snapshots.forEach(snapshot => {
+                options += `<option value="${snapshot.name}">${snapshot.name}</option>`;
+            });
+
+            snapshot1Select.innerHTML = options;
+            snapshot2Select.innerHTML = options;
+        }
+
+        // 对比系统快照
+        document.getElementById('compareSystemSnapshotsBtn').addEventListener('click', compareSystemSnapshots);
+
+
+        function createSystemSnapshot() {
+            const nameInput = document.getElementById('snapshotNameInput');
+            const snapshotName = nameInput.value.trim() || `snapshot_${new Date().toISOString().replace(/[:.-]/g, '').slice(0, 15)}`;
+
+            fetch(`${API_BASE}/system/snapshot/create`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name: snapshotName })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 显示成功状态
+                        document.getElementById('snapshotNameDisplay').textContent = data.name;
+                        document.getElementById('snapshotStatus').classList.remove('hidden');
+
+                        // 清空输入框
+                        nameInput.value = '';
+
+                        // 重新加载快照列表
+                        loadSystemSnapshotData();
+
+                        // 3秒后隐藏状态信息
+                        setTimeout(() => {
+                            document.getElementById('snapshotStatus').classList.add('hidden');
+                        }, 3000);
+                    } else {
+                        alert(`快照创建失败: ${data.error}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('创建系统快照失败:', err);
+                    alert(`创建系统快照失败: ${err.message}`);
+                });
+        }
+
+        // 添加一个辅助函数来安全地格式化数字
+        function safeToFixed(value, decimals = 2) {
+            if (typeof value !== 'number' || isNaN(value)) {
+                return 'N/A';
+            }
+            return value.toFixed(decimals);
+        }
+
+        // 查看系统快照详情
+        function viewSystemSnapshot(name) {
+            fetch(`${API_BASE}/system/snapshot/get?name=${encodeURIComponent(name)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 添加一个辅助函数来安全地格式化数字
+                    function safeToFixed(value, decimals = 2) {
+                        if (typeof value !== 'number' || isNaN(value)) {
+                            return 'N/A';
+                        }
+                        return value.toFixed(decimals);
+                    }
+
+                    const content = document.getElementById('snapshotDetailContent');
+                    content.innerHTML = `
+                <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold text-lg mb-2">快照信息</h4>
+                    <p><span class="font-medium">名称:</span> ${name}</p>
+                    <p><span class="font-medium">时间:</span> ${new Date(data.cpu.timestamp).toLocaleString()}</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <h4 class="font-semibold mb-2">CPU信息</h4>
+                        <p><span class="font-medium">使用率:</span> ${safeToFixed(data.cpu.usage)}%</p>
+                        <p><span class="font-medium">核心数:</span> ${data.cpu.coreCount || 'N/A'}</p>
+                    </div>
+                    
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <h4 class="font-semibold mb-2">内存信息</h4>
+                        <p><span class="font-medium">已使用:</span> ${safeToFixed(data.memory.usedPhysical / (1024 ** 3))} GB</p>
+                        <p><span class="font-medium">总计:</span> ${safeToFixed(data.memory.totalPhysical / (1024 ** 3))} GB</p>
+                        <p><span class="font-medium">使用率:</span> ${safeToFixed(data.memory.usedPhysicalPercent)}%</p>
+                    </div>
+                </div>
+                
+                <div class="bg-yellow-50 rounded-lg p-4 mb-4">
+                    <h4 class="font-semibold mb-2">磁盘信息</h4>
+                    <div class="grid grid-cols-1 gap-2">
+                        ${data.partitions && data.partitions.length > 0 ?
+                            data.partitions.map(partition => `
+                            <div class="bg-white rounded p-2 mb-1">
+                                <p><span class="font-medium">${partition.driveLetter}:</span> 
+                                ${safeToFixed(partition.usedSpace / (1024 ** 3))} GB / ${safeToFixed(partition.totalSize / (1024 ** 3))} GB 
+                                (${safeToFixed(partition.usagePercentage)}%)</p>
+                            </div>
+                        `).join('') :
+                            '<p>无分区信息</p>'}
+                    </div>
+                </div>
+                
+                <div class="bg-purple-50 rounded-lg p-4">
+                    <h4 class="font-semibold mb-2">驱动信息</h4>
+                    <p><span class="font-medium">总驱动数:</span> ${data.driver.stats.totalDrivers || 'N/A'}</p>
+                    <p><span class="font-medium">运行中:</span> ${data.driver.stats.runningCount || 'N/A'}</p>
+                    <p><span class="font-medium">已停止:</span> ${data.driver.stats.stoppedCount || 'N/A'}</p>
+                </div>
+            `;
+
+                    document.getElementById('snapshotDetailModal').classList.remove('hidden');
+                })
+                .catch(err => {
+                    console.error('获取快照详情失败:', err);
+                    alert(`获取快照详情失败: ${err.message}`);
+                });
+        }
+        // 关闭快照详情模态框
+        function closeSnapshotDetailModal() {
+            document.getElementById('snapshotDetailModal').classList.add('hidden');
+        }
+
+        // 保存系统快照
+        function saveSystemSnapshot(name) {
+            if (!confirm(`确定要保存快照 "${name}" 到磁盘吗？`)) return;
+
+            fetch(`${API_BASE}/system/snapshot/save`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`快照 "${name}" 保存成功`);
+                    } else {
+                        alert(`快照保存失败: ${data.error}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('保存系统快照失败:', err);
+                    alert(`保存系统快照失败: ${err.message}`);
+                });
+        }
+        // 删除系统快照
+        function deleteSystemSnapshot(name) {
+            if (!confirm(`确定要删除系统快照 "${name}" 吗？`)) return;
+
+            fetch(`${API_BASE}/system/snapshot/delete/${name}`, {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('系统快照删除成功');
+                        loadSystemSnapshotData();
+                    } else {
+                        alert(`系统快照删除失败: ${data.error}`);
+                    }
+                })
+                .catch(err => {
+                    console.error('删除系统快照失败:', err);
+                    alert(`删除系统快照失败: ${err.message}`);
+                });
+        }
+
+        // 对比系统快照
+        function compareSystemSnapshots() {
+            const snapshot1 = document.getElementById('snapshot1Select').value;
+            const snapshot2 = document.getElementById('snapshot2Select').value;
+
+            if (!snapshot1 || !snapshot2) {
+                alert('请选择两个快照进行对比');
+                return;
+            }
+
+            const compareBtn = document.getElementById('compareSystemSnapshotsBtn');
+            const originalBtnText = compareBtn.innerHTML;
+            compareBtn.innerHTML = '<span class="flex items-center"><svg class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>正在对比...</span>';
+            compareBtn.disabled = true;
+
+            fetch(`${API_BASE}/system/snapshot/compare`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ snapshot1, snapshot2 })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.error) {
+                        const resultElement = document.getElementById('systemComparisonResult');
+                        resultElement.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                        <div class="flex items-center">
+                            <svg class="h-5 w-5 text-red-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                            <h4 class="text-lg font-medium text-red-800">请求失败</h4>
+                        </div>
+                        <p class="mt-2 text-red-700">对比系统快照时发生错误: ${data.error}</p>
+                        <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">关闭</button>
+                    </div>
+                `;
+                        resultElement.classList.remove('hidden');
+                        return;
+                    }
+
+                    displaySystemComparisonResult(data);
+                })
+                .catch(err => {
+                    const resultElement = document.getElementById('systemComparisonResult');
+                    resultElement.innerHTML = `
+                <div class="bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div class="flex items-center">
+                        <svg class="h-5 w-5 text-red-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        <h4 class="text-lg font-medium text-red-800">网络错误</h4>
+                    </div>
+                    <p class="mt-2 text-red-700">无法连接服务器: ${err.message}</p>
+                    <button onclick="this.parentElement.parentElement.classList.add('hidden')" class="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">关闭</button>
+                </div>
+            `;
+                    resultElement.classList.remove('hidden');
+                })
+                .finally(() => {
+                    compareBtn.innerHTML = originalBtnText;
+                    compareBtn.disabled = false;
+                });
+        }
+
+
+        function exportSystemSnapshot(name) {
+            fetch(`${API_BASE}/system/snapshot/get?name=${encodeURIComponent(name)}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 创建要下载的数据
+                    const jsonData = JSON.stringify(data, null, 2);
+                    const blob = new Blob([jsonData], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+
+                    // 创建下载链接
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `system_snapshot_${name}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+
+                    // 清理
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 100);
+                })
+                .catch(err => {
+                    console.error('导出快照失败:', err);
+                    alert(`导出快照失败: ${err.message}`);
+                });
+        }
+
+
+
+        // 显示系统快照对比结果
+        function displaySystemComparisonResult(data) {
+            const resultElement = document.getElementById('systemComparisonResult');
+            const contentContainer = document.getElementById('systemComparisonContent');
+
+            // 检查元素是否存在
+            if (!resultElement) {
+                console.error('无法找到 systemComparisonResult 元素');
+                return;
+            }
+
+            // 检查元素是否存在
+            if (!contentContainer) {
+                resultElement.innerHTML = `
+            <h4 class="text-lg font-semibold mb-3">对比结果</h4>
+            <div class="bg-gray-50 rounded-lg p-4" id="systemComparisonContent">
+                <!-- 对比结果内容 -->
+            </div>
+        `;
+                contentContainer = document.getElementById('systemComparisonContent');
+
+                if (!contentContainer) {
+                    console.error('无法创建 systemComparisonContent 元素');
+                    return;
+                }
+            }
+
+            resultElement.classList.remove('hidden');
+
+            contentContainer.innerHTML = `
+        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+            <h4 class="font-semibold text-lg mb-2">快照信息</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <p><span class="font-medium">快照1:</span> ${data.snapshot1}</p>
+                </div>
+                <div>
+                    <p><span class="font-medium">快照2:</span> ${data.snapshot2}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-lg p-4 shadow">
+                <h4 class="font-semibold mb-3 text-center">CPU信息变化</h4>
+                ${data.cpuChanges ? `
+                    <div class="space-y-2">
+                        <p><span class="font-medium">平均负载变化:</span> ${data.cpuChanges.avgLoad ? data.cpuChanges.avgLoad.toFixed(2) : 'N/A'}</p>
+                        <p><span class="font-medium">最高频率变化:</span> ${data.cpuChanges.maxFreq ? data.cpuChanges.maxFreq.toFixed(2) : 'N/A'} MHz</p>
+                    </div>
+                ` : '<p class="text-gray-500 text-center">无CPU变化数据</p>'}
+            </div>
+            
+            <div class="bg-white rounded-lg p-4 shadow">
+                <h4 class="font-semibold mb-3 text-center">内存信息变化</h4>
+                ${data.memoryChanges ? `
+                    <div class="space-y-2">
+                        <p><span class="font-medium">物理内存使用变化:</span> ${data.memoryChanges.physicalMemoryPercent ? data.memoryChanges.physicalMemoryPercent.toFixed(2) : 'N/A'}%</p>
+                        <p><span class="font-medium">虚拟内存使用变化:</span> ${data.memoryChanges.virtualMemoryPercent ? data.memoryChanges.virtualMemoryPercent.toFixed(2) : 'N/A'}%</p>
+                    </div>
+                ` : '<p class="text-gray-500 text-center">无内存变化数据</p>'}
+            </div>
+        </div>
+        
+        <div class="mt-6 bg-white rounded-lg p-4 shadow">
+            <h4 class="font-semibold mb-3">系统信息变更</h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <h5 class="font-medium mb-2 text-green-700">新增项 (${data.systemInfoChanges?.added?.length || 0})</h5>
+                    <ul class="list-disc list-inside max-h-32 overflow-y-auto bg-green-50 p-2 rounded">
+                        ${data.systemInfoChanges?.added?.length ?
+                    data.systemInfoChanges.added.map(item => `<li class="text-sm">${item}</li>`).join('') :
+                    '<li class="text-gray-500 text-sm">无新增项</li>'}
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-medium mb-2 text-yellow-700">修改项 (${data.systemInfoChanges?.modified?.length || 0})</h5>
+                    <ul class="list-disc list-inside max-h-32 overflow-y-auto bg-yellow-50 p-2 rounded">
+                        ${data.systemInfoChanges?.modified?.length ?
+                    data.systemInfoChanges.modified.map(item => `<li class="text-sm">${item}</li>`).join('') :
+                    '<li class="text-gray-500 text-sm">无修改项</li>'}
+                    </ul>
+                </div>
+                <div>
+                    <h5 class="font-medium mb-2 text-red-700">删除项 (${data.systemInfoChanges?.removed?.length || 0})</h5>
+                    <ul class="list-disc list-inside max-h-32 overflow-y-auto bg-red-50 p-2 rounded">
+                        ${data.systemInfoChanges?.removed?.length ?
+                    data.systemInfoChanges.removed.map(item => `<li class="text-sm">${item}</li>`).join('') :
+                    '<li class="text-gray-500 text-sm">无删除项</li>'}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+        }
         // 格式化字节大小
         function formatBytes(bytes) {
             if (bytes === 0) return '0 Bytes';
