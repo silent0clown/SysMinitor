@@ -633,7 +633,8 @@ void DriverMonitor::CategorizeDrivers(DriverSnapshot& snapshot, const std::vecto
 }
 
 void DriverMonitor::CalculateStatistics(DriverSnapshot& snapshot) {
-    size_t total = snapshot.kernelDrivers.size() + snapshot.fileSystemDrivers.size() + snapshot.hardwareDrivers.size();
+    // size_t total = snapshot.kernelDrivers.size() + snapshot.fileSystemDrivers.size() + snapshot.hardwareDrivers.size();
+    size_t total = snapshot.runningDrivers.size() + snapshot.stoppedDrivers.size();
     
     snapshot.stats.totalDrivers = total;
     snapshot.stats.runningCount = snapshot.runningDrivers.size();

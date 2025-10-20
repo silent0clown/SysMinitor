@@ -398,11 +398,11 @@ void HttpServer::HandleGetProcesses(const httplib::Request& req, httplib::Respon
                 processJson["userCount"] = process.userCount;       // 获取进程使用的 USER 对象数量,监控 USER 数量有助于检测窗口泄漏或 UI 资源泄漏
                 
                 // 字符串字段需要 UTF-8 清理
-                processJson["name"] = SanitizeUTF8(process.name);
-                processJson["fullPath"] = SanitizeUTF8(process.fullPath);
-                processJson["state"] = SanitizeUTF8(process.state);
-                processJson["username"] = SanitizeUTF8(process.username);
-                processJson["commandLine"] = SanitizeUTF8(process.commandLine);
+                processJson["name"] = util::EncodingUtil::ToUTF8(process.name);
+                processJson["fullPath"] = util::EncodingUtil::ToUTF8(process.fullPath);
+                processJson["state"] = util::EncodingUtil::ToUTF8(process.state);
+                processJson["username"] = util::EncodingUtil::ToUTF8(process.username);
+                processJson["commandLine"] = util::EncodingUtil::ToUTF8(process.commandLine);
                 
                 // 确保没有空值，提供默认值
                 if (processJson["name"].get<std::string>().empty()) {
