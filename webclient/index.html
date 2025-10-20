@@ -3535,10 +3535,11 @@
 
 
 
+        // 替换 displaySystemComparisonResult 函数
         // 显示系统快照对比结果
         function displaySystemComparisonResult(data) {
             const resultElement = document.getElementById('systemComparisonResult');
-            const contentContainer = document.getElementById('systemComparisonContent');
+            let contentContainer = document.getElementById('systemComparisonContent');
 
             // 检查元素是否存在
             if (!resultElement) {
@@ -3564,71 +3565,397 @@
 
             resultElement.classList.remove('hidden');
 
-            contentContainer.innerHTML = `
-        <div class="bg-blue-50 rounded-lg p-4 mb-4">
+            // 构建详细对比结果
+            let htmlContent = `
+        <div class="bg-blue-50 rounded-lg p-4 mb-6">
             <h4 class="font-semibold text-lg mb-2">快照信息</h4>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <p><span class="font-medium">快照1:</span> ${data.snapshot1}</p>
+                    <p><span class="font-medium">快照1:</span> ${data.snapshot1 || 'N/A'}</p>
                 </div>
                 <div>
-                    <p><span class="font-medium">快照2:</span> ${data.snapshot2}</p>
-                </div>
-            </div>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="bg-white rounded-lg p-4 shadow">
-                <h4 class="font-semibold mb-3 text-center">CPU信息变化</h4>
-                ${data.cpuChanges ? `
-                    <div class="space-y-2">
-                        <p><span class="font-medium">平均负载变化:</span> ${data.cpuChanges.avgLoad ? data.cpuChanges.avgLoad.toFixed(2) : 'N/A'}</p>
-                        <p><span class="font-medium">最高频率变化:</span> ${data.cpuChanges.maxFreq ? data.cpuChanges.maxFreq.toFixed(2) : 'N/A'} MHz</p>
-                    </div>
-                ` : '<p class="text-gray-500 text-center">无CPU变化数据</p>'}
-            </div>
-            
-            <div class="bg-white rounded-lg p-4 shadow">
-                <h4 class="font-semibold mb-3 text-center">内存信息变化</h4>
-                ${data.memoryChanges ? `
-                    <div class="space-y-2">
-                        <p><span class="font-medium">物理内存使用变化:</span> ${data.memoryChanges.physicalMemoryPercent ? data.memoryChanges.physicalMemoryPercent.toFixed(2) : 'N/A'}%</p>
-                        <p><span class="font-medium">虚拟内存使用变化:</span> ${data.memoryChanges.virtualMemoryPercent ? data.memoryChanges.virtualMemoryPercent.toFixed(2) : 'N/A'}%</p>
-                    </div>
-                ` : '<p class="text-gray-500 text-center">无内存变化数据</p>'}
-            </div>
-        </div>
-        
-        <div class="mt-6 bg-white rounded-lg p-4 shadow">
-            <h4 class="font-semibold mb-3">系统信息变更</h4>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <h5 class="font-medium mb-2 text-green-700">新增项 (${data.systemInfoChanges?.added?.length || 0})</h5>
-                    <ul class="list-disc list-inside max-h-32 overflow-y-auto bg-green-50 p-2 rounded">
-                        ${data.systemInfoChanges?.added?.length ?
-                    data.systemInfoChanges.added.map(item => `<li class="text-sm">${item}</li>`).join('') :
-                    '<li class="text-gray-500 text-sm">无新增项</li>'}
-                    </ul>
-                </div>
-                <div>
-                    <h5 class="font-medium mb-2 text-yellow-700">修改项 (${data.systemInfoChanges?.modified?.length || 0})</h5>
-                    <ul class="list-disc list-inside max-h-32 overflow-y-auto bg-yellow-50 p-2 rounded">
-                        ${data.systemInfoChanges?.modified?.length ?
-                    data.systemInfoChanges.modified.map(item => `<li class="text-sm">${item}</li>`).join('') :
-                    '<li class="text-gray-500 text-sm">无修改项</li>'}
-                    </ul>
-                </div>
-                <div>
-                    <h5 class="font-medium mb-2 text-red-700">删除项 (${data.systemInfoChanges?.removed?.length || 0})</h5>
-                    <ul class="list-disc list-inside max-h-32 overflow-y-auto bg-red-50 p-2 rounded">
-                        ${data.systemInfoChanges?.removed?.length ?
-                    data.systemInfoChanges.removed.map(item => `<li class="text-sm">${item}</li>`).join('') :
-                    '<li class="text-gray-500 text-sm">无删除项</li>'}
-                    </ul>
+                    <p><span class="font-medium">快照2:</span> ${data.snapshot2 || 'N/A'}</p>
                 </div>
             </div>
         </div>
     `;
+
+            // CPU信息变化
+            htmlContent += `
+        <div class="bg-white rounded-lg shadow mb-6">
+            <div class="border-b p-4">
+                <h5 class="font-semibold text-lg flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
+                    </svg>
+                    CPU信息变化
+                </h5>
+            </div>
+            <div class="p-4">
+    `;
+
+            if (data.cpu && data.cpu.coreUsageDiffs && Array.isArray(data.cpu.coreUsageDiffs)) {
+                htmlContent += `
+                <div class="mb-4">
+                    <h6 class="font-medium mb-2">核心使用率变化</h6>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        `;
+
+                data.cpu.coreUsageDiffs.forEach(core => {
+                    const diffClass = core.diff > 0 ? 'text-red-500' : core.diff < 0 ? 'text-green-500' : 'text-gray-500';
+                    htmlContent += `
+                <div class="bg-gray-50 p-3 rounded">
+                    <div class="flex justify-between">
+                        <span class="font-medium">核心 ${core.coreIndex}</span>
+                        <span class="${diffClass}">${core.diff !== undefined ? (core.diff > 0 ? '+' : '') + core.diff.toFixed(2) : 'N/A'}%</span>
+                    </div>
+                    <div class="mt-1 text-sm">
+                        <span class="inline-block w-24">快照1:</span>
+                        <span>${core.usage1 !== undefined ? core.usage1.toFixed(2) : 'N/A'}%</span>
+                    </div>
+                    <div class="text-sm">
+                        <span class="inline-block w-24">快照2:</span>
+                        <span>${core.usage2 !== undefined ? core.usage2.toFixed(2) : 'N/A'}%</span>
+                    </div>
+                </div>
+            `;
+                });
+
+                htmlContent += `
+                    </div>
+                </div>
+        `;
+
+                if (data.cpu.totalUsageDiff !== undefined) {
+                    const totalDiffClass = data.cpu.totalUsageDiff > 0 ? 'text-red-500' : data.cpu.totalUsageDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                    htmlContent += `
+                <div class="border-t pt-4">
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium">总体CPU使用率变化:</span>
+                        <span class="${totalDiffClass}">${data.cpu.totalUsageDiff > 0 ? '+' : ''}${data.cpu.totalUsageDiff.toFixed(2)}%</span>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                        <div>
+                            <span class="inline-block w-24">快照1:</span>
+                            <span>${data.cpu.totalUsage1 !== undefined ? data.cpu.totalUsage1.toFixed(2) : 'N/A'}%</span>
+                        </div>
+                        <div>
+                            <span class="inline-block w-24">快照2:</span>
+                            <span>${data.cpu.totalUsage2 !== undefined ? data.cpu.totalUsage2.toFixed(2) : 'N/A'}%</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+                }
+            } else {
+                htmlContent += '<p class="text-gray-500 text-center">无CPU变化数据</p>';
+            }
+
+            htmlContent += `
+            </div>
+        </div>
+    `;
+
+            // 内存信息变化
+            if (data.memory) {
+                const memoryDiffClass = data.memory.usedPercentDiff > 0 ? 'text-red-500' : data.memory.usedPercentDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                htmlContent += `
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b p-4">
+                    <h5 class="font-semibold text-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
+                        </svg>
+                        内存信息变化
+                    </h5>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-medium mb-2">使用率变化</div>
+                            <div class="text-2xl ${memoryDiffClass}">
+                                ${data.memory.usedPercentDiff !== undefined ? (data.memory.usedPercentDiff > 0 ? '+' : '') + data.memory.usedPercentDiff.toFixed(2) : 'N/A'}%
+                            </div>
+                            <div class="text-sm mt-1">
+                                <div>
+                                    <span class="inline-block w-20">快照1:</span>
+                                    <span>${data.memory.usedPercent1 !== undefined ? data.memory.usedPercent1.toFixed(2) : 'N/A'}%</span>
+                                </div>
+                                <div>
+                                    <span class="inline-block w-20">快照2:</span>
+                                    <span>${data.memory.usedPercent2 !== undefined ? data.memory.usedPercent2.toFixed(2) : 'N/A'}%</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-medium mb-2">可用物理内存</div>
+                            <div class="text-2xl">
+                                ${data.memory.availablePhysicalDiff !== undefined ? (data.memory.availablePhysicalDiff / (1024 * 1024)).toFixed(2) : 'N/A'} MB
+                            </div>
+                            <div class="text-sm mt-1">
+                                <div>
+                                    <span class="inline-block w-20">快照1:</span>
+                                    <span>${data.memory.availablePhysical1 !== undefined ? (data.memory.availablePhysical1 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
+                                </div>
+                                <div>
+                                    <span class="inline-block w-20">快照2:</span>
+                                    <span>${data.memory.availablePhysical2 !== undefined ? (data.memory.availablePhysical2 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-medium mb-2">已用物理内存</div>
+                            <div class="text-2xl">
+                                ${data.memory.usedPhysicalDiff !== undefined ? (data.memory.usedPhysicalDiff / (1024 * 1024)).toFixed(2) : 'N/A'} MB
+                            </div>
+                            <div class="text-sm mt-1">
+                                <div>
+                                    <span class="inline-block w-20">快照1:</span>
+                                    <span>${data.memory.usedPhysical1 !== undefined ? (data.memory.usedPhysical1 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
+                                </div>
+                                <div>
+                                    <span class="inline-block w-20">快照2:</span>
+                                    <span>${data.memory.usedPhysical2 !== undefined ? (data.memory.usedPhysical2 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+            }
+
+            // 磁盘信息变化
+            if (data.disk && data.disk.drives && data.disk.drives.modified && Array.isArray(data.disk.drives.modified)) {
+                htmlContent += `
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b p-4">
+                    <h5 class="font-semibold text-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
+                        </svg>
+                        磁盘信息变化
+                    </h5>
+                </div>
+                <div class="p-4">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">驱动器</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用率变化</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">读取速度变化</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">写入速度变化</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+        `;
+
+                data.disk.drives.modified.forEach(drive => {
+                    const usageDiffClass = drive.usagePercentageDiff > 0 ? 'text-red-500' : drive.usagePercentageDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                    const readDiffClass = drive.readSpeedDiff > 0 ? 'text-red-500' : drive.readSpeedDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                    const writeDiffClass = drive.writeSpeedDiff > 0 ? 'text-red-500' : drive.writeSpeedDiff < 0 ? 'text-green-500' : 'text-gray-500';
+
+                    htmlContent += `
+                <tr>
+                    <td class="px-4 py-3 whitespace-nowrap">
+                        <div class="font-medium">${drive.driveLetter || 'N/A'}</div>
+                        <div class="text-sm text-gray-500">${drive.model || '-'}</div>
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap ${usageDiffClass}">
+                        ${drive.usagePercentageDiff !== undefined ? (drive.usagePercentageDiff > 0 ? '+' : '') + drive.usagePercentageDiff.toFixed(2) : 'N/A'}%
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap ${readDiffClass}">
+                        ${drive.readSpeedDiff !== undefined ? (drive.readSpeedDiff > 0 ? '+' : '') + drive.readSpeedDiff.toFixed(2) : 'N/A'} MB/s
+                    </td>
+                    <td class="px-4 py-3 whitespace-nowrap ${writeDiffClass}">
+                        ${drive.writeSpeedDiff !== undefined ? (drive.writeSpeedDiff > 0 ? '+' : '') + drive.writeSpeedDiff.toFixed(2) : 'N/A'} MB/s
+                    </td>
+                </tr>
+            `;
+                });
+
+                htmlContent += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+            }
+
+            // 进程信息变化
+            if (data.processes) {
+                htmlContent += `
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b p-4">
+                    <h5 class="font-semibold text-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        进程信息变化
+                    </h5>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        `;
+
+                // 新增进程统计
+                htmlContent += `
+            <div class="bg-blue-50 p-3 rounded">
+                <div class="font-medium mb-1">新增进程</div>
+                <div class="text-2xl">${data.processes.added && Array.isArray(data.processes.added) ? data.processes.added.length : 0}</div>
+            </div>
+        `;
+
+                // 移除进程统计
+                htmlContent += `
+            <div class="bg-red-50 p-3 rounded">
+                <div class="font-medium mb-1">移除进程</div>
+                <div class="text-2xl">${data.processes.removed && Array.isArray(data.processes.removed) ? data.processes.removed.length : 0}</div>
+            </div>
+        `;
+
+                // 修改进程统计
+                htmlContent += `
+            <div class="bg-yellow-50 p-3 rounded">
+                <div class="font-medium mb-1">修改进程</div>
+                <div class="text-2xl">${data.processes.modified && Array.isArray(data.processes.modified) ? data.processes.modified.length : 0}</div>
+            </div>
+        `;
+
+                htmlContent += `
+                    </div>
+        `;
+
+                // 显示修改的进程详情（只显示前5个）
+                if (data.processes.modified && Array.isArray(data.processes.modified) && data.processes.modified.length > 0) {
+                    htmlContent += `
+                <div class="mt-4">
+                    <h6 class="font-medium mb-2">主要进程变化</h6>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">进程名</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PID</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPU变化</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">内存变化</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+            `;
+
+                    data.processes.modified.slice(0, 5).forEach(process => {
+                        const cpuDiffClass = process.cpuUsageDiff > 0 ? 'text-red-500' : process.cpuUsageDiff < 0 ? 'text-green-500' : 'text-gray-500';
+                        const memDiffClass = process.memoryUsageDiff > 0 ? 'text-red-500' : process.memoryUsageDiff < 0 ? 'text-green-500' : 'text-gray-500';
+
+                        htmlContent += `
+                    <tr>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="font-medium">${process.name || 'N/A'}</div>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">${process.pid || 'N/A'}</td>
+                        <td class="px-4 py-3 whitespace-nowrap ${cpuDiffClass}">
+                            ${process.cpuUsageDiff !== undefined ? (process.cpuUsageDiff > 0 ? '+' : '') + process.cpuUsageDiff.toFixed(2) : 'N/A'}%
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap ${memDiffClass}">
+                            ${process.memoryUsageDiff !== undefined ? (process.memoryUsageDiff / (1024 * 1024)).toFixed(2) : 'N/A'} MB
+                        </td>
+                    </tr>
+                `;
+                    });
+
+                    htmlContent += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+                }
+
+                htmlContent += `
+                </div>
+            </div>
+        `;
+            }
+
+            // 驱动信息变化
+            if (data.drivers) {
+                htmlContent += `
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="border-b p-4">
+                    <h5 class="font-semibold text-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                        </svg>
+                        驱动信息变化
+                    </h5>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        `;
+
+                // 运行中驱动变化
+                htmlContent += `
+            <div class="bg-gray-50 p-3 rounded">
+                <div class="font-medium mb-1">运行中驱动</div>
+                <div class="text-2xl">${data.drivers.runningCountDiff !== undefined ? (data.drivers.runningCountDiff > 0 ? '+' : '') + data.drivers.runningCountDiff : 'N/A'}</div>
+                <div class="text-sm mt-1">
+                    <div>
+                        <span class="inline-block w-16">快照1:</span>
+                        <span>${data.drivers.runningCount1 !== undefined ? data.drivers.runningCount1 : 'N/A'}</span>
+                    </div>
+                    <div>
+                        <span class="inline-block w-16">快照2:</span>
+                        <span>${data.drivers.runningCount2 !== undefined ? data.drivers.runningCount2 : 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+                // 停止驱动变化
+                htmlContent += `
+            <div class="bg-gray-50 p-3 rounded">
+                <div class="font-medium mb-1">停止驱动</div>
+                <div class="text-2xl">${data.drivers.stoppedCountDiff !== undefined ? (data.drivers.stoppedCountDiff > 0 ? '+' : '') + data.drivers.stoppedCountDiff : 'N/A'}</div>
+                <div class="text-sm mt-1">
+                    <div>
+                        <span class="inline-block w-16">快照1:</span>
+                        <span>${data.drivers.stoppedCount1 !== undefined ? data.drivers.stoppedCount1 : 'N/A'}</span>
+                    </div>
+                    <div>
+                        <span class="inline-block w-16">快照2:</span>
+                        <span>${data.drivers.stoppedCount2 !== undefined ? data.drivers.stoppedCount2 : 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+                // 新增驱动
+                htmlContent += `
+            <div class="bg-blue-50 p-3 rounded">
+                <div class="font-medium mb-1">新增驱动</div>
+                <div class="text-2xl">${data.drivers.runningDrivers && data.drivers.runningDrivers.addedCount !== undefined ? data.drivers.runningDrivers.addedCount : 'N/A'}</div>
+            </div>
+        `;
+
+                // 移除驱动
+                htmlContent += `
+            <div class="bg-red-50 p-3 rounded">
+                <div class="font-medium mb-1">移除驱动</div>
+                <div class="text-2xl">${data.drivers.runningDrivers && data.drivers.runningDrivers.removedCount !== undefined ? data.drivers.runningDrivers.removedCount : 'N/A'}</div>
+            </div>
+        `;
+
+                htmlContent += `
+                    </div>
+                </div>
+            </div>
+        `;
+            }
+
+            contentContainer.innerHTML = htmlContent;
         }
         // 格式化字节大小
         function formatBytes(bytes) {
