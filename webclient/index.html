@@ -3672,6 +3672,10 @@
                 <div class="p-4">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-gray-50 p-3 rounded">
+                            <div class="font-medium mb-2">内存总量</div>
+                                <div class="text-2xl">
+                                    ${data.memory.totalPhysical1 !== undefined ? (data.memory.totalPhysical1 / (1024 * 1024 * 1024)).toFixed(2) : 'N/A'} GB
+                                </div>
                             <div class="font-medium mb-2">使用率变化</div>
                             <div class="text-2xl ${memoryDiffClass}">
                                 ${data.memory.usedPercentDiff !== undefined ? (data.memory.usedPercentDiff > 0 ? '+' : '') + data.memory.usedPercentDiff.toFixed(2) : 'N/A'}%
@@ -3725,64 +3729,6 @@
         `;
             }
 
-            // 磁盘信息变化
-            if (data.disk && data.disk.drives && data.disk.drives.modified && Array.isArray(data.disk.drives.modified)) {
-                htmlContent += `
-            <div class="bg-white rounded-lg shadow mb-6">
-                <div class="border-b p-4">
-                    <h5 class="font-semibold text-lg flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"></path>
-                        </svg>
-                        磁盘信息变化
-                    </h5>
-                </div>
-                <div class="p-4">
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">驱动器</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用率变化</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">读取速度变化</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">写入速度变化</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-        `;
-
-                data.disk.drives.modified.forEach(drive => {
-                    const usageDiffClass = drive.usagePercentageDiff > 0 ? 'text-red-500' : drive.usagePercentageDiff < 0 ? 'text-green-500' : 'text-gray-500';
-                    const readDiffClass = drive.readSpeedDiff > 0 ? 'text-red-500' : drive.readSpeedDiff < 0 ? 'text-green-500' : 'text-gray-500';
-                    const writeDiffClass = drive.writeSpeedDiff > 0 ? 'text-red-500' : drive.writeSpeedDiff < 0 ? 'text-green-500' : 'text-gray-500';
-
-                    htmlContent += `
-                <tr>
-                    <td class="px-4 py-3 whitespace-nowrap">
-                        <div class="font-medium">${drive.driveLetter || 'N/A'}</div>
-                        <div class="text-sm text-gray-500">${drive.model || '-'}</div>
-                    </td>
-                    <td class="px-4 py-3 whitespace-nowrap ${usageDiffClass}">
-                        ${drive.usagePercentageDiff !== undefined ? (drive.usagePercentageDiff > 0 ? '+' : '') + drive.usagePercentageDiff.toFixed(2) : 'N/A'}%
-                    </td>
-                    <td class="px-4 py-3 whitespace-nowrap ${readDiffClass}">
-                        ${drive.readSpeedDiff !== undefined ? (drive.readSpeedDiff > 0 ? '+' : '') + drive.readSpeedDiff.toFixed(2) : 'N/A'} MB/s
-                    </td>
-                    <td class="px-4 py-3 whitespace-nowrap ${writeDiffClass}">
-                        ${drive.writeSpeedDiff !== undefined ? (drive.writeSpeedDiff > 0 ? '+' : '') + drive.writeSpeedDiff.toFixed(2) : 'N/A'} MB/s
-                    </td>
-                </tr>
-            `;
-                });
-
-                htmlContent += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        `;
-            }
 
             // 进程信息变化
             if (data.processes) {
@@ -3956,7 +3902,110 @@
             }
 
             contentContainer.innerHTML = htmlContent;
+
+            // 显示磁盘分区变化
+            displayDiskPartitionChanges(data);
         }
+
+        // 在 index.html 中添加磁盘分区变化显示函数
+        function displayDiskPartitionChanges(data) {
+            const contentContainer = document.getElementById('systemComparisonContent');
+
+            // 如果没有磁盘分区变化数据，则返回
+            if (!data.disk || !data.disk.partitions || !data.disk.partitions.changes || data.disk.partitions.changes.length === 0) {
+                contentContainer.innerHTML += `
+            <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                <h4 class="font-semibold text-lg mb-2">磁盘分区变化</h4>
+                <p class="text-gray-500">无磁盘分区变化数据</p>
+            </div>
+        `;
+                return;
+            }
+
+            let diskChangesHTML = `
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h4 class="font-semibold text-lg mb-2">磁盘分区变化</h4>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">驱动器</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">卷标</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">文件系统</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">总大小变化</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">已用空间变化</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">可用空间变化</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">使用率变化</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+    `;
+
+            data.disk.partitions.changes.forEach(partition => {
+                // 根据变化值设置颜色类
+                const totalSizeDiffClass = getDiffClass(partition.totalSizeDiff);
+                const usedSpaceDiffClass = getDiffClass(partition.usedSpaceDiff);
+                const freeSpaceDiffClass = getDiffClass(partition.freeSpaceDiff);
+                const usagePercentageDiffClass = getDiffClass(partition.usagePercentageDiff);
+
+                diskChangesHTML += `
+            <tr>
+                <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${partition.driveLetter}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${partition.label || 'N/A'}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">${partition.fileSystem || 'N/A'}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm ${totalSizeDiffClass}">${formatBytesWithSign(partition.totalSizeDiff)}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm ${usedSpaceDiffClass}">${formatBytesWithSign(partition.usedSpaceDiff)}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm ${freeSpaceDiffClass}">${formatBytesWithSign(partition.freeSpaceDiff)}</td>
+                <td class="px-4 py-3 whitespace-nowrap text-sm ${usagePercentageDiffClass}">${formatPercentageWithSign(partition.usagePercentageDiff)}</td>
+            </tr>
+        `;
+            });
+
+            diskChangesHTML += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+
+            contentContainer.innerHTML += diskChangesHTML;
+        }
+
+        // 辅助函数：根据差异值返回相应的CSS类
+        function getDiffClass(diffValue) {
+            if (diffValue > 0) {
+                return 'text-red-500 font-semibold'; // 增加用红色表示
+            } else if (diffValue < 0) {
+                return 'text-green-500 font-semibold'; // 减少用绿色表示
+            } else {
+                return 'text-gray-500'; // 无变化用灰色表示
+            }
+        }
+
+        // 辅助函数：格式化字节大小并带符号显示
+        function formatBytesWithSign(bytes) {
+            if (bytes === 0) return '0 B';
+
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(Math.abs(bytes)) / Math.log(k));
+            const formattedValue = parseFloat(Math.abs(bytes) / Math.pow(k, i)).toFixed(2);
+
+            // 添加符号
+            const sign = bytes > 0 ? '+' : '';
+            return `${sign}${formattedValue} ${sizes[i]}`;
+        }
+
+        // 辅助函数：格式化百分比并带符号显示
+        function formatPercentageWithSign(percentage) {
+            if (percentage === 0) return '0%';
+
+            // 将小数转换为百分比并保留两位小数
+            const formattedValue = (Math.abs(percentage)).toFixed(2);
+            const sign = percentage > 0 ? '+' : '';
+            return `${sign}${formattedValue}%`;
+        }
+
         // 格式化字节大小
         function formatBytes(bytes) {
             if (bytes === 0) return '0 Bytes';
