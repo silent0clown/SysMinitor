@@ -1845,19 +1845,42 @@ void HttpServer::HandleListSystemSnapshots(const httplib::Request& req, httplib:
     try {
         LoadSnapshotsFromDisk();
 
-        std::vector<std::string> names;
+        // 收集快照名称和JSON数据
+        std::vector<std::pair<std::string, std::string>> snapshots;
         {
             std::lock_guard<std::mutex> lk(systemSnapshotsMutex_);
-            names.reserve(systemSnapshotsJson_.size());
+            snapshots.reserve(systemSnapshotsJson_.size());
             for (const auto &kv : systemSnapshotsJson_) {
-                names.push_back(kv.first);
+                snapshots.push_back({kv.first, kv.second});
             }
         }
 
-        std::sort(names.begin(), names.end(), std::greater<std::string>());
+        // 按名称降序排序
+        std::sort(snapshots.begin(), snapshots.end(), 
+                  [](const auto& a, const auto& b) { return a.first > b.first; });
 
+        // 构建返回的JSON数组，包含名称和时间戳
         json arr = json::array();
-        for (const auto &n : names) arr.push_back(n);
+        for (const auto &[name, jsonStr] : snapshots) {
+            json item;
+            item["name"] = name;
+            
+            // 尝试解析JSON获取时间戳
+            try {
+                json snapshotData = json::parse(jsonStr);
+                if (snapshotData.contains("snapshotTimestamp")) {
+                    item["timestamp"] = snapshotData["snapshotTimestamp"];
+                } else {
+                    item["timestamp"] = 0;
+                }
+            } catch (const json::exception& e) {
+                // 解析失败时设置默认值
+                std::cerr << "Failed to parse snapshot JSON for " << name << ": " << e.what() << std::endl;
+                item["timestamp"] = 0;
+            }
+            
+            arr.push_back(item);
+        }
 
         res.set_content(arr.dump(), "application/json");
     } catch (const std::exception& e) {

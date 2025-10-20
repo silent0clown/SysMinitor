@@ -679,9 +679,14 @@ POST /api/system/snapshot/save?name=我的快照
   "code": 200,
   "message": "success",
   "data": [
-    "snapshot_20251018_153045",
-    "snapshot_20251018_152800",
-    "我的快照"
+    {
+      "name": "snapshot_20250120_143022",
+      "timestamp": 1737355822000
+    },
+    {
+      "name": "snapshot_20250120_120000",
+      "timestamp": 1737347200000
+    }
   ]
 }
 ```
