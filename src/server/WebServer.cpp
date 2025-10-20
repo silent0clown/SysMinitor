@@ -809,6 +809,7 @@ std::string HttpServer::GetCurrentTimeString() {
 //             keyJson["subkeys"] = key.subkeys;
             
 //             networkJson.push_back(keyJson);
+
 //         }
 //         response["network"] = networkJson;
         
@@ -2062,17 +2063,23 @@ json HttpServer::CompareSystemSnapshotsJson(const json& snap1, const json& snap2
         auto mem1 = snap1["memory"];
         auto mem2 = snap2["memory"];
         
-        result["memory"]["totalPhysical1"] = mem1.value("totalPhysical", 0);
-        result["memory"]["totalPhysical2"] = mem2.value("totalPhysical", 0);
-        result["memory"]["totalPhysicalDiff"] = mem2.value("totalPhysical", 0) - mem1.value("totalPhysical", 0);
+        uint64_t totalPhysical1 = mem1.value("totalPhysical", static_cast<uint64_t>(0));
+        uint64_t totalPhysical2 = mem2.value("totalPhysical", static_cast<uint64_t>(0));
+        result["memory"]["totalPhysical1"] = totalPhysical1;
+        result["memory"]["totalPhysical2"] = totalPhysical2;
+        result["memory"]["totalPhysicalDiff"] = static_cast<int64_t>(totalPhysical2) - static_cast<int64_t>(totalPhysical1);
         
-        result["memory"]["availablePhysical1"] = mem1.value("availablePhysical", 0);
-        result["memory"]["availablePhysical2"] = mem2.value("availablePhysical", 0);
-        result["memory"]["availablePhysicalDiff"] = mem2.value("availablePhysical", 0) - mem1.value("availablePhysical", 0);
+        uint64_t availablePhysical1 = mem1.value("availablePhysical", static_cast<uint64_t>(0));
+        uint64_t availablePhysical2 = mem2.value("availablePhysical", static_cast<uint64_t>(0));
+        result["memory"]["availablePhysical1"] = availablePhysical1;
+        result["memory"]["availablePhysical2"] = availablePhysical2;
+        result["memory"]["availablePhysicalDiff"] = static_cast<int64_t>(availablePhysical2) - static_cast<int64_t>(availablePhysical1);
         
-        result["memory"]["usedPhysical1"] = mem1.value("usedPhysical", 0);
-        result["memory"]["usedPhysical2"] = mem2.value("usedPhysical", 0);
-        result["memory"]["usedPhysicalDiff"] = mem2.value("usedPhysical", 0) - mem1.value("usedPhysical", 0);
+        uint64_t usedPhysical1 = mem1.value("usedPhysical", static_cast<uint64_t>(0));
+        uint64_t usedPhysical2 = mem2.value("usedPhysical", static_cast<uint64_t>(0));
+        result["memory"]["usedPhysical1"] = usedPhysical1;
+        result["memory"]["usedPhysical2"] = usedPhysical2;
+        result["memory"]["usedPhysicalDiff"] = static_cast<int64_t>(usedPhysical2) - static_cast<int64_t>(usedPhysical1);
         
         result["memory"]["usedPercent1"] = mem1.value("usedPercent", 0.0);
         result["memory"]["usedPercent2"] = mem2.value("usedPercent", 0.0);
@@ -2115,7 +2122,7 @@ json HttpServer::CompareSystemSnapshotsJson(const json& snap1, const json& snap2
                     add["serialNumber"] = d2.value("serialNumber", "");
                     add["interfaceType"] = d2.value("interfaceType", "");
                     add["mediaType"] = d2.value("mediaType", "");
-                    add["totalSize"] = d2.value("totalSize", 0);
+                    add["totalSize"] = d2.value("totalSize", static_cast<uint64_t>(0));  // 使用 uint64_t
                     add["status"] = d2.value("status", "");
                     added.push_back(add);
                 } else {
@@ -2132,10 +2139,13 @@ json HttpServer::CompareSystemSnapshotsJson(const json& snap1, const json& snap2
                         change["status2"] = d2.value("status", "");
                         hasChange = true;
                     }
-                    if (d1.value("totalSize", 0) != d2.value("totalSize", 0)) {
+                    
+                    uint64_t size1 = d1.value("totalSize", static_cast<uint64_t>(0));
+                    uint64_t size2 = d2.value("totalSize", static_cast<uint64_t>(0));
+                    if (size1 != size2) {
                         change["totalSizeChanged"] = true;
-                        change["totalSize1"] = d1.value("totalSize", 0);
-                        change["totalSize2"] = d2.value("totalSize", 0);
+                        change["totalSize1"] = size1;
+                        change["totalSize2"] = size2;
                         hasChange = true;
                     }
                     
@@ -2187,17 +2197,23 @@ json HttpServer::CompareSystemSnapshotsJson(const json& snap1, const json& snap2
                     change["label"] = p2.value("label", "");
                     change["fileSystem"] = p2.value("fileSystem", "");
                     
-                    change["totalSize1"] = p1.value("totalSize", 0);
-                    change["totalSize2"] = p2.value("totalSize", 0);
-                    change["totalSizeDiff"] = p2.value("totalSize", 0) - p1.value("totalSize", 0);
+                    uint64_t totalSize1 = p1.value("totalSize", static_cast<uint64_t>(0));
+                    uint64_t totalSize2 = p2.value("totalSize", static_cast<uint64_t>(0));
+                    change["totalSize1"] = totalSize1;
+                    change["totalSize2"] = totalSize2;
+                    change["totalSizeDiff"] = static_cast<int64_t>(totalSize2) - static_cast<int64_t>(totalSize1);
                     
-                    change["freeSpace1"] = p1.value("freeSpace", 0);
-                    change["freeSpace2"] = p2.value("freeSpace", 0);
-                    change["freeSpaceDiff"] = p2.value("freeSpace", 0) - p1.value("freeSpace", 0);
+                    uint64_t freeSpace1 = p1.value("freeSpace", static_cast<uint64_t>(0));
+                    uint64_t freeSpace2 = p2.value("freeSpace", static_cast<uint64_t>(0));
+                    change["freeSpace1"] = freeSpace1;
+                    change["freeSpace2"] = freeSpace2;
+                    change["freeSpaceDiff"] = static_cast<int64_t>(freeSpace2) - static_cast<int64_t>(freeSpace1);
                     
-                    change["usedSpace1"] = p1.value("usedSpace", 0);
-                    change["usedSpace2"] = p2.value("usedSpace", 0);
-                    change["usedSpaceDiff"] = p2.value("usedSpace", 0) - p1.value("usedSpace", 0);
+                    uint64_t usedSpace1 = p1.value("usedSpace", static_cast<uint64_t>(0));
+                    uint64_t usedSpace2 = p2.value("usedSpace", static_cast<uint64_t>(0));
+                    change["usedSpace1"] = usedSpace1;
+                    change["usedSpace2"] = usedSpace2;
+                    change["usedSpaceDiff"] = static_cast<int64_t>(usedSpace2) - static_cast<int64_t>(usedSpace1);
                     
                     change["usagePercentage1"] = p1.value("usagePercentage", 0.0);
                     change["usagePercentage2"] = p2.value("usagePercentage", 0.0);
@@ -2240,13 +2256,17 @@ json HttpServer::CompareSystemSnapshotsJson(const json& snap1, const json& snap2
                     change["writeSpeed2"] = p2.value("writeSpeed", 0.0);
                     change["writeSpeedDiff"] = p2.value("writeSpeed", 0.0) - p1.value("writeSpeed", 0.0);
                     
-                    change["readBytesPerSec1"] = p1.value("readBytesPerSec", 0);
-                    change["readBytesPerSec2"] = p2.value("readBytesPerSec", 0);
-                    change["readBytesPerSecDiff"] = p2.value("readBytesPerSec", 0) - p1.value("readBytesPerSec", 0);
+                    uint64_t readBytes1 = p1.value("readBytesPerSec", static_cast<uint64_t>(0));
+                    uint64_t readBytes2 = p2.value("readBytesPerSec", static_cast<uint64_t>(0));
+                    change["readBytesPerSec1"] = readBytes1;
+                    change["readBytesPerSec2"] = readBytes2;
+                    change["readBytesPerSecDiff"] = static_cast<int64_t>(readBytes2) - static_cast<int64_t>(readBytes1);
                     
-                    change["writeBytesPerSec1"] = p1.value("writeBytesPerSec", 0);
-                    change["writeBytesPerSec2"] = p2.value("writeBytesPerSec", 0);
-                    change["writeBytesPerSecDiff"] = p2.value("writeBytesPerSec", 0) - p1.value("writeBytesPerSec", 0);
+                    uint64_t writeBytes1 = p1.value("writeBytesPerSec", static_cast<uint64_t>(0));
+                    uint64_t writeBytes2 = p2.value("writeBytesPerSec", static_cast<uint64_t>(0));
+                    change["writeBytesPerSec1"] = writeBytes1;
+                    change["writeBytesPerSec2"] = writeBytes2;
+                    change["writeBytesPerSecDiff"] = static_cast<int64_t>(writeBytes2) - static_cast<int64_t>(writeBytes1);
                     
                     change["queueLength1"] = p1.value("queueLength", 0.0);
                     change["queueLength2"] = p2.value("queueLength", 0.0);
@@ -2545,8 +2565,8 @@ json HttpServer::CompareSystemSnapshotsJson(const json& snap1, const json& snap2
                         hasChange = true;
                     }
                     
-                    uint64_t mem1 = proc1.value("memoryUsage", 0);
-                    uint64_t mem2 = proc2.value("memoryUsage", 0);
+                    uint64_t mem1 = proc1.value("memoryUsage", static_cast<uint64_t>(0));
+                    uint64_t mem2 = proc2.value("memoryUsage", static_cast<uint64_t>(0));
                     if (mem1 != mem2) {
                         change["memoryUsage1"] = mem1;
                         change["memoryUsage2"] = mem2;
@@ -2563,8 +2583,8 @@ json HttpServer::CompareSystemSnapshotsJson(const json& snap1, const json& snap2
                         hasChange = true;
                     }
                     
-                    uint64_t workingSet1 = proc1.value("workingSetSize", 0);
-                    uint64_t workingSet2 = proc2.value("workingSetSize", 0);
+                    uint64_t workingSet1 = proc1.value("workingSetSize", static_cast<uint64_t>(0));
+                    uint64_t workingSet2 = proc2.value("workingSetSize", static_cast<uint64_t>(0));
                     if (workingSet1 != workingSet2) {
                         change["workingSetSize1"] = workingSet1;
                         change["workingSetSize2"] = workingSet2;
