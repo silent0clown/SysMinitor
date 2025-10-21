@@ -15,19 +15,6 @@
     <script src="assets/js/echarts.min.js"></script>
     <!-- 引入自定义字体样式 -->
     <link href="assets/css/fonts.css" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3b82f6',
-                        secondary: '#10b981',
-                        dark: '#1e293b'
-                    }
-                }
-            }
-        }
-    </script>
     <style>
         .tab-content {
             display: none;
@@ -1120,6 +1107,7 @@
         // 当前活动的标签
         let activeTab = 'home';
 
+
         // 初始化图表
         let charts = {};
 
@@ -1491,7 +1479,9 @@
                 });
             }
 
-
+            setTimeout(() => {
+                charts.historyUsageChart.resize();
+            }, 100);
         }
 
         function loadHistoryUsageData() {
@@ -3776,7 +3766,7 @@
                 });
         }
         // 刷新快照列表
-        document.getElementById('refreshSnapshotBtn').addEventListener('click', loadSystemSnapshotData);
+        //document.getElementById('refreshSnapshotBtn').addEventListener('click', loadSystemSnapshotData);
 
         // 创建系统快照
         document.getElementById('createSystemSnapshotBtn').addEventListener('click', createSystemSnapshot);
@@ -4326,25 +4316,50 @@
             <div class="bg-yellow-50 rounded-lg p-3 text-center"><p class="text-sm text-yellow-600">修改键</p><p class="text-lg font-bold text-yellow-700">${reg.totalModifiedKeys ?? 0}</p></div>
             <div class="bg-purple-50 rounded-lg p-3 text-center"><p class="text-sm text-purple-600">独有文件</p><p class="text-lg font-bold text-purple-700">${(reg.filesOnlyInFolder1?.length ?? 0) + (reg.filesOnlyInFolder2?.length ?? 0)}</p></div>
           </div>
-          <div class="overflow-x-auto mb-4">
-            <table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">文件前缀</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">新增键</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">删除键</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">修改键</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
-            </tr></thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              ${(reg.comparedFiles ?? []).map(f => `
-              <tr class="${f.modifiedKeys > 0 ? 'bg-yellow-50' : ''} hover:bg-gray-50">
-                <td class="px-4 py-3 text-sm font-medium">${f.prefix}</td>
-                <td class="px-4 py-3 text-sm">${f.addedKeys}</td>
-                <td class="px-4 py-3 text-sm">${f.removedKeys}</td>
-                <td class="px-4 py-3 text-sm ${f.modifiedKeys > 0 ? 'text-yellow-600 font-medium' : ''}">${f.modifiedKeys}</td>
-                <td class="px-4 py-3 text-sm"><span class="px-2 py-1 text-xs rounded-full ${f.modifiedKeys > 0 ? 'bg-yellow-100 text-yellow-800' : f.addedKeys > 0 ? 'bg-green-100 text-green-800' : f.removedKeys > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">${f.modifiedKeys > 0 ? '有修改' : f.addedKeys > 0 ? '有新增' : f.removedKeys > 0 ? '有删除' : '无变化'}</span></td>
-              </tr>`).join('')}
-            </tbody></table>
-          </div>
+            <div class="overflow-x-auto mb-4">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">文件1</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">文件2</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">新增键</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">删除键</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">修改键</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${(reg.comparedFiles ?? []).map((f, idx) => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 text-sm font-medium text-blue-600">${f.file1}</td>
+                            <td class="px-4 py-3 text-sm font-medium text-green-600">${f.file2}</td>
+                            <td class="px-4 py-3 text-sm">${f.addedKeys}</td>
+                            <td class="px-4 py-3 text-sm">${f.removedKeys}</td>
+                            <td class="px-4 py-3 text-sm ${f.modifiedKeys > 0 ? 'text-yellow-600 font-medium' : ''}">${f.modifiedKeys}</td>
+                            <td class="px-4 py-3 text-sm">
+                                <button onclick="showRegistryDetail(${idx})" class="text-indigo-600 hover:text-indigo-900">查看详情</button>
+                            </td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 注册表详情模态窗口 -->
+            <div id="registryDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+                <div class="bg-white rounded-lg shadow-lg w-2/3 max-h-[80vh] overflow-y-auto">
+                    <div class="border-b p-4 flex justify-between items-center">
+                        <h3 class="text-lg font-semibold">注册表详情</h3>
+                        <button onclick="closeRegistryDetailModal()" class="text-gray-500 hover:text-gray-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="p-6" id="registryDetailContent">
+                        <!-- 详细内容将在这里显示 -->
+                    </div>
+                </div>
+            </div>
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div class="bg-green-50 rounded-lg p-3"><h4 class="font-medium text-green-700 mb-1">新增键详情</h4><ul class="text-sm space-y-1">${(reg.comparedFiles ?? []).flatMap(f => f.addedKeysDetails ?? []).map(k => `<li>${k}</li>`).join('') || '<li class="text-gray-500">无新增键</li>'}</ul></div>
             <div class="bg-red-50 rounded-lg p-3"><h4 class="font-medium text-red-700 mb-1">删除键详情</h4><ul class="text-sm space-y-1">${(reg.comparedFiles ?? []).flatMap(f => f.removedKeysDetails ?? []).map(k => `<li>${k}</li>`).join('') || '<li class="text-gray-500">无删除键</li>'}</ul></div>
@@ -4357,6 +4372,8 @@
             /* ---------- 7. 组装并注入 ---------- */
             content.innerHTML = headHtml + statHtml + cpuHtml + memHtml + diskHtml + procHtml + regHtml;
             resultContainer.classList.remove('hidden');
+
+            window.comparisonData = data;
 
             /* ---------- 8. 渲染默认进程表格 & 注册切换函数 ---------- */
             window.switchProcTable = function (type) {
@@ -4528,6 +4545,58 @@
                 content.style.maxHeight = content.scrollHeight + 'px';
                 icon.style.transform = 'rotate(180deg)';
             }
+        }
+
+        // 显示注册表详情
+        function showRegistryDetail(index) {
+            const reg = window.comparisonData?.registry ?? {};
+            const file = reg.comparedFiles?.[index];
+            if (!file) return;
+
+            const content = `
+        <div class="space-y-6">
+            ${file.addedKeysDetails?.length ? `
+            <div class="bg-green-50 rounded-lg p-4">
+                <h4 class="font-medium text-green-700 mb-2">新增键 (${file.addedKeysDetails.length})</h4>
+                <ul class="text-sm space-y-1 max-h-40 overflow-y-auto">
+                    ${file.addedKeysDetails.map(k => `<li class="font-mono text-xs">${k}</li>`).join('')}
+                </ul>
+            </div>` : ''}
+
+            ${file.removedKeysDetails?.length ? `
+            <div class="bg-red-50 rounded-lg p-4">
+                <h4 class="font-medium text-red-700 mb-2">删除键 (${file.removedKeysDetails.length})</h4>
+                <ul class="text-sm space-y-1 max-h-40 overflow-y-auto">
+                    ${file.removedKeysDetails.map(k => `<li class="font-mono text-xs">${k}</li>`).join('')}
+                </ul>
+            </div>` : ''}
+
+            ${file.modifiedKeysDetails?.length ? `
+            <div class="bg-yellow-50 rounded-lg p-4">
+                <h4 class="font-medium text-yellow-700 mb-2">修改键 (${file.modifiedKeysDetails.length})</h4>
+                <ul class="text-sm space-y-1 max-h-40 overflow-y-auto">
+                    ${file.modifiedKeysDetails.map(k => `<li class="font-mono text-xs">${k}</li>`).join('')}
+                </ul>
+            </div>` : ''}
+
+            ${!file.addedKeysDetails?.length && !file.removedKeysDetails?.length && !file.modifiedKeysDetails?.length ? `
+            <div class="text-center text-gray-500 py-8">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </path>
+                </svg>
+                <p class="mt-2 text-sm">该文件无详细变更信息</p>
+            </div>` : ''}
+        </div>
+    `;
+
+            document.getElementById('registryDetailContent').innerHTML = content;
+            document.getElementById('registryDetailModal').classList.remove('hidden');
+        }
+
+        // 关闭注册表详情模态窗口
+        function closeRegistryDetailModal() {
+            document.getElementById('registryDetailModal').classList.add('hidden');
         }
 
         // 窗口大小改变时重绘图表
