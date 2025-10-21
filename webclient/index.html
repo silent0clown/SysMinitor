@@ -447,7 +447,7 @@
                     </div>
 
                     <!-- 图表容器 -->
-                    <div class="h-80" id="historyUsageChart"></div>
+                    <div class="h-80 min-h-[320px]" id="historyUsageChart"></div>
 
                     <!-- 底部图例和信息 -->
                     <div class="mt-4 flex justify-between items-center text-sm text-gray-600">
@@ -1169,14 +1169,15 @@
             });
 
             // 初始化首页图表
-            initHomeCharts();
+            //initHomeCharts();
 
             // 绑定事件
             bindEvents();
 
             // 加载首页数据
-            loadDashboardData();
-            loadOverviewData();
+             loadDashboardData();
+             loadOverviewData();
+            switchTab('snapshot');
 
             initSnapshotFunctionality();
 
@@ -1275,6 +1276,11 @@
 
             // 根据标签初始化相应内容
             switch (tabId) {
+                case 'home':
+                    initHomeCharts();          // 保证容器可见后再 init
+                    loadHistoryUsageData();    // 再加载数据
+                    startHistoryRefresh();     // 启动定时刷新
+                    break;
                 case 'cpu':
                     initCpuCharts();
                     loadCpuData();
