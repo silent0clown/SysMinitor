@@ -74,6 +74,158 @@
             max-height: 0;
             transition: max-height 0.3s ease;
         }
+
+
+        /* ===== 1. 设计变量 ===== */
+        :root {
+            --primary: #3b82f6;
+            /* 主色 - 蓝 */
+            --secondary: #10b981;
+            /* 辅助 - 绿 */
+            --danger: #ef4444;
+            /* 危险 - 红 */
+            --warning: #f59e0b;
+            /* 警告 - 橙 */
+            --surface: #ffffff;
+            /* 卡片底色 */
+            --background: #f3f4f6;
+            /* 全局背景 */
+            --text-main: #111827;
+            /* 主文本 */
+            --text-second: #6b7280;
+            /* 次要文本 */
+            --radius: 12px;
+            /* 统一圆角 */
+            --shadow: 0 4px 14px 0 rgba(0, 0, 0, .08);
+            /* 统一卡片阴影 */
+            --transition: .25s ease;
+        }
+
+        /* ===== 2. 全局微调 ===== */
+        body {
+            background: var(--background);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        /* ===== 3. 卡片统一 ===== */
+        .bg-white.rounded-xl.shadow-md,
+        .bg-white.rounded-lg.shadow,
+        .bg-white.rounded-lg.shadow-lg {
+            border-radius: var(--radius) !important;
+            box-shadow: var(--shadow) !important;
+            background: var(--surface);
+            transition: transform var(--transition), box-shadow var(--transition);
+        }
+
+        .bg-white:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px 0 rgba(0, 0, 0, .1) !important;
+        }
+
+        /* ===== 4. 按钮统一 ===== */
+        button {
+            border-radius: calc(var(--radius) / 2);
+            font-weight: 500;
+            transition: background-color var(--transition), transform var(--transition);
+            transform: scale(1);
+        }
+
+        button:hover {
+            transform: scale(1.03);
+        }
+
+        button:active {
+            transform: scale(.98);
+        }
+
+        /* 主按钮 */
+        .bg-blue-500,
+        .bg-blue-600 {
+            background: var(--primary) !important;
+        }
+
+        .bg-blue-500:hover,
+        .bg-blue-600:hover {
+            background: #2563eb !important;
+        }
+
+        /* 成功按钮 */
+        .bg-green-500,
+        .bg-green-600 {
+            background: var(--secondary) !important;
+        }
+
+        .bg-green-500:hover,
+        .bg-green-600:hover {
+            background: #059669 !important;
+        }
+
+        /* 危险按钮 */
+        .bg-red-500,
+        .bg-red-600 {
+            background: var(--danger) !important;
+        }
+
+        .bg-red-500:hover,
+        .bg-red-600:hover {
+            background: #dc2626 !important;
+        }
+
+        /* ===== 5. 表格统一 ===== */
+        table {
+            border-radius: var(--radius);
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f9fafb;
+            color: var(--text-second);
+            font-weight: 600;
+            letter-spacing: .4px;
+        }
+
+        tr:hover {
+            background: #f9fafb !important;
+        }
+
+        td,
+        th {
+            padding: .75rem 1rem !important;
+        }
+
+        /* ===== 6. 进度条/图表容器 ===== */
+        .rounded-full {
+            border-radius: 9999px;
+        }
+
+        .bg-gray-200 {
+            background: #e5e7eb;
+        }
+
+        .bg-blue-600,
+        .bg-green-600,
+        .bg-purple-600 {
+            background: var(--primary) !important;
+        }
+
+        /* 图表区域统一留白 */
+        #historyUsageChart,
+        #cpuUsageGauge,
+        #memoryUsageGauge,
+        #driverTypeChart,
+        #cpuHistoryChart,
+        #memoryHistoryChart,
+        [id^="diskUsageChart-"],
+        [id^="diskPerformanceChart-"] {
+            border-radius: var(--radius);
+            background: var(--surface);
+            padding: .5rem;
+        }
     </style>
 </head>
 
@@ -86,12 +238,13 @@
             </div>
             <nav class="p-2">
                 <ul>
+
                     <li class="mb-1">
                         <button class="w-full text-left px-4 py-3 rounded-lg nav-link active"
-                            data-tab="home">首页</button>
+                            data-tab="snapshot">快照信息</button>
                     </li>
                     <li class="mb-1">
-                        <button class="w-full text-left px-4 py-3 rounded-lg nav-link" data-tab="snapshot">快照信息</button>
+                        <button class="w-full text-left px-4 py-3 rounded-lg nav-link " data-tab="home">性能概览</button>
                     </li>
                     <li class="mb-1">
                         <button class="w-full text-left px-4 py-3 rounded-lg nav-link" data-tab="registry">注册表</button>
@@ -118,10 +271,7 @@
         <!-- 主内容区 -->
         <div class="flex-1 overflow-auto">
             <!-- 首页 -->
-            <!-- 首页 -->
-            <!-- 首页 -->
-            <!-- 首页 -->
-            <div id="home" class="tab-content active p-6">
+            <div id="home" class="tab-content p-6">
                 <h2 class="text-2xl font-bold mb-6 text-gray-800">系统概览</h2>
 
                 <!-- 统计数据卡片网格（一行四列） -->
@@ -332,7 +482,7 @@
             </div>
 
             <!-- 快照信息 -->
-            <div id="snapshot" class="tab-content p-6">
+            <div id="snapshot" class="tab-content active p-6">
                 <h2 class="text-2xl font-bold mb-6 text-gray-800">系统快照信息</h2>
 
                 <!-- 创建系统快照 -->
@@ -4038,21 +4188,6 @@
             <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">变化量</p><p class="text-lg font-semibold ${cpuDiff > 0 ? 'text-red-500' : 'text-green-500'}">${cpuDiff > 0 ? '+' : ''}${cpuDiff.toFixed(2)}%</p></div>
             <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">核心数</p><p class="text-lg font-semibold">${data.cpu?.coreUsageDiffs?.length ?? 0}</p></div>
           </div>
-          <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">核心</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用率1</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用率2</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">变化</th>
-            </tr></thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              ${(data.cpu?.coreUsageDiffs ?? []).map(c => `
-              <tr class="hover:bg-gray-50"><td class="px-4 py-3 text-sm font-medium">核心${c.coreIndex}</td>
-              <td class="px-4 py-3 text-sm">${c.usage1.toFixed(2)}%</td>
-              <td class="px-4 py-3 text-sm">${c.usage2.toFixed(2)}%</td>
-              <td class="px-4 py-3 text-sm ${c.diff > 0 ? 'text-red-500' : 'text-green-500'} font-medium">${c.diff > 0 ? '+' : ''}${c.diff.toFixed(2)}%</td></tr>`).join('')}
-            </tbody></table>
-          </div>
         </div>
       </div>
     </div>`;
@@ -4159,10 +4294,8 @@
             </div>
           </div>
           <!-- 表格容器 -->
-          <div id="procTableContainer" class="rounded-lg border border-gray-200 overflow-hidden">
-              <div class="max-h-[50vh] overflow-y-auto">
+          <div id="procTableContainer" class="rounded-lg border border-gray-200 overflow-hidden" style="max-height:50vh; overflow-y:auto;">
     <!-- 动态表格内容 -->
-  </div>
           </div>
         </div>
       </div>
