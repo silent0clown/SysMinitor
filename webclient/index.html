@@ -3979,37 +3979,43 @@
 
 
         // 显示系统快照对比结果
+        // 完整的 displaySystemComparisonResult 函数（已合并上述改动）
         function displaySystemComparisonResult(data) {
             const content = document.getElementById('systemComparisonContent');
             const resultContainer = document.getElementById('systemComparisonResult');
 
-            /* ---------- 1. 头部卡片：关键指标 ---------- */
+            /* ---------- 0. 快照名称头部卡片 ---------- */
+            const headHtml = `
+    <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl shadow-md p-6 mb-6">
+      <h3 class="text-lg font-bold text-gray-800 mb-2">对比快照</h3>
+      <div class="flex items-center space-x-4">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          ${data.snapshot1}
+        </span>
+        <span class="text-gray-400">VS</span>
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+          <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          ${data.snapshot2}
+        </span>
+      </div>
+    </div>`;
+
+            /* ---------- 1. 关键指标卡片 ---------- */
             const cpuDiff = data.cpu?.totalUsageDiff ?? 0;
             const memDiff = data.memory?.usedPhysicalDiff ?? 0;
             const procAdded = data.processes?.addedCount ?? 0;
             const regMod = data.registry?.totalModifiedKeys ?? 0;
 
-            const headHtml = `
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      <div class="bg-white rounded-xl shadow p-4 flex items-center">
-        <div class="p-3 rounded-full bg-blue-100 mr-4"><svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg></div>
-        <div><p class="text-sm text-gray-500">CPU 变化</p><p class="text-2xl font-bold ${cpuDiff > 0 ? 'text-red-500' : 'text-green-500'}">${cpuDiff > 0 ? '+' : ''}${cpuDiff.toFixed(2)}%</p></div>
-      </div>
-      <div class="bg-white rounded-xl shadow p-4 flex items-center">
-        <div class="p-3 rounded-full bg-green-100 mr-4"><svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg></div>
-        <div><p class="text-sm text-gray-500">内存变化</p><p class="text-2xl font-bold ${memDiff > 0 ? 'text-red-500' : 'text-green-500'}">${memDiff > 0 ? '+' : ''}${formatBytes(Math.abs(memDiff))}</p></div>
-      </div>
-      <div class="bg-white rounded-xl shadow p-4 flex items-center">
-        <div class="p-3 rounded-full bg-purple-100 mr-4"><svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
-        <div><p class="text-sm text-gray-500">新增进程</p><p class="text-2xl font-bold text-green-600">+${procAdded}</p></div>
-      </div>
-      <div class="bg-white rounded-xl shadow p-4 flex items-center">
-        <div class="p-3 rounded-full bg-yellow-100 mr-4"><svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg></div>
-        <div><p class="text-sm text-gray-500">注册表修改</p><p class="text-2xl font-bold text-yellow-600">+${regMod}</p></div>
-      </div>
+            const statHtml = `
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+      <div class="bg-white rounded-xl shadow-md p-6 flex items-center"><div class="p-3 rounded-full bg-blue-100 mr-4"><svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg></div><div><p class="text-sm text-gray-500">CPU 变化</p><p class="text-2xl font-bold ${cpuDiff > 0 ? 'text-red-500' : 'text-green-500'}">${cpuDiff > 0 ? '+' : ''}${cpuDiff.toFixed(2)}%</p></div></div>
+      <div class="bg-white rounded-xl shadow-md p-6 flex items-center"><div class="p-3 rounded-full bg-green-100 mr-4"><svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg></div><div><p class="text-sm text-gray-500">内存变化</p><p class="text-2xl font-bold ${memDiff > 0 ? 'text-red-500' : 'text-green-500'}">${memDiff > 0 ? '+' : ''}${formatBytes(Math.abs(memDiff))}</p></div></div>
+      <div class="bg-white rounded-xl shadow-md p-6 flex items-center"><div class="p-3 rounded-full bg-purple-100 mr-4"><svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div><div><p class="text-sm text-gray-500">新增进程</p><p class="text-2xl font-bold text-green-600">+${procAdded}</p></div></div>
+      <div class="bg-white rounded-xl shadow-md p-6 flex items-center"><div class="p-3 rounded-full bg-yellow-100 mr-4"><svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg></div><div><p class="text-sm text-gray-500">注册表修改</p><p class="text-2xl font-bold text-yellow-600">+${regMod}</p></div></div>
     </div>`;
 
-            /* ---------- 2. 折叠卡片：CPU ---------- */
+            /* ---------- 2. CPU 折叠卡片 ---------- */
             const cpuHtml = `
     <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
       <div class="p-6 cursor-pointer bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all duration-300" onclick="toggleExpand('cpuExpand')">
@@ -4051,7 +4057,7 @@
       </div>
     </div>`;
 
-            /* ---------- 3. 折叠卡片：内存 ---------- */
+            /* ---------- 3. 内存 折叠卡片 ---------- */
             const mem = data.memory ?? {};
             const memHtml = `
     <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
@@ -4078,7 +4084,7 @@
       </div>
     </div>`;
 
-            /* ---------- 4. 折叠卡片：磁盘 ---------- */
+            /* ---------- 4. 磁盘 折叠卡片 ---------- */
             const diskHtml = `
     <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
       <div class="p-6 cursor-pointer bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300" onclick="toggleExpand('diskExpand')">
@@ -4100,7 +4106,7 @@
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">盘符</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">名称</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">文件系统</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">总空间</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">总大小</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">已用空间变化</th>
               <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用率变化</th>
             </tr></thead>
@@ -4120,7 +4126,7 @@
       </div>
     </div>`;
 
-            /* ---------- 5. 折叠卡片：进程 ---------- */
+            /* ---------- 5. 进程 折叠卡片（带切换） ---------- */
             const proc = data.processes ?? {};
             const procHtml = `
     <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
@@ -4138,23 +4144,31 @@
       </div>
       <div id="procExpand" class="expandable-content">
         <div class="p-6 border-t border-gray-100">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
-            <div class="bg-green-50 rounded-lg p-4"><p class="text-sm text-green-600">新增进程</p><p class="text-2xl font-bold text-green-700">${proc.addedCount ?? 0}</p></div>
-            <div class="bg-yellow-50 rounded-lg p-4"><p class="text-sm text-yellow-600">变化进程</p><p class="text-2xl font-bold text-yellow-700">${proc.changedCount ?? 0}</p></div>
-            <div class="bg-red-50 rounded-lg p-4"><p class="text-sm text-red-600">移除进程</p><p class="text-2xl font-bold text-red-700">${proc.removedCount ?? 0}</p></div>
+          <!-- 切换按钮组 -->
+          <div class="flex justify-center mb-4">
+            <div class="inline-flex rounded-md shadow-sm" role="group">
+              <button onclick="switchProcTable('added')" id="btn-added" class="proc-tab-btn px-4 py-2 text-sm font-medium rounded-l-lg border border-green-300 bg-green-50 text-green-700 hover:bg-green-100 focus:z-10 focus:ring-2 focus:ring-green-500">
+                新增进程
+              </button>
+              <button onclick="switchProcTable('changed')" id="btn-changed" class="proc-tab-btn px-4 py-2 text-sm font-medium border-t border-b border-yellow-300 bg-white text-gray-700 hover:bg-yellow-50 focus:z-10 focus:ring-2 focus:ring-yellow-500">
+                变化进程
+              </button>
+              <button onclick="switchProcTable('removed')" id="btn-removed" class="proc-tab-btn px-4 py-2 text-sm font-medium rounded-r-lg border border-red-300 bg-white text-gray-700 hover:bg-red-50 focus:z-10 focus:ring-2 focus:ring-red-500">
+                移除进程
+              </button>
+            </div>
           </div>
-          <div class="space-y-4 max-h-96 overflow-y-auto">
-            ${(proc.added ?? []).slice(0, 20).map(p => `
-            <div class="border rounded-lg p-3 hover:bg-gray-50"><div class="flex justify-between items-center">
-              <div><p class="font-semibold text-gray-800">${p.name}</p><p class="text-xs text-gray-500">PID: ${p.pid}</p></div>
-              <div class="text-right"><p class="text-xs text-gray-500">内存: ${formatBytes(p.memoryUsage ?? 0)}</p></div>
-            </div></div>`).join('')}
+          <!-- 表格容器 -->
+          <div id="procTableContainer" class="rounded-lg border border-gray-200 overflow-hidden">
+              <div class="max-h-[50vh] overflow-y-auto">
+    <!-- 动态表格内容 -->
+  </div>
           </div>
         </div>
       </div>
     </div>`;
 
-            /* ---------- 6. 折叠卡片：注册表 ---------- */
+            /* ---------- 6. 注册表 折叠卡片 ---------- */
             const reg = data.registry ?? {};
             const regHtml = `
     <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
@@ -4208,10 +4222,57 @@
     </div>`;
 
             /* ---------- 7. 组装并注入 ---------- */
-            content.innerHTML = headHtml + cpuHtml + memHtml + diskHtml + procHtml + regHtml;
+            content.innerHTML = headHtml + statHtml + cpuHtml + memHtml + diskHtml + procHtml + regHtml;
             resultContainer.classList.remove('hidden');
 
-            /* ---------- 8. 动画 ---------- */
+            /* ---------- 8. 渲染默认进程表格 & 注册切换函数 ---------- */
+            window.switchProcTable = function (type) {
+                const map = {
+                    added: {
+                        data: proc.added ?? [],
+                        headers: ['进程名', 'PID', '线程数', '内存使用'],
+                        keys: ['name', 'pid', 'threadCount', 'memoryUsage'],
+                        color: 'green'
+                    },
+                    changed: {
+                        data: proc.changed ?? [],
+                        headers: ['进程名', 'PID', '线程数变化', '内存变化'],
+                        keys: ['name', 'pid', 'threadCountDiff', 'memoryUsageDiff'],
+                        color: 'yellow'
+                    },
+                    removed: {
+                        data: proc.removed ?? [],
+                        headers: ['进程名', 'PID'],
+                        keys: ['name', 'pid'],
+                        color: 'red'
+                    }
+                };
+                const cfg = map[type];
+                const tbody = cfg.data.map(p => `<tr class="hover:bg-gray-50">
+      ${cfg.keys.map(k => `<td class="px-4 py-2 text-sm">${k === 'memoryUsage' || k === 'memoryUsageDiff'
+                    ? formatBytes(Math.abs(p[k] ?? 0)) + ' ' + (p[k] < 0 ? '↓' : '↑')
+                    : p[k] ?? ''
+                    }</td>`).join('')}
+    </tr>`).join('') || `<tr><td colspan="${cfg.headers.length}" class="text-center text-gray-500 py-4">无数据</td></tr>`;
+                const table = `<table class="min-w-full divide-y divide-gray-200"><thead class="bg-${cfg.color}-50"><tr>
+      ${cfg.headers.map(h => `<th class="px-4 py-2 text-left text-xs font-medium text-${cfg.color}-700 uppercase">${h}</th>`).join('')}
+    </tr></thead><tbody class="bg-white divide-y divide-gray-200">${tbody}</tbody></table>`;
+                document.getElementById('procTableContainer').innerHTML = table;
+
+                // 按钮状态
+                document.querySelectorAll('.proc-tab-btn').forEach(btn => {
+                    btn.classList.remove('bg-green-50', 'bg-yellow-50', 'bg-red-50', 'text-green-700', 'text-yellow-700', 'text-red-700');
+                    btn.classList.add('bg-white', 'text-gray-700');
+                });
+                const active = document.getElementById('btn-' + type);
+                active.classList.remove('bg-white', 'text-gray-700');
+                active.classList.add(`bg-${cfg.color}-50`, `text-${cfg.color}-700`);
+            };
+
+            // 首次渲染
+            switchProcTable('added');
+
+            /* ---------- 9. 动画 ---------- */
             anime({
                 targets: '.comparison-card',
                 translateY: [20, 0],
@@ -4221,7 +4282,6 @@
                 easing: 'easeOutQuad'
             });
         }
-        // 在 index.html 中添加磁盘分区变化显示函数
         // 优化磁盘分区变化显示函数
         function displayDiskPartitionChanges(data) {
             const contentContainer = document.getElementById('systemComparisonContent');
