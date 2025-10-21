@@ -3593,6 +3593,20 @@
             const nameInput = document.getElementById('snapshotNameInput');
             const snapshotName = nameInput.value.trim() || `snapshot_${new Date().toISOString().replace(/[:.-]/g, '').slice(0, 15)}`;
 
+            // 显示加载状态
+            const createBtn = document.getElementById('createSystemSnapshotBtn');
+            const originalBtnText = createBtn.innerHTML;
+            createBtn.innerHTML = `
+        <div class="flex items-center">
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            创建中...
+        </div>
+    `;
+            createBtn.disabled = true;
+
             fetch(`${API_BASE}/system/snapshot/create`, {
                 method: 'POST',
                 headers: {
@@ -3602,6 +3616,10 @@
             })
                 .then(response => response.json())
                 .then(data => {
+                    // 恢复按钮状态
+                    createBtn.innerHTML = originalBtnText;
+                    createBtn.disabled = false;
+
                     if (data.success) {
                         // 显示成功状态
                         document.getElementById('snapshotNameDisplay').textContent = data.name;
@@ -3622,6 +3640,10 @@
                     }
                 })
                 .catch(err => {
+                    // 恢复按钮状态
+                    createBtn.innerHTML = originalBtnText;
+                    createBtn.disabled = false;
+
                     console.error('创建系统快照失败:', err);
                     alert(`创建系统快照失败: ${err.message}`);
                 });
@@ -4220,25 +4242,25 @@
         }
 
         // 在 index.html 中添加磁盘分区变化显示函数
-    // 优化磁盘分区变化显示函数
-    function displayDiskPartitionChanges(data) {
-        const contentContainer = document.getElementById('systemComparisonContent');
+        // 优化磁盘分区变化显示函数
+        function displayDiskPartitionChanges(data) {
+            const contentContainer = document.getElementById('systemComparisonContent');
 
-        // 如果没有磁盘分区变化数据，则返回
-        if (!data.disk || !data.disk.partitions || !data.disk.partitions.changes || data.disk.partitions.changes.length === 0) {
-            const fragment = document.createDocumentFragment();
-            const div = document.createElement('div');
-            div.className = 'bg-gray-50 rounded-lg p-4 mb-6';
-            div.innerHTML = `
+            // 如果没有磁盘分区变化数据，则返回
+            if (!data.disk || !data.disk.partitions || !data.disk.partitions.changes || data.disk.partitions.changes.length === 0) {
+                const fragment = document.createDocumentFragment();
+                const div = document.createElement('div');
+                div.className = 'bg-gray-50 rounded-lg p-4 mb-6';
+                div.innerHTML = `
             <h4 class="font-semibold text-lg mb-2">磁盘分区变化</h4>
             <p class="text-gray-500">无磁盘分区变化数据</p>
         `;
-            fragment.appendChild(div);
-            contentContainer.appendChild(fragment);
-            return;
-        }
+                fragment.appendChild(div);
+                contentContainer.appendChild(fragment);
+                return;
+            }
 
-        let diskChangesHTML = `
+            let diskChangesHTML = `
         <div class="bg-gray-50 rounded-lg p-4 mb-6">
             <h4 class="font-semibold text-lg mb-2">磁盘分区变化</h4>
             <div class="overflow-x-auto">
@@ -4256,10 +4278,10 @@
                     </thead>
     `;
 
-        // 构建表格内容
-        diskChangesHTML += '<tbody>';
-        data.disk.partitions.changes.forEach(change => {
-            diskChangesHTML += `
+            // 构建表格内容
+            diskChangesHTML += '<tbody>';
+            data.disk.partitions.changes.forEach(change => {
+                diskChangesHTML += `
             <tr>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${change.drive}</td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${change.label || '-'}</td>
@@ -4270,12 +4292,12 @@
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${change.usageChange || '-'}</td>
             </tr>
         `;
-        });
-        diskChangesHTML += '</tbody></table></div></div></div>';
+            });
+            diskChangesHTML += '</tbody></table></div></div></div>';
 
-        // 一次性更新DOM
-        contentContainer.innerHTML += diskChangesHTML;
-    }
+            // 一次性更新DOM
+            contentContainer.innerHTML += diskChangesHTML;
+        }
         // 辅助函数：根据差异值返回相应的CSS类
         function getDiffClass(diffValue) {
             if (diffValue > 0) {
