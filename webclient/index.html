@@ -68,6 +68,12 @@
                 transform: rotate(360deg);
             }
         }
+
+        .expandable-content {
+            overflow: hidden;
+            max-height: 0;
+            transition: max-height 0.3s ease;
+        }
     </style>
 </head>
 
@@ -338,82 +344,72 @@
                         <input type="text" id="snapshotNameInput" placeholder="输入快照名称（可选）"
                             class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <button id="createSystemSnapshotBtn"
-                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
-                            创建快照
+                            class="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors flex items-center">
+                            <span>创建快照</span>
                         </button>
                     </div>
-                    <div id="snapshotStatus" class="mt-4 hidden">
-                        <div class="p-4 rounded-lg bg-green-100 border border-green-300">
-                            <div class="flex items-center">
-                                <svg class="h-5 w-5 text-green-400 mr-2" xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd"
-                                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                        clip-rule="evenodd" />
-                                </svg>
-                                <span id="snapshotNameDisplay"></span>
-                            </div>
-                        </div>
+                    <div id="snapshotStatus" class="hidden mt-4 p-3 rounded-lg">
+                        <p class="text-green-600">快照 "<span id="snapshotNameDisplay"></span>" 创建成功!</p>
                     </div>
                 </div>
 
-                <!-- 快照列表 -->
+                <!-- 系统快照列表 -->
                 <div class="bg-white rounded-lg shadow p-6 mb-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-semibold">快照列表</h3>
-                        <button id="refreshSnapshotBtn"
-                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+                        <h3 class="text-lg font-semibold">系统快照列表（选择两个开始比较）</h3>
+                        <!-- <button id="refreshSnapshotBtn"
+                            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                             刷新
-                        </button>
+                        </button> -->
                     </div>
+
                     <div class="overflow-x-auto">
                         <table class="min-w-full process-table">
                             <thead>
                                 <tr>
+                                    <th class="py-2 px-4 text-left w-1/12">
+                                        <input type="checkbox" id="selectAllCheckbox"
+                                            class="form-checkbox h-4 w-4 text-blue-600">
+                                    </th>
                                     <th class="py-2 px-4 text-left">快照名称</th>
-                                    <th class="py-2 px-4 text-left">时间戳</th>
+                                    <th class="py-2 px-4 text-left">创建时间</th>
                                     <th class="py-2 px-4 text-left">操作</th>
                                 </tr>
                             </thead>
                             <tbody id="systemSnapshotTableBody">
                                 <tr>
-                                    <td colspan="3" class="py-4 text-center text-gray-500">加载中...</td>
+                                    <td colspan="4" class="py-4 text-center text-gray-500">
+                                        加载中...
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- 对比选中快照按钮 -->
+                    <div class="mt-4">
+                        <button id="compareSelectedSnapshotsBtn"
+                            class="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors hidden flex items-center">
+                            <span>开始对比</span>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- 系统快照对比 -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold mb-4">系统快照对比</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">选择快照1</label>
-                            <select id="snapshot1Select"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">请选择快照</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">选择快照2</label>
-                            <select id="snapshot2Select"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">请选择快照</option>
-                            </select>
-                        </div>
+                <!-- 系统快照对比结果 -->
+                <div id="systemComparisonResult" class="bg-white rounded-lg shadow p-6 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">快照对比结果</h3>
+                        <button id="closeComparisonBtn" class="text-gray-500 hover:text-gray-700">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12">
+                                </path>
+                            </svg>
+                        </button>
                     </div>
-                    <button id="compareSystemSnapshotsBtn"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
-                        对比快照
-                    </button>
-
-                    <!-- 对比结果区域 -->
-                    <div id="systemComparisonResult" class="mt-6 hidden">
-                        <h4 class="text-lg font-semibold mb-3">对比结果</h4>
-                        <div id="systemComparisonContent" class="bg-gray-50 rounded-lg p-4">
-                            <!-- 对比结果将在这里显示 -->
-                        </div>
+                    <div id="systemComparisonContent" class="bg-gray-50 rounded-lg p-4">
+                        <!-- 对比结果将在这里显示 -->
                     </div>
                 </div>
             </div>
@@ -979,6 +975,9 @@
 
         // 快照相关变量
         let systemSnapshots = [];
+
+        // 添加新变量来跟踪选中的快照
+        let selectedSnapshots = [];
 
         // 进程排序状态
         let processSort = {
@@ -3447,13 +3446,99 @@
             document.getElementById('createSystemSnapshotBtn').addEventListener('click', createSystemSnapshot);
 
             // 刷新快照列表
-            document.getElementById('refreshSnapshotBtn').addEventListener('click', loadSystemSnapshotData);
+            // document.getElementById('refreshSnapshotBtn').addEventListener('click', loadSystemSnapshotData);
 
-            // 对比快照
-            document.getElementById('compareSystemSnapshotsBtn').addEventListener('click', compareSystemSnapshots);
+            // 全选复选框
+            document.getElementById('selectAllCheckbox').addEventListener('change', function () {
+                const checkboxes = document.querySelectorAll('.snapshot-checkbox');
+                checkboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+                updateSelectedSnapshots();
+            });
+
+            // 对比选中快照
+            document.getElementById('compareSelectedSnapshotsBtn').addEventListener('click', compareSelectedSnapshots);
+
+            // 关闭对比结果
+            document.getElementById('closeComparisonBtn').addEventListener('click', function () {
+                document.getElementById('systemComparisonResult').classList.add('hidden');
+            });
 
             // 页面加载时加载数据
             loadSystemSnapshotData();
+        }
+
+        // 更新选中的快照列表
+        function updateSelectedSnapshots() {
+            selectedSnapshots = [];
+            document.querySelectorAll('.snapshot-checkbox:checked').forEach(checkbox => {
+                selectedSnapshots.push(checkbox.value);
+            });
+
+            const compareBtn = document.getElementById('compareSelectedSnapshotsBtn');
+            if (selectedSnapshots.length === 2) {
+                compareBtn.classList.remove('hidden');
+            } else {
+                compareBtn.classList.add('hidden');
+            }
+        }
+
+
+        // 对比选中的快照
+        function compareSelectedSnapshots() {
+            if (selectedSnapshots.length !== 2) {
+                alert('请选择两个快照进行对比');
+                return;
+            }
+
+            const snapshot1 = selectedSnapshots[0];
+            const snapshot2 = selectedSnapshots[1];
+
+            // 显示加载状态
+            const compareBtn = document.getElementById('compareSelectedSnapshotsBtn');
+            const originalBtnText = compareBtn.innerHTML;
+            compareBtn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        对比中...
+    `;
+            compareBtn.disabled = true;
+
+            fetch(`${API_BASE}/system/snapshot/compare`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    snapshot1,
+                    snapshot2
+                })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    // 恢复按钮状态
+                    compareBtn.innerHTML = originalBtnText;
+                    compareBtn.disabled = false;
+
+                    if (data.error) {
+                        alert(`对比失败: ${data.error}`);
+                        return;
+                    }
+
+                    // 显示对比结果
+                    displaySystemComparisonResult(data);
+                })
+                .catch(err => {
+                    // 恢复按钮状态
+                    compareBtn.innerHTML = originalBtnText;
+                    compareBtn.disabled = false;
+
+                    console.error('快照对比失败:', err);
+                    alert(`快照对比失败: ${err.message}`);
+                });
         }
         // 添加加载状态管理
         function showLoadingIndicator(elementId) {
@@ -3475,42 +3560,67 @@
             }
         }
 
-        // 加载系统快照数据
         function loadSystemSnapshotData() {
-
-            // 显示加载状态
-            showLoadingIndicator('systemSnapshotTableBody');
-
             fetch(`${API_BASE}/system/snapshot/list`)
                 .then(response => response.json())
                 .then(data => {
+                    systemSnapshots = data;
                     const tbody = document.getElementById('systemSnapshotTableBody');
-                    if (data && data.length > 0) {
-                        tbody.innerHTML = data.map(snapshot => `
+
+                    if (data.length === 0) {
+                        tbody.innerHTML = `
                     <tr>
-                        <td class="py-2 px-4 border-b">${snapshot.name}</td>
-                        <td class="py-2 px-4 border-b">${new Date(snapshot.timestamp).toLocaleString()}</td>
-                        <td class="py-2 px-4 border-b">
-                                <button onclick="exportSystemSnapshot('${snapshot.name}')" 
-            class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm mr-2">
-        导出
-    </button>
-                            <button onclick="saveSystemSnapshot('${snapshot.name}')" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm mr-2">保存</button>
-                            <button onclick="deleteSystemSnapshot('${snapshot.name}')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">删除</button>
+                        <td colspan="4" class="py-4 text-center text-gray-500">
+                            暂无快照数据
                         </td>
                     </tr>
-                `).join('');
-
-                        updateSystemSnapshotDropdowns(data);
-                    } else {
-                        tbody.innerHTML = '<tr><td colspan="3" class="py-4 text-center text-gray-500">暂无快照数据</td></tr>';
+                `;
+                        return;
                     }
+
+                    tbody.innerHTML = data.map(snapshot => `
+                <tr class="hover:bg-gray-50">
+                    <td class="py-2 px-4">
+                        <input type="checkbox" class="snapshot-checkbox form-checkbox h-4 w-4 text-blue-600" value="${snapshot.name}">
+                    </td>
+                    <td class="py-2 px-4">${snapshot.name}</td>
+                    <td class="py-2 px-4">${new Date(snapshot.timestamp).toLocaleString()}</td>
+                    <td class="py-2 px-4">
+                        <div class="flex space-x-2">
+                            <button onclick="viewSystemSnapshot('${snapshot.name}')" 
+                                class="text-blue-500 hover:text-blue-700">
+                                查看
+                            </button>
+                            <button onclick="exportSystemSnapshot('${snapshot.name}')" 
+                                class="text-green-500 hover:text-green-700">
+                                导出
+                            </button>
+                            <button onclick="deleteSystemSnapshot('${snapshot.name}')" 
+                                class="text-red-500 hover:text-red-700">
+                                删除
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+
+                    // 为新添加的复选框绑定事件
+                    document.querySelectorAll('.snapshot-checkbox').forEach(checkbox => {
+                        checkbox.addEventListener('change', updateSelectedSnapshots);
+                    });
+
+                    // 重置全选复选框
+                    document.getElementById('selectAllCheckbox').checked = false;
+                    selectedSnapshots = [];
+                    document.getElementById('compareSelectedSnapshotsBtn').classList.add('hidden');
                 })
                 .catch(err => {
-                    console.error('加载快照失败:', err);
+                    console.error('加载快照数据失败:', err);
                     document.getElementById('systemSnapshotTableBody').innerHTML = `
                 <tr>
-                    <td colspan="3" class="py-4 text-center text-red-500">加载失败: ${err.message}</td>
+                    <td colspan="4" class="py-4 text-center text-red-500">
+                        加载失败: ${err.message}
+                    </td>
                 </tr>
             `;
                 });
@@ -3868,379 +3978,249 @@
         }
 
 
-
-        // 替换 displaySystemComparisonResult 函数
         // 显示系统快照对比结果
         function displaySystemComparisonResult(data) {
-            const resultElement = document.getElementById('systemComparisonResult');
-            let contentContainer = document.getElementById('systemComparisonContent');
+            const content = document.getElementById('systemComparisonContent');
+            const resultContainer = document.getElementById('systemComparisonResult');
 
-            // 检查元素是否存在
-            if (!resultElement) {
-                console.error('无法找到 systemComparisonResult 元素');
-                return;
-            }
+            /* ---------- 1. 头部卡片：关键指标 ---------- */
+            const cpuDiff = data.cpu?.totalUsageDiff ?? 0;
+            const memDiff = data.memory?.usedPhysicalDiff ?? 0;
+            const procAdded = data.processes?.addedCount ?? 0;
+            const regMod = data.registry?.totalModifiedKeys ?? 0;
 
-            // 检查元素是否存在
-            if (!contentContainer) {
-                resultElement.innerHTML = `
-            <h4 class="text-lg font-semibold mb-3">对比结果</h4>
-            <div class="bg-gray-50 rounded-lg p-4" id="systemComparisonContent">
-                <!-- 对比结果内容 -->
-            </div>
-        `;
-                contentContainer = document.getElementById('systemComparisonContent');
+            const headHtml = `
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="bg-white rounded-xl shadow p-4 flex items-center">
+        <div class="p-3 rounded-full bg-blue-100 mr-4"><svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg></div>
+        <div><p class="text-sm text-gray-500">CPU 变化</p><p class="text-2xl font-bold ${cpuDiff > 0 ? 'text-red-500' : 'text-green-500'}">${cpuDiff > 0 ? '+' : ''}${cpuDiff.toFixed(2)}%</p></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center">
+        <div class="p-3 rounded-full bg-green-100 mr-4"><svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg></div>
+        <div><p class="text-sm text-gray-500">内存变化</p><p class="text-2xl font-bold ${memDiff > 0 ? 'text-red-500' : 'text-green-500'}">${memDiff > 0 ? '+' : ''}${formatBytes(Math.abs(memDiff))}</p></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center">
+        <div class="p-3 rounded-full bg-purple-100 mr-4"><svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+        <div><p class="text-sm text-gray-500">新增进程</p><p class="text-2xl font-bold text-green-600">+${procAdded}</p></div>
+      </div>
+      <div class="bg-white rounded-xl shadow p-4 flex items-center">
+        <div class="p-3 rounded-full bg-yellow-100 mr-4"><svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg></div>
+        <div><p class="text-sm text-gray-500">注册表修改</p><p class="text-2xl font-bold text-yellow-600">+${regMod}</p></div>
+      </div>
+    </div>`;
 
-                if (!contentContainer) {
-                    console.error('无法创建 systemComparisonContent 元素');
-                    return;
-                }
-            }
-
-            resultElement.classList.remove('hidden');
-
-            // 构建详细对比结果
-            let htmlContent = `
-        <div class="bg-blue-50 rounded-lg p-4 mb-6">
-            <h4 class="font-semibold text-lg mb-2">快照信息</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <p><span class="font-medium">快照1:</span> ${data.snapshot1 || 'N/A'}</p>
-                </div>
-                <div>
-                    <p><span class="font-medium">快照2:</span> ${data.snapshot2 || 'N/A'}</p>
-                </div>
-            </div>
+            /* ---------- 2. 折叠卡片：CPU ---------- */
+            const cpuHtml = `
+    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+      <div class="p-6 cursor-pointer bg-gradient-to-r from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 transition-all duration-300" onclick="toggleExpand('cpuExpand')">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+              <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"/></svg>
+              CPU 对比分析
+            </h2>
+            <p class="text-gray-600 mt-1">总使用率变化：<span class="font-semibold ${cpuDiff > 0 ? 'text-red-500' : 'text-green-500'}">${cpuDiff > 0 ? '+' : ''}${cpuDiff.toFixed(2)}%</span></p>
+          </div>
+          <svg class="w-5 h-5 transform transition-transform" id="cpuExpandIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
         </div>
-    `;
-
-            // CPU信息变化
-            htmlContent += `
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="border-b p-4">
-                <h5 class="font-semibold text-lg flex items-center">
-                    <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path>
-                    </svg>
-                    CPU信息变化
-                </h5>
-            </div>
-            <div class="p-4">
-    `;
-
-            if (data.cpu && data.cpu.coreUsageDiffs && Array.isArray(data.cpu.coreUsageDiffs)) {
-                htmlContent += `
-                <div class="mb-4">
-                    <h6 class="font-medium mb-2">核心使用率变化</h6>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        `;
-
-                data.cpu.coreUsageDiffs.forEach(core => {
-                    const diffClass = core.diff > 0 ? 'text-red-500' : core.diff < 0 ? 'text-green-500' : 'text-gray-500';
-                    htmlContent += `
-                <div class="bg-gray-50 p-3 rounded">
-                    <div class="flex justify-between">
-                        <span class="font-medium">核心 ${core.coreIndex}</span>
-                        <span class="${diffClass}">${core.diff !== undefined ? (core.diff > 0 ? '+' : '') + core.diff.toFixed(2) : 'N/A'}%</span>
-                    </div>
-                    <div class="mt-1 text-sm">
-                        <span class="inline-block w-24">快照1:</span>
-                        <span>${core.usage1 !== undefined ? core.usage1.toFixed(2) : 'N/A'}%</span>
-                    </div>
-                    <div class="text-sm">
-                        <span class="inline-block w-24">快照2:</span>
-                        <span>${core.usage2 !== undefined ? core.usage2.toFixed(2) : 'N/A'}%</span>
-                    </div>
-                </div>
-            `;
-                });
-
-                htmlContent += `
-                    </div>
-                </div>
-        `;
-
-                if (data.cpu.totalUsageDiff !== undefined) {
-                    const totalDiffClass = data.cpu.totalUsageDiff > 0 ? 'text-red-500' : data.cpu.totalUsageDiff < 0 ? 'text-green-500' : 'text-gray-500';
-                    htmlContent += `
-                <div class="border-t pt-4">
-                    <div class="flex justify-between items-center">
-                        <span class="font-medium">总体CPU使用率变化:</span>
-                        <span class="${totalDiffClass}">${data.cpu.totalUsageDiff > 0 ? '+' : ''}${data.cpu.totalUsageDiff.toFixed(2)}%</span>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
-                        <div>
-                            <span class="inline-block w-24">快照1:</span>
-                            <span>${data.cpu.totalUsage1 !== undefined ? data.cpu.totalUsage1.toFixed(2) : 'N/A'}%</span>
-                        </div>
-                        <div>
-                            <span class="inline-block w-24">快照2:</span>
-                            <span>${data.cpu.totalUsage2 !== undefined ? data.cpu.totalUsage2.toFixed(2) : 'N/A'}%</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-                }
-            } else {
-                htmlContent += '<p class="text-gray-500 text-center">无CPU变化数据</p>';
-            }
-
-            htmlContent += `
-            </div>
+      </div>
+      <div id="cpuExpand" class="expandable-content">
+        <div class="p-6 border-t border-gray-100">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">快照1总使用率</p><p class="text-lg font-semibold">${(data.cpu?.totalUsage1 ?? 0).toFixed(2)}%</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">快照2总使用率</p><p class="text-lg font-semibold">${(data.cpu?.totalUsage2 ?? 0).toFixed(2)}%</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">变化量</p><p class="text-lg font-semibold ${cpuDiff > 0 ? 'text-red-500' : 'text-green-500'}">${cpuDiff > 0 ? '+' : ''}${cpuDiff.toFixed(2)}%</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">核心数</p><p class="text-lg font-semibold">${data.cpu?.coreUsageDiffs?.length ?? 0}</p></div>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">核心</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用率1</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用率2</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">变化</th>
+            </tr></thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${(data.cpu?.coreUsageDiffs ?? []).map(c => `
+              <tr class="hover:bg-gray-50"><td class="px-4 py-3 text-sm font-medium">核心${c.coreIndex}</td>
+              <td class="px-4 py-3 text-sm">${c.usage1.toFixed(2)}%</td>
+              <td class="px-4 py-3 text-sm">${c.usage2.toFixed(2)}%</td>
+              <td class="px-4 py-3 text-sm ${c.diff > 0 ? 'text-red-500' : 'text-green-500'} font-medium">${c.diff > 0 ? '+' : ''}${c.diff.toFixed(2)}%</td></tr>`).join('')}
+            </tbody></table>
+          </div>
         </div>
-    `;
+      </div>
+    </div>`;
 
-            // 内存信息变化
-            if (data.memory) {
-                const memoryDiffClass = data.memory.usedPercentDiff > 0 ? 'text-red-500' : data.memory.usedPercentDiff < 0 ? 'text-green-500' : 'text-gray-500';
-                htmlContent += `
-            <div class="bg-white rounded-lg shadow mb-6">
-                <div class="border-b p-4">
-                    <h5 class="font-semibold text-lg flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path>
-                        </svg>
-                        内存信息变化
-                    </h5>
-                </div>
-                <div class="p-4">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div class="bg-gray-50 p-3 rounded">
-                            <div class="font-medium mb-2">内存总量</div>
-                                <div class="text-2xl">
-                                    ${data.memory.totalPhysical1 !== undefined ? (data.memory.totalPhysical1 / (1024 * 1024 * 1024)).toFixed(2) : 'N/A'} GB
-                                </div>
-                            <div class="font-medium mb-2">使用率变化</div>
-                            <div class="text-2xl ${memoryDiffClass}">
-                                ${data.memory.usedPercentDiff !== undefined ? (data.memory.usedPercentDiff > 0 ? '+' : '') + data.memory.usedPercentDiff.toFixed(2) : 'N/A'}%
-                            </div>
-                            <div class="text-sm mt-1">
-                                <div>
-                                    <span class="inline-block w-20">快照1:</span>
-                                    <span>${data.memory.usedPercent1 !== undefined ? data.memory.usedPercent1.toFixed(2) : 'N/A'}%</span>
-                                </div>
-                                <div>
-                                    <span class="inline-block w-20">快照2:</span>
-                                    <span>${data.memory.usedPercent2 !== undefined ? data.memory.usedPercent2.toFixed(2) : 'N/A'}%</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded">
-                            <div class="font-medium mb-2">可用物理内存</div>
-                            <div class="text-2xl">
-                                ${data.memory.availablePhysicalDiff !== undefined ? (data.memory.availablePhysicalDiff / (1024 * 1024)).toFixed(2) : 'N/A'} MB
-                            </div>
-                            <div class="text-sm mt-1">
-                                <div>
-                                    <span class="inline-block w-20">快照1:</span>
-                                    <span>${data.memory.availablePhysical1 !== undefined ? (data.memory.availablePhysical1 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
-                                </div>
-                                <div>
-                                    <span class="inline-block w-20">快照2:</span>
-                                    <span>${data.memory.availablePhysical2 !== undefined ? (data.memory.availablePhysical2 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 p-3 rounded">
-                            <div class="font-medium mb-2">已用物理内存</div>
-                            <div class="text-2xl">
-                                ${data.memory.usedPhysicalDiff !== undefined ? (data.memory.usedPhysicalDiff / (1024 * 1024)).toFixed(2) : 'N/A'} MB
-                            </div>
-                            <div class="text-sm mt-1">
-                                <div>
-                                    <span class="inline-block w-20">快照1:</span>
-                                    <span>${data.memory.usedPhysical1 !== undefined ? (data.memory.usedPhysical1 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
-                                </div>
-                                <div>
-                                    <span class="inline-block w-20">快照2:</span>
-                                    <span>${data.memory.usedPhysical2 !== undefined ? (data.memory.usedPhysical2 / (1024 * 1024)).toFixed(2) : 'N/A'} MB</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-            }
+            /* ---------- 3. 折叠卡片：内存 ---------- */
+            const mem = data.memory ?? {};
+            const memHtml = `
+    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+      <div class="p-6 cursor-pointer bg-gradient-to-r from-green-50 to-green-100 hover:from-green-100 hover:to-green-200 transition-all duration-300" onclick="toggleExpand('memExpand')">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+              <svg class="w-6 h-6 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+              内存 对比分析
+            </h2>
+            <p class="text-gray-600 mt-1">可用内存变化：<span class="font-semibold ${mem.availablePhysicalDiff > 0 ? 'text-green-500' : 'text-red-500'}">${mem.availablePhysicalDiff > 0 ? '+' : ''}${formatBytes(Math.abs(mem.availablePhysicalDiff))}</span></p>
+          </div>
+          <svg class="w-5 h-5 transform transition-transform" id="memExpandIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </div>
+      <div id="memExpand" class="expandable-content">
+        <div class="p-6 border-t border-gray-100">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">总物理内存</p><p class="text-xl font-semibold">${formatBytes(mem.totalPhysical1 ?? 0)}</p><p class="text-sm text-gray-500 mt-1">无变化</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">可用内存变化</p><p class="text-xl font-semibold ${mem.availablePhysicalDiff > 0 ? 'text-green-500' : 'text-red-500'}">${mem.availablePhysicalDiff > 0 ? '+' : ''}${formatBytes(Math.abs(mem.availablePhysicalDiff))}</p><p class="text-sm text-gray-500 mt-1">${formatBytes(mem.availablePhysical1 ?? 0)} → ${formatBytes(mem.availablePhysical2 ?? 0)}</p></div>
+            <div class="bg-gray-50 rounded-lg p-4"><p class="text-sm text-gray-500">使用率变化</p><p class="text-xl font-semibold ${mem.usedPercentDiff > 0 ? 'text-red-500' : 'text-green-500'}">${mem.usedPercentDiff > 0 ? '+' : ''}${(mem.usedPercentDiff ?? 0).toFixed(2)}%</p><p class="text-sm text-gray-500 mt-1">${(mem.usedPercent1 ?? 0).toFixed(1)}% → ${(mem.usedPercent2 ?? 0).toFixed(1)}%</p></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 
+            /* ---------- 4. 折叠卡片：磁盘 ---------- */
+            const diskHtml = `
+    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+      <div class="p-6 cursor-pointer bg-gradient-to-r from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 transition-all duration-300" onclick="toggleExpand('diskExpand')">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+              <svg class="w-6 h-6 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01"/></svg>
+              磁盘 对比分析
+            </h2>
+            <p class="text-gray-600 mt-1">分区变化概览</p>
+          </div>
+          <svg class="w-5 h-5 transform transition-transform" id="diskExpandIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </div>
+      <div id="diskExpand" class="expandable-content">
+        <div class="p-6 border-t border-gray-100">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">盘符</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">名称</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">文件系统</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">总空间</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">已用空间变化</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">使用率变化</th>
+            </tr></thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${(data.disk?.partitions?.changes ?? []).map(p => `
+              <tr class="hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm font-medium">${p.driveLetter}</td>
+                <td class="px-4 py-3 text-sm">${p.label}</td>
+                <td class="px-4 py-3 text-sm">${p.fileSystem}</td>
+                <td class="px-4 py-3 text-sm">${formatBytes(p.totalSize1)}</td>
+                <td class="px-4 py-3 text-sm ${p.usedSpaceDiff > 0 ? 'text-red-500' : 'text-green-500'} font-medium">${p.usedSpaceDiff > 0 ? '+' : ''}${formatBytes(Math.abs(p.usedSpaceDiff))}</td>
+                <td class="px-4 py-3 text-sm ${p.usagePercentageDiff > 0 ? 'text-red-500' : 'text-green-500'} font-medium">${p.usagePercentageDiff > 0 ? '+' : ''}${p.usagePercentageDiff.toFixed(3)}%</td>
+              </tr>`).join('')}
+            </tbody></table>
+          </div>
+        </div>
+      </div>
+    </div>`;
 
-            // 进程信息变化
-            if (data.processes) {
-                htmlContent += `
-            <div class="bg-white rounded-lg shadow mb-6">
-                <div class="border-b p-4">
-                    <h5 class="font-semibold text-lg flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
-                        进程信息变化
-                    </h5>
-                </div>
-                <div class="p-4">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-        `;
+            /* ---------- 5. 折叠卡片：进程 ---------- */
+            const proc = data.processes ?? {};
+            const procHtml = `
+    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+      <div class="p-6 cursor-pointer bg-gradient-to-r from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 transition-all duration-300" onclick="toggleExpand('procExpand')">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+              <svg class="w-6 h-6 mr-2 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              进程 对比分析
+            </h2>
+            <p class="text-gray-600 mt-1">新增 <span class="font-semibold text-green-600">${proc.addedCount ?? 0}</span> · 变化 <span class="font-semibold text-yellow-600">${proc.changedCount ?? 0}</span> · 移除 <span class="font-semibold text-red-600">${proc.removedCount ?? 0}</span></p>
+          </div>
+          <svg class="w-5 h-5 transform transition-transform" id="procExpandIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </div>
+      <div id="procExpand" class="expandable-content">
+        <div class="p-6 border-t border-gray-100">
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-4">
+            <div class="bg-green-50 rounded-lg p-4"><p class="text-sm text-green-600">新增进程</p><p class="text-2xl font-bold text-green-700">${proc.addedCount ?? 0}</p></div>
+            <div class="bg-yellow-50 rounded-lg p-4"><p class="text-sm text-yellow-600">变化进程</p><p class="text-2xl font-bold text-yellow-700">${proc.changedCount ?? 0}</p></div>
+            <div class="bg-red-50 rounded-lg p-4"><p class="text-sm text-red-600">移除进程</p><p class="text-2xl font-bold text-red-700">${proc.removedCount ?? 0}</p></div>
+          </div>
+          <div class="space-y-4 max-h-96 overflow-y-auto">
+            ${(proc.added ?? []).slice(0, 20).map(p => `
+            <div class="border rounded-lg p-3 hover:bg-gray-50"><div class="flex justify-between items-center">
+              <div><p class="font-semibold text-gray-800">${p.name}</p><p class="text-xs text-gray-500">PID: ${p.pid}</p></div>
+              <div class="text-right"><p class="text-xs text-gray-500">内存: ${formatBytes(p.memoryUsage ?? 0)}</p></div>
+            </div></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>`;
 
-                // 新增进程统计
-                htmlContent += `
-            <div class="bg-blue-50 p-3 rounded">
-                <div class="font-medium mb-1">新增进程</div>
-                <div class="text-2xl">${data.processes.added && Array.isArray(data.processes.added) ? data.processes.added.length : 0}</div>
-            </div>
-        `;
+            /* ---------- 6. 折叠卡片：注册表 ---------- */
+            const reg = data.registry ?? {};
+            const regHtml = `
+    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
+      <div class="p-6 cursor-pointer bg-gradient-to-r from-pink-50 to-pink-100 hover:from-pink-100 hover:to-pink-200 transition-all duration-300" onclick="toggleExpand('regExpand')">
+        <div class="flex justify-between items-center">
+          <div>
+            <h2 class="text-xl font-bold text-gray-800 flex items-center">
+              <svg class="w-6 h-6 mr-2 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"/></svg>
+              注册表 对比分析
+            </h2>
+            <p class="text-gray-600 mt-1">共对比 <span class="font-semibold">${reg.totalComparedFiles ?? 0}</span> 个文件 · 修改 <span class="font-semibold text-yellow-600">${reg.totalModifiedKeys ?? 0}</span> 项</p>
+          </div>
+          <svg class="w-5 h-5 transform transition-transform" id="regExpandIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </div>
+      </div>
+      <div id="regExpand" class="expandable-content">
+        <div class="p-6 border-t border-gray-100">
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+            <div class="bg-blue-50 rounded-lg p-3 text-center"><p class="text-sm text-blue-600">对比文件</p><p class="text-lg font-bold text-blue-700">${reg.totalComparedFiles ?? 0}</p></div>
+            <div class="bg-green-50 rounded-lg p-3 text-center"><p class="text-sm text-green-600">新增键</p><p class="text-lg font-bold text-green-700">${reg.totalAddedKeys ?? 0}</p></div>
+            <div class="bg-red-50 rounded-lg p-3 text-center"><p class="text-sm text-red-600">删除键</p><p class="text-lg font-bold text-red-700">${reg.totalRemovedKeys ?? 0}</p></div>
+            <div class="bg-yellow-50 rounded-lg p-3 text-center"><p class="text-sm text-yellow-600">修改键</p><p class="text-lg font-bold text-yellow-700">${reg.totalModifiedKeys ?? 0}</p></div>
+            <div class="bg-purple-50 rounded-lg p-3 text-center"><p class="text-sm text-purple-600">独有文件</p><p class="text-lg font-bold text-purple-700">${(reg.filesOnlyInFolder1?.length ?? 0) + (reg.filesOnlyInFolder2?.length ?? 0)}</p></div>
+          </div>
+          <div class="overflow-x-auto mb-4">
+            <table class="min-w-full divide-y divide-gray-200"><thead class="bg-gray-50"><tr>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">文件前缀</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">新增键</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">删除键</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">修改键</th>
+              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">状态</th>
+            </tr></thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              ${(reg.comparedFiles ?? []).map(f => `
+              <tr class="${f.modifiedKeys > 0 ? 'bg-yellow-50' : ''} hover:bg-gray-50">
+                <td class="px-4 py-3 text-sm font-medium">${f.prefix}</td>
+                <td class="px-4 py-3 text-sm">${f.addedKeys}</td>
+                <td class="px-4 py-3 text-sm">${f.removedKeys}</td>
+                <td class="px-4 py-3 text-sm ${f.modifiedKeys > 0 ? 'text-yellow-600 font-medium' : ''}">${f.modifiedKeys}</td>
+                <td class="px-4 py-3 text-sm"><span class="px-2 py-1 text-xs rounded-full ${f.modifiedKeys > 0 ? 'bg-yellow-100 text-yellow-800' : f.addedKeys > 0 ? 'bg-green-100 text-green-800' : f.removedKeys > 0 ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}">${f.modifiedKeys > 0 ? '有修改' : f.addedKeys > 0 ? '有新增' : f.removedKeys > 0 ? '有删除' : '无变化'}</span></td>
+              </tr>`).join('')}
+            </tbody></table>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-green-50 rounded-lg p-3"><h4 class="font-medium text-green-700 mb-1">新增键详情</h4><ul class="text-sm space-y-1">${(reg.comparedFiles ?? []).flatMap(f => f.addedKeysDetails ?? []).map(k => `<li>${k}</li>`).join('') || '<li class="text-gray-500">无新增键</li>'}</ul></div>
+            <div class="bg-red-50 rounded-lg p-3"><h4 class="font-medium text-red-700 mb-1">删除键详情</h4><ul class="text-sm space-y-1">${(reg.comparedFiles ?? []).flatMap(f => f.removedKeysDetails ?? []).map(k => `<li>${k}</li>`).join('') || '<li class="text-gray-500">无删除键</li>'}</ul></div>
+            <div class="bg-yellow-50 rounded-lg p-3"><h4 class="font-medium text-yellow-700 mb-1">修改键详情</h4><ul class="text-sm space-y-1 max-h-40 overflow-y-auto">${(reg.comparedFiles ?? []).flatMap(f => f.modifiedKeysDetails ?? []).map(k => `<li>${k}</li>`).join('') || '<li class="text-gray-500">无修改键</li>'}</ul></div>
+          </div>
+        </div>
+      </div>
+    </div>`;
 
-                // 移除进程统计
-                htmlContent += `
-            <div class="bg-red-50 p-3 rounded">
-                <div class="font-medium mb-1">移除进程</div>
-                <div class="text-2xl">${data.processes.removed && Array.isArray(data.processes.removed) ? data.processes.removed.length : 0}</div>
-            </div>
-        `;
+            /* ---------- 7. 组装并注入 ---------- */
+            content.innerHTML = headHtml + cpuHtml + memHtml + diskHtml + procHtml + regHtml;
+            resultContainer.classList.remove('hidden');
 
-                // 修改进程统计
-                htmlContent += `
-            <div class="bg-yellow-50 p-3 rounded">
-                <div class="font-medium mb-1">修改进程</div>
-                <div class="text-2xl">${data.processes.modified && Array.isArray(data.processes.modified) ? data.processes.modified.length : 0}</div>
-            </div>
-        `;
-
-                htmlContent += `
-                    </div>
-        `;
-
-                // 显示修改的进程详情（只显示前5个）
-                if (data.processes.modified && Array.isArray(data.processes.modified) && data.processes.modified.length > 0) {
-                    htmlContent += `
-                <div class="mt-4">
-                    <h6 class="font-medium mb-2">主要进程变化</h6>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">进程名</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PID</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPU变化</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">内存变化</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-            `;
-
-                    data.processes.modified.slice(0, 5).forEach(process => {
-                        const cpuDiffClass = process.cpuUsageDiff > 0 ? 'text-red-500' : process.cpuUsageDiff < 0 ? 'text-green-500' : 'text-gray-500';
-                        const memDiffClass = process.memoryUsageDiff > 0 ? 'text-red-500' : process.memoryUsageDiff < 0 ? 'text-green-500' : 'text-gray-500';
-
-                        htmlContent += `
-                    <tr>
-                        <td class="px-4 py-3 whitespace-nowrap">
-                            <div class="font-medium">${process.name || 'N/A'}</div>
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap">${process.pid || 'N/A'}</td>
-                        <td class="px-4 py-3 whitespace-nowrap ${cpuDiffClass}">
-                            ${process.cpuUsageDiff !== undefined ? (process.cpuUsageDiff > 0 ? '+' : '') + process.cpuUsageDiff.toFixed(2) : 'N/A'}%
-                        </td>
-                        <td class="px-4 py-3 whitespace-nowrap ${memDiffClass}">
-                            ${process.memoryUsageDiff !== undefined ? (process.memoryUsageDiff / (1024 * 1024)).toFixed(2) : 'N/A'} MB
-                        </td>
-                    </tr>
-                `;
-                    });
-
-                    htmlContent += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-                }
-
-                htmlContent += `
-                </div>
-            </div>
-        `;
-            }
-
-            // 驱动信息变化
-            if (data.drivers) {
-                htmlContent += `
-            <div class="bg-white rounded-lg shadow mb-6">
-                <div class="border-b p-4">
-                    <h5 class="font-semibold text-lg flex items-center">
-                        <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-                        </svg>
-                        驱动信息变化
-                    </h5>
-                </div>
-                <div class="p-4">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-        `;
-
-                // 运行中驱动变化
-                htmlContent += `
-            <div class="bg-gray-50 p-3 rounded">
-                <div class="font-medium mb-1">运行中驱动</div>
-                <div class="text-2xl">${data.drivers.runningCountDiff !== undefined ? (data.drivers.runningCountDiff > 0 ? '+' : '') + data.drivers.runningCountDiff : 'N/A'}</div>
-                <div class="text-sm mt-1">
-                    <div>
-                        <span class="inline-block w-16">快照1:</span>
-                        <span>${data.drivers.runningCount1 !== undefined ? data.drivers.runningCount1 : 'N/A'}</span>
-                    </div>
-                    <div>
-                        <span class="inline-block w-16">快照2:</span>
-                        <span>${data.drivers.runningCount2 !== undefined ? data.drivers.runningCount2 : 'N/A'}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-
-                // 停止驱动变化
-                htmlContent += `
-            <div class="bg-gray-50 p-3 rounded">
-                <div class="font-medium mb-1">停止驱动</div>
-                <div class="text-2xl">${data.drivers.stoppedCountDiff !== undefined ? (data.drivers.stoppedCountDiff > 0 ? '+' : '') + data.drivers.stoppedCountDiff : 'N/A'}</div>
-                <div class="text-sm mt-1">
-                    <div>
-                        <span class="inline-block w-16">快照1:</span>
-                        <span>${data.drivers.stoppedCount1 !== undefined ? data.drivers.stoppedCount1 : 'N/A'}</span>
-                    </div>
-                    <div>
-                        <span class="inline-block w-16">快照2:</span>
-                        <span>${data.drivers.stoppedCount2 !== undefined ? data.drivers.stoppedCount2 : 'N/A'}</span>
-                    </div>
-                </div>
-            </div>
-        `;
-
-                // 新增驱动
-                htmlContent += `
-            <div class="bg-blue-50 p-3 rounded">
-                <div class="font-medium mb-1">新增驱动</div>
-                <div class="text-2xl">${data.drivers.runningDrivers && data.drivers.runningDrivers.addedCount !== undefined ? data.drivers.runningDrivers.addedCount : 'N/A'}</div>
-            </div>
-        `;
-
-                // 移除驱动
-                htmlContent += `
-            <div class="bg-red-50 p-3 rounded">
-                <div class="font-medium mb-1">移除驱动</div>
-                <div class="text-2xl">${data.drivers.runningDrivers && data.drivers.runningDrivers.removedCount !== undefined ? data.drivers.runningDrivers.removedCount : 'N/A'}</div>
-            </div>
-        `;
-
-                htmlContent += `
-                    </div>
-                </div>
-            </div>
-        `;
-            }
-
-            contentContainer.innerHTML = htmlContent;
-
-            // 显示磁盘分区变化
-            displayDiskPartitionChanges(data);
+            /* ---------- 8. 动画 ---------- */
+            anime({
+                targets: '.comparison-card',
+                translateY: [20, 0],
+                opacity: [0, 1],
+                delay: anime.stagger(100),
+                duration: 800,
+                easing: 'easeOutQuad'
+            });
         }
-
         // 在 index.html 中添加磁盘分区变化显示函数
         // 优化磁盘分区变化显示函数
         function displayDiskPartitionChanges(data) {
@@ -4340,6 +4320,21 @@
             const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function toggleExpand(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById(id + 'Icon');
+            if (!content || !icon) return;
+
+            const isOpen = content.style.maxHeight && content.style.maxHeight !== '0px';
+            if (isOpen) {
+                content.style.maxHeight = '0px';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.maxHeight = content.scrollHeight + 'px';
+                icon.style.transform = 'rotate(180deg)';
+            }
         }
 
         // 窗口大小改变时重绘图表
