@@ -44,23 +44,23 @@ struct SystemSnapshot {
         out["disk"]["drives"] = json::array();
         for (const auto& d : disk.drives) {
             json jd;
-            jd["model"] = d.model;
-            jd["serialNumber"] = d.serialNumber;
-            jd["interfaceType"] = d.interfaceType;
-            jd["mediaType"] = d.mediaType;
+            jd["model"] = util::EncodingUtil::ToUTF8(d.model);
+            jd["serialNumber"] = util::EncodingUtil::ToUTF8(d.serialNumber);
+            jd["interfaceType"] = util::EncodingUtil::ToUTF8(d.interfaceType);
+            jd["mediaType"] = util::EncodingUtil::ToUTF8(d.mediaType);
             jd["totalSize"] = d.totalSize;
             jd["bytesPerSector"] = d.bytesPerSector;
-            jd["status"] = d.status;
-            jd["deviceId"] = d.deviceId;
+            jd["status"] = util::EncodingUtil::ToUTF8(d.status);
+            jd["deviceId"] = util::EncodingUtil::ToUTF8(d.deviceId);
             out["disk"]["drives"].push_back(jd);
         }
 
         out["disk"]["partitions"] = json::array();
         for (const auto& p : disk.partitions) {
             json jp;
-            jp["driveLetter"] = p.driveLetter;
-            jp["label"] = p.label;
-            jp["fileSystem"] = p.fileSystem;
+            jp["driveLetter"] = util::EncodingUtil::ToUTF8(p.driveLetter);
+            jp["label"] = util::EncodingUtil::ToUTF8(p.label);
+            jp["fileSystem"] = util::EncodingUtil::ToUTF8(p.fileSystem);
             jp["totalSize"] = p.totalSize;
             jp["freeSpace"] = p.freeSpace;
             jp["usedSpace"] = p.usedSpace;
@@ -72,7 +72,7 @@ struct SystemSnapshot {
         out["disk"]["performance"] = json::array();
         for (const auto& perf : disk.performance) {
             json jperf;
-            jperf["driveLetter"] = perf.driveLetter;
+            jperf["driveLetter"] = util::EncodingUtil::ToUTF8(perf.driveLetter);
             jperf["readSpeed"] = perf.readSpeed;
             jperf["writeSpeed"] = perf.writeSpeed;
             jperf["readBytesPerSec"] = perf.readBytesPerSec;
@@ -88,7 +88,7 @@ struct SystemSnapshot {
         out["disk"]["smart"] = json::array();
         for (const auto& s : disk.smartData) {
             json js;
-            js["deviceId"] = s.deviceId;
+            js["deviceId"] = util::EncodingUtil::ToUTF8(s.deviceId);
             js["temperature"] = s.temperature;
             js["healthStatus"] = s.healthStatus;
             js["powerOnHours"] = s.powerOnHours;
@@ -96,7 +96,7 @@ struct SystemSnapshot {
             js["badSectors"] = s.badSectors;
             js["readErrorCount"] = s.readErrorCount;
             js["writeErrorCount"] = s.writeErrorCount;
-            js["overallHealth"] = s.overallHealth;
+            js["overallHealth"] = util::EncodingUtil::ToUTF8(s.overallHealth);
             out["disk"]["smart"].push_back(js);
         }
 
@@ -109,29 +109,29 @@ struct SystemSnapshot {
         out["driver"]["runningDrivers"] = json::array();
         for (const auto& det : driver.runningDrivers) {
             json jd;
-            jd["name"] = det.name;
-            jd["displayName"] = det.displayName;
-            jd["description"] = det.description;
-            jd["state"] = det.state;
-            jd["startType"] = det.startType;
-            jd["binaryPath"] = det.binaryPath;
-            jd["serviceType"] = det.serviceType;
-            jd["errorControl"] = det.errorControl;
-            jd["account"] = det.account;
-            jd["group"] = det.group;
+            jd["name"] = util::EncodingUtil::ToUTF8(det.name);
+            jd["displayName"] = util::EncodingUtil::ToUTF8(det.displayName);
+            jd["description"] = util::EncodingUtil::ToUTF8(det.description);
+            jd["state"] = util::EncodingUtil::ToUTF8(det.state);
+            jd["startType"] = util::EncodingUtil::ToUTF8(det.startType);
+            jd["binaryPath"] = util::EncodingUtil::ToUTF8(det.binaryPath);
+            jd["serviceType"] = util::EncodingUtil::ToUTF8(det.serviceType);
+            jd["errorControl"] = util::EncodingUtil::ToUTF8(det.errorControl);
+            jd["account"] = util::EncodingUtil::ToUTF8(det.account);
+            jd["group"] = util::EncodingUtil::ToUTF8(det.group);
             jd["tagId"] = det.tagId;
-            jd["driverType"] = det.driverType;
-            jd["hardwareClass"] = det.hardwareClass;
+            jd["driverType"] = util::EncodingUtil::ToUTF8(det.driverType);
+            jd["hardwareClass"] = util::EncodingUtil::ToUTF8(det.hardwareClass);
             jd["pid"] = det.pid;
             jd["exitCode"] = det.exitCode;
             jd["win32ExitCode"] = det.win32ExitCode;
             jd["serviceSpecificExitCode"] = det.serviceSpecificExitCode;
-            jd["version"]["fileVersion"] = det.version.fileVersion;
-            jd["version"]["productVersion"] = det.version.productVersion;
-            jd["version"]["companyName"] = det.version.companyName;
-            jd["version"]["fileDescription"] = det.version.fileDescription;
-            jd["version"]["legalCopyright"] = det.version.legalCopyright;
-            jd["version"]["originalFilename"] = det.version.originalFilename;
+            jd["version"]["fileVersion"] = util::EncodingUtil::ToUTF8(det.version.fileVersion);
+            jd["version"]["productVersion"] = util::EncodingUtil::ToUTF8(det.version.productVersion);
+            jd["version"]["companyName"] = util::EncodingUtil::ToUTF8(det.version.companyName);
+            jd["version"]["fileDescription"] = util::EncodingUtil::ToUTF8(det.version.fileDescription);
+            jd["version"]["legalCopyright"] = util::EncodingUtil::ToUTF8(det.version.legalCopyright);
+            jd["version"]["originalFilename"] = util::EncodingUtil::ToUTF8(det.version.originalFilename);
 
             try {
                 auto t = std::chrono::system_clock::to_time_t(det.installTime);
@@ -146,10 +146,10 @@ struct SystemSnapshot {
             out["driver"][key] = json::array();
             for (const auto& det : list) {
                 json jd;
-                jd["name"] = det.name;
-                jd["displayName"] = det.displayName;
-                jd["state"] = det.state;
-                jd["binaryPath"] = det.binaryPath;
+                jd["name"] = util::EncodingUtil::ToUTF8(det.name);
+                jd["displayName"] = util::EncodingUtil::ToUTF8(det.displayName);
+                jd["state"] = util::EncodingUtil::ToUTF8(det.state);
+                jd["binaryPath"] = util::EncodingUtil::ToUTF8(det.binaryPath);
                 out["driver"][key].push_back(jd);
             }
         };
@@ -170,8 +170,8 @@ struct SystemSnapshot {
 
         // registry
         out["registry"]["timestamp"] = registry.timestamp;
-        out["registry"]["backupInfo"]["folderName"] = registry.backupInfo.folderName;
-        out["registry"]["backupInfo"]["folderPath"] = registry.backupInfo.folderPath;
+        out["registry"]["backupInfo"]["folderName"] = util::EncodingUtil::ToUTF8(registry.backupInfo.folderName);
+        out["registry"]["backupInfo"]["folderPath"] = util::EncodingUtil::ToUTF8(registry.backupInfo.folderPath);
         out["registry"]["backupInfo"]["createTime"] = registry.backupInfo.createTime;
         out["registry"]["backupInfo"]["totalSize"] = registry.backupInfo.totalSize;
 
@@ -187,10 +187,10 @@ struct SystemSnapshot {
             json jp;
             jp["pid"] = p.pid;
             jp["parentPid"] = p.parentPid;
-            jp["name"] = p.name;
-            jp["fullPath"] = p.fullPath;
-            jp["state"] = p.state;
-            jp["username"] = p.username;
+            jp["name"] = util::EncodingUtil::ToUTF8(p.name);
+            jp["fullPath"] = util::EncodingUtil::ToUTF8(p.fullPath);
+            jp["state"] = util::EncodingUtil::ToUTF8(p.state);
+            jp["username"] = util::EncodingUtil::ToUTF8(p.username);
             jp["cpuUsage"] = p.cpuUsage;
             jp["memoryUsage"] = p.memoryUsage;
             jp["workingSetSize"] = p.workingSetSize;
@@ -198,7 +198,7 @@ struct SystemSnapshot {
             jp["createTime"] = p.createTime;
             jp["priority"] = p.priority;
             jp["threadCount"] = p.threadCount;
-            jp["commandLine"] = p.commandLine;
+            jp["commandLine"] = util::EncodingUtil::ToUTF8(p.commandLine);
             jp["handleCount"] = p.handleCount;
             jp["gdiCount"] = p.gdiCount;
             jp["userCount"] = p.userCount;
@@ -206,7 +206,7 @@ struct SystemSnapshot {
         }
 
         out["snapshotTimestamp"] = timestamp;
-        out["id"] = id;
+        out["id"] = util::EncodingUtil::ToUTF8(id);
         return out;
     }
 };
